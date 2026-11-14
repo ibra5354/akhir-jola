@@ -72,6 +72,21 @@
   .opt input:focus-visible + .sw { outline:2px solid var(--ember); outline-offset:2px; }
   @keyframes grain { 0% { transform:translate(0,0); } 25% { transform:translate(-37px,19px); } 50% { transform:translate(23px,-41px); } 75% { transform:translate(-11px,-29px); } }
   @media (prefers-reduced-motion: reduce) { body.zmode #grain { animation:none; } }
+  #c { transition:filter .5s; }
+  body.zdown #c { filter:saturate(.4) contrast(1.12); }
+  #zFade { position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, rgba(0,0,0,0) 30%, rgba(0,0,0,.7) 78%, rgba(0,0,0,.95) 100%); }
+  body.zdead #hud { opacity:0; transition:opacity .7s; }
+  body.zdead #stick, body.zdead #fire, body.zdead #reloadBtn, body.zdead #swapBtn, body.zdead #useBtn, body.zdead .mb, body.zdead #pauseBtn { display:none !important; }
+  body.zdown #swapBtn, body.zdown #useBtn { opacity:.25; }
+  #downBox { position:absolute; left:50%; top:118px; transform:translateX(-50%); text-align:center; pointer-events:none; white-space:nowrap; text-shadow:0 0 6px #000, 0 2px 0 #000; }
+  #downBox b { display:block; font-family:'Lalezar','Tajawal',serif; font-size:34px; font-weight:900; color:#ff4d6d; letter-spacing:1px; animation:dnPulse 1s ease-in-out infinite; }
+  #downBox span { display:block; font-size:15px; font-weight:800; color:#fff; margin-top:2px; }
+  #downBox small { display:block; font-size:12px; color:#f1c6cf; margin-top:6px; opacity:.85; }
+  #downBox .dbar { width:240px; max-width:62vw; height:8px; margin:8px auto 0; border-radius:99px; background:rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.28); overflow:hidden; direction:ltr; }
+  #downBox .dbar i { display:block; height:100%; background:linear-gradient(90deg,#ec4899,#fb7185); transform-origin:left center; transform:scaleX(0); }
+  @keyframes dnPulse { 50% { opacity:.55; } }
+  @media (max-height:480px) { #downBox { top:106px; } #downBox b { font-size:22px; } #downBox small { display:none; } #downBox .dbar { margin-top:5px; height:6px; } }
+  @media (prefers-reduced-motion: reduce) { #downBox b { animation:none; } }
   #hurt { position:fixed; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, rgba(120,0,0,0) 30%, rgba(110,0,0,.55) 70%, rgba(70,0,0,.92) 100%); }
   #roundBig { position:absolute; top:13%; left:50%; transform:translateX(-50%); font-family:'Lalezar','Tajawal',serif; font-size:64px; font-weight:900; color:#a40d0d;
               text-shadow:0 0 18px rgba(255,30,30,.55), 0 3px 0 #2a0000, 0 0 3px #000; opacity:0; transition:opacity 1.4s; white-space:nowrap; pointer-events:none; letter-spacing:2px; }
@@ -337,8 +352,10 @@
 <div id="vig"></div>
 <div id="grain"></div>
 <div id="hurt"></div>
+<div id="zFade"></div>
 
 <div id="hud">
+  <div id="downBox" style="display:none"><b>النفس الأخير</b><span id="downSec"></span><div class="dbar"><i id="downFill"></i></div><small>ضربة وحدة وأنت طايح = موت</small></div>
   <div id="left">
     <div id="wpn"><div id="wname">مسدس</div><div id="ammoBox"><span id="ammoMag">12</span><span id="ammoRes">84</span></div><span id="reload"></span><div id="gearRow">🔪 &nbsp;💣 <b id="gN">2</b><span id="dRow"> &nbsp;📻 <b id="dN">1</b></span></div></div>
     <div id="vit"><span id="hpRow">✚ <b id="hpTxt">100</b></span><span id="shRow">🛡️ <b id="shTxt">0</b></span><span id="perkRow"></span><span id="boost"></span></div>
@@ -452,7 +469,7 @@
       <div class="row"><span>الشبابيك</span><span>الزومبي يجون من برا السور، يفكّون ألواح الشبابيك ويدخلون. قف عند الشباك و<b>ثبّت الألواح</b>، وكل لوح <b>10</b> نقاط</span></div>
       <div class="row"><span>النقاط</span><span><b>10</b> لكل إصابة، <b>60</b> للقتلة، <b>100</b> للهيدشوت، <b>130</b> للسكين</span></div>
       <div class="row"><span>الصندوق</span><span>بـ<b>500</b> يعطيك سلاح عشوائي. عمود النور الأزرق يدلّك عليه</span></div>
-      <div class="row"><span>المشروبات</span><span>قوة (تتحمل 4 ضربات)، تعبئة سريعة، إطلاق سريع، جري أسرع، شفاء سريع</span></div>
+      <div class="row"><span>المشروبات</span><span>قوة (تتحمل 4 ضربات)، تعبئة سريعة، إطلاق سريع، جري أسرع، شفاء سريع (500: لو طحت تقوم لحالك، 3 مرات بس)</span></div>
       <div class="row"><span>التطوير</span><span>البوابة البنفسجية تضاعف ضرر سلاحك ومخزنه</span></div>
       <div class="row"><span>القوى</span><span>الزومبي يطيّحون أحياناً: ذخيرة كاملة، قتل فوري، نقاط مضاعفة، قنبلة تمسحهم، ونجّار يسكّر كل الشبابيك</span></div>
       <div class="row"><span>الزعيم</span><span>يجيك كل <b>5</b> جولات</span></div>
@@ -1083,7 +1100,7 @@ const PERKS = {
   speed:  { name: 'تعبئة سريعة',  icon: '\u26a1',       cost: 2000, col: 0x16a34a, dot: '#16a34a', desc: 'تعبئة أسرع ×2' },
   dtap:   { name: 'إطلاق سريع',   icon: '\ud83d\udd25', cost: 2000, col: 0xf59e0b, dot: '#f59e0b', desc: 'رصاص أسرع +ضرر' },
   stam:   { name: 'جري أسرع',     icon: '\ud83d\udc5f', cost: 1750, col: 0x3b82f6, dot: '#3b82f6', desc: 'حركة أسرع' },
-  revive: { name: 'شفاء سريع',    icon: '\u2764\ufe0f', cost: 1500, col: 0xec4899, dot: '#ec4899', desc: 'الصحة ترجع أسرع' }
+  revive: { name: 'شفاء سريع',    icon: '\u2764\ufe0f', cost: 500, col: 0xec4899, dot: '#ec4899', desc: 'لو طحت تقوم لحالك' }
 };
 const emojiMats = {};
 function emojiIcon(ch, ring) {
@@ -1120,6 +1137,7 @@ function papMachine(x, z, dir) {
 // A standing vending machine. dir = which way its face points along z (+1 or -1).
 function perkMachine(x, z, dir, id) {
   const P = PERKS[id];
+  const i0 = mapObjects.length, o0 = obstacles.length, m0 = obstacleMeshes.length, g0 = glows.length;
   boxMM(x - 0.7, x + 0.7, z - 0.45, z + 0.45, 0, 2.3, 0x14161c);        // cabinet (blocks walking)
   const fz = z + dir * 0.46;
   glow(x, 1.35, fz, 1.15, 1.3, 0.04, P.col);                             // lit front panel
@@ -1132,7 +1150,8 @@ function perkMachine(x, z, dir, id) {
   icon.scale.set(0.8, 0.8, 1);
   icon.position.set(x, 1.4, z + dir * 0.66);
   track(icon);
-  stations.push({ type: 'perk', perk: id, x, z, fx: x, fz: z + dir * 1.15, cost: P.cost });
+  stations.push({ type: 'perk', perk: id, x, z, fx: x, fz: z + dir * 1.15, cost: P.cost,
+                  objs: mapObjects.slice(i0), obst: obstacles.slice(o0), oms: obstacleMeshes.slice(m0), gl: glows.slice(g0) });
 }
 const chalkMat = new THREE.MeshBasicMaterial({ color: 0xf5f5dc });
 function weaponStation(x, z, dir, id, cost) {
@@ -1954,14 +1973,14 @@ function startDive() {
 }
 // one button: crouch when still or walking, slide when sprinting, dive when in the air after a sprint
 function crouchPress() {
-  if (!running || !player.alive || mantle || diving || proneT > 0 || slideT > 0) return;
+  if (!running || !player.alive || down || mantle || diving || proneT > 0 || slideT > 0) return;
   const sp = Math.hypot(pvx, pvz);
   if (!player.grounded) { if (sp > 6.5 && sinceSprint < 0.7) startDive(); return; }
   if (sp > 7 && slideCd <= 0) { startSlide(); return; }
   stance = stance === 'crouch' ? 'stand' : 'crouch';
 }
 function jump() {
-  if (!running || !player.alive || mantle || diving || proneT > 0.3) return;
+  if (!running || !player.alive || down || mantle || diving || proneT > 0.3) return;
   if (!player.grounded) return;
   if (slideT <= 0) {                               // facing something climbable: climb instead of hopping in place
     const L = findLedge(-Math.sin(player.yaw), -Math.cos(player.yaw), 2.25);
@@ -2222,13 +2241,78 @@ function tone(freq, dur, type, vol, slide) {
     const t = actx.currentTime;
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = type || 'square';
+    freq *= sndPitch; if (slide) slide *= sndPitch;
     o.frequency.setValueAtTime(freq, t);
     if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
     g.gain.setValueAtTime(vol || 0.06, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(actx.destination);
+    o.connect(g); g.connect(sndOut());
     o.start(t); o.stop(t + dur + 0.02);
   } catch (e) {}
+}
+
+// Everything the game plays goes through one bus with a low-pass on it. Wide open normally; closing it is how the
+// world goes dull when you are on the ground or dying. sndPitch drags the pitch of new sounds down with it.
+let sndBus = null, sndLP = null, sndPitch = 1;
+function sndOut() {
+  if (sndBus) return sndBus;
+  sndBus = actx.createGain(); sndLP = actx.createBiquadFilter();
+  sndLP.type = 'lowpass'; sndLP.frequency.value = 20000; sndLP.Q.value = 0.6;
+  sndBus.connect(sndLP); sndLP.connect(actx.destination);
+  return sndBus;
+}
+function sndMuffle(hz, secs) {                 // hz = 0 opens it back up
+  if (!actx) return;
+  try {
+    sndOut();
+    const t = actx.currentTime, f = sndLP.frequency, g = sndBus.gain;
+    f.cancelScheduledValues(t); f.setValueAtTime(Math.max(60, f.value), t); f.exponentialRampToValueAtTime(hz || 20000, t + secs);
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(hz ? (hz < 800 ? 0.75 : 0.9) : 1, t + secs);
+  } catch (e) {}
+}
+// The laugh of whatever just killed you. A rough throat (two saws and a square an octave down, pushed through a
+// shaper), three vowel bands for an open "ha", and one gate per syllable: it starts slow, breaks into a cackle and
+// winds down. It skips the muffled bus on purpose, so it is the one clear thing you hear.
+function zLaugh(at) {
+  if (!actx || muted) return 0;
+  try {
+    const t0 = actx.currentTime + (at || 0);
+    const out = actx.createGain(); out.gain.value = 0.85; out.connect(actx.destination);
+    const dl = actx.createDelay(1), fb = actx.createGain(), dlp = actx.createBiquadFilter();        // hollow room behind it
+    dl.delayTime.value = 0.27; fb.gain.value = 0.42; dlp.type = 'lowpass'; dlp.frequency.value = 1300;
+    out.connect(dl); dl.connect(dlp); dlp.connect(fb); fb.connect(dl); dlp.connect(actx.destination);
+    const pre = actx.createGain(), sh = actx.createWaveShaper(), gate = actx.createGain();
+    const curve = new Float32Array(257); for (let i = 0; i < 257; i++) { const x = i / 128 - 1; curve[i] = Math.tanh(x * 3.2); }
+    sh.curve = curve; pre.gain.value = 0.6; gate.gain.value = 0.0001;
+    pre.connect(sh); sh.connect(gate);
+    [[640, 5, 1], [1120, 7, 0.6], [2500, 8, 0.22]].forEach(([f, q, v]) => {
+      const bp = actx.createBiquadFilter(), g = actx.createGain(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q; g.gain.value = v;
+      gate.connect(bp); bp.connect(g); g.connect(out);
+    });
+    const oscs = [['sawtooth', 1, -9, 0.5], ['sawtooth', 1, 8, 0.5], ['square', 0.5, 0, 0.45]].map(([type, mul, det, v]) => {
+      const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.detune.value = det; g.gain.value = v; o.connect(g); g.connect(pre); o._mul = mul; return o;
+    });
+    const rough = actx.createOscillator(), rg = actx.createGain(); rough.frequency.value = 31; rg.gain.value = 9;      // gravel in the throat
+    rough.connect(rg); oscs.forEach(o => rg.connect(o.frequency));
+    // [pitch, gap after it, loudness]
+    const syl = [[92, 0.42, 0.7], [100, 0.36, 0.8], [128, 0.2, 0.9], [156, 0.165, 1], [168, 0.155, 1], [163, 0.155, 1], [152, 0.16, 0.95],
+                 [139, 0.175, 0.9], [124, 0.2, 0.85], [108, 0.24, 0.8], [93, 0.3, 0.7], [78, 0.42, 0.65], [64, 0.6, 0.55]];
+    let t = t0;
+    ensureNoise();
+    for (const [f, gap, v] of syl) {
+      const len = Math.min(gap * 0.72, 0.3);
+      for (const o of oscs) { o.frequency.setValueAtTime(f * o._mul * 1.14, t); o.frequency.exponentialRampToValueAtTime(f * o._mul * 0.84, t + len); }
+      gate.gain.setValueAtTime(0.0001, t); gate.gain.exponentialRampToValueAtTime(v, t + 0.028); gate.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      const n = actx.createBufferSource(), nf = actx.createBiquadFilter(), ng = actx.createGain();           // the breath in front of each "ha"
+      n.buffer = noiseBuf; n.loop = true; nf.type = 'bandpass'; nf.frequency.value = 1500; nf.Q.value = 1.1;
+      ng.gain.setValueAtTime(0.0001, t - 0.03); ng.gain.exponentialRampToValueAtTime(0.11 * v, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + len * 0.8);
+      n.connect(nf); nf.connect(ng); ng.connect(out); n.start(t - 0.03, Math.random()); n.stop(t + len);
+      t += gap;
+    }
+    oscs.forEach(o => { o.start(t0); o.stop(t + 0.2); }); rough.start(t0); rough.stop(t + 0.2);
+    setTimeout(() => { try { out.disconnect(); dlp.disconnect(); } catch (e) {} }, (t - actx.currentTime + 3) * 1000);
+    return t - t0;
+  } catch (e) { return 0; }
 }
 
 // ---- music bus with an echo, so everything played through it sounds far away and hollow ----
@@ -2236,7 +2320,7 @@ let musicIn = null, musicGain = null, amb = null;
 function musicBus() {
   if (!actx) return null;
   if (musicIn) return musicIn;
-  musicGain = actx.createGain(); musicGain.gain.value = muted ? 0 : 1; musicGain.connect(actx.destination);
+  musicGain = actx.createGain(); musicGain.gain.value = muted ? 0 : 1; musicGain.connect(sndOut());
   musicIn = actx.createGain(); musicIn.connect(musicGain);
   const dl = actx.createDelay(1), fb = actx.createGain(), lp = actx.createBiquadFilter();
   dl.delayTime.value = 0.41; fb.gain.value = 0.46; lp.type = 'lowpass'; lp.frequency.value = 1800;
@@ -2366,14 +2450,14 @@ function zVoice(kind, x, z) {
   try {
     const t = actx.currentTime, o = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain(), l = actx.createOscillator(), lg = actx.createGain();
     const dur = kind === 'groan' ? 0.7 + Math.random() * 0.9 : kind === 'attack' ? 0.32 : 0.55;
-    const f0 = kind === 'attack' ? 190 + Math.random() * 60 : kind === 'death' ? 150 : 70 + Math.random() * 50;
-    const f1 = kind === 'attack' ? 110 : kind === 'death' ? 45 : f0 * (0.75 + Math.random() * 0.5);
+    const f0 = (kind === 'attack' ? 190 + Math.random() * 60 : kind === 'death' ? 150 : 70 + Math.random() * 50) * sndPitch;
+    const f1 = kind === 'attack' ? 110 * sndPitch : kind === 'death' ? 45 : f0 * (0.75 + Math.random() * 0.5);
     o.type = 'sawtooth'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     l.frequency.value = 18 + Math.random() * 14; lg.gain.value = f0 * 0.12; l.connect(lg); lg.connect(o.frequency);
     f.type = 'bandpass'; f.Q.value = 3.5; f.frequency.setValueAtTime(kind === 'attack' ? 1100 : 500 + Math.random() * 300, t); f.frequency.linearRampToValueAtTime(kind === 'death' ? 300 : 800 + Math.random() * 400, t + dur);
     const vol = (kind === 'groan' ? 0.16 : kind === 'attack' ? 0.3 : 0.2) * near;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(f); f.connect(g); g.connect(d > 14 ? musicBus() : actx.destination);     // far ones echo
+    o.connect(f); f.connect(g); g.connect(d > 14 ? musicBus() : sndOut());     // far ones echo
     o.start(t); l.start(t); o.stop(t + dur + 0.05); l.stop(t + dur + 0.05);
     if (kind !== 'groan') shotNoise(0.06 * near, 0.2, 1400);
   } catch (e) {}
@@ -2502,7 +2586,7 @@ function click(at, f, vol, dur, q) {
     src.buffer = noiseBuf; src.loop = true;
     bf.type = 'bandpass'; bf.frequency.value = f; bf.Q.value = q || 4;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(bf); bf.connect(g); g.connect(actx.destination);
+    src.connect(bf); bf.connect(g); g.connect(sndOut());
     src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.02);
   } catch (e) {}
 }
@@ -2546,7 +2630,7 @@ function clank(at, f, vol) {
       const o = actx.createOscillator(), g = actx.createGain();
       o.type = 'triangle'; o.frequency.value = f * m;
       g.gain.setValueAtTime(vol * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13 / m + 0.04);
-      o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.25);
+      o.connect(g); g.connect(sndOut()); o.start(t); o.stop(t + 0.25);
     });
   } catch (e) {}
 }
@@ -2571,7 +2655,7 @@ function shotNoise(vol, dur, cutoff) {
     src.buffer = noiseBuf; src.loop = true;
     f.type = 'lowpass'; f.frequency.setValueAtTime(cutoff, t); f.frequency.exponentialRampToValueAtTime(Math.max(180, cutoff * 0.12), t + dur);
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f); f.connect(g); g.connect(actx.destination);
+    src.connect(f); f.connect(g); g.connect(sndOut());
     src.start(t, Math.random() * 0.3); src.stop(t + dur + 0.03);
   } catch (e) {}
 }
@@ -2727,6 +2811,7 @@ function quitToMenu() {
   if (!running) return;
   running = false; pauseOpen = false;
   if (mode === 'tdm') tdm.over = true; else saveBest();
+  zClear();
   mouseFire = fireHeld = false; aimHeld = false;
   if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
   try { stopAmbience(); } catch (e) {}
@@ -3208,8 +3293,8 @@ function deathCard() {
 function deathCam(dt) {
   const d = death; if (!d) return;
   d.t += dt;
-  const u = Math.min(1, d.t / 0.55), e = u * u * (3 - 2 * u);
-  const cy = d.y0 + (player.y + 0.42 - d.y0) * e;
+  const u = Math.min(1, d.t / (d.dur || 0.55)), e = u * u * (3 - 2 * u);
+  const cy = d.y0 + (player.y + (d.low || 0.42) - d.y0) * e;
   let ty = d.yaw, tp = -0.04;
   const o = d.obj;
   if (o && !o.dead && o.group.parent) {
@@ -3220,7 +3305,7 @@ function deathCam(dt) {
   const k = Math.min(1, dt * 4.5);
   d.yaw += da * k; d.pitch += (tp - d.pitch) * k;
   camera.position.set(player.x, cy, player.z);
-  camera.rotation.set(d.pitch, d.yaw, 0.34 * e);
+  camera.rotation.set(d.pitch, d.yaw, (d.roll || 0.34) * e);
   if (Math.abs(camera.fov - 68) > 0.05) { camera.fov += (68 - camera.fov) * Math.min(1, dt * 6); camera.updateProjectionMatrix(); }
   camera.updateMatrixWorld();
   gun.visible = false;
@@ -3882,7 +3967,7 @@ function updateBoss(b, dt, dx, dz, d) {
   const moved = Math.hypot(g.position.x - ox, g.position.z - oz);
   if (!c.hit && player.y < 1.0 && Math.hypot(player.x - g.position.x, player.z - g.position.z) < 2.0) {
     c.hit = true;
-    damagePlayer(50, true);
+    zHit(b);
     collide(player.x + c.dx * 3, player.z + c.dz * 3, 0.4, player.y);      // knock-back
     player.x = clamp(_cx, -ARENA + 1.5, ARENA - 1.5);
     player.z = clamp(_cz, -ARENA + 1.5, ARENA - 1.5);
@@ -3963,7 +4048,7 @@ let sinceHit = 99;
 function updateRegen(dt) {
   sinceHit += dt;
   const wait = player.perks.revive ? 1.6 : 3.5, rate = player.perks.revive ? 55 : 25;
-  if (sinceHit > wait && player.hp < maxHp() && player.alive) player.hp = Math.min(maxHp(), player.hp + rate * dt);
+  if (sinceHit > wait && player.hp < maxHp() && player.alive && !down) player.hp = Math.min(maxHp(), player.hp + rate * dt);
   // one hit from death: the screen goes red and you hear your heart
   const frac = player.hp / maxHp();
   if (player.alive && frac <= 0.5 && mode !== 'tdm') {
@@ -4018,7 +4103,7 @@ function updateEntry(b, dt) {
     if (b.cool <= 0 && player.alive && player.y < 1.5 && Math.abs(b.slot) < 1.2 && Math.hypot(player.x - (B.x + B.nx * 0.9), player.z - (B.z + B.nz * 0.9)) < 1.25) {
       b.cool = 1.3; b.swipe = 0.35;
       zVoice('attack', g.position.x, g.position.z);
-      damagePlayer(50, true); hitFrom(g.position.x, g.position.z);
+      zHit(b); hitFrom(g.position.x, g.position.z);
     }
   } else {
     b.climbT += dt / (b.type === 'runner' ? 0.7 : 0.95);
@@ -4160,7 +4245,7 @@ function updateBots(dt) {
       const hl = Math.hypot(b.hx, b.hz) || 1;
       ux = b.hx / hl; uz = b.hz / hl;
       g.rotation.y = Math.atan2(ux, uz);
-      const step = b.speed * dt * (b.stag > 0 ? 0.35 : 1);
+      const step = (down ? Math.min(b.speed * 0.35, 1.1) : b.speed * (b.stag > 0 ? 0.35 : 1)) * dt;          // they close in slowly on someone who is already on the ground
       let nx = ox + ux * step, nz = oz + uz * step;
       for (const o of enemies) {               // don't stack on top of each other
         if (o === b || o.rise > 0 || o.ph) continue;
@@ -4188,7 +4273,7 @@ function updateBots(dt) {
     else if (d < reach * (evading() ? 0.55 : 1) && b.cool <= 0 && player.alive && player.y < 3) {     // close enough: swipe (hard to land on someone sliding past)
       b.cool = 1.1; b.swipe = 0.35;
       zVoice('attack', g.position.x, g.position.z);
-      damagePlayer(50, true);
+      zHit(b);
       hitFrom(g.position.x, g.position.z);
     }
   }
@@ -4324,13 +4409,13 @@ function giveWeapon(id) {
   tone(600, 0.2, 'triangle', 0.08, 500);
 }
 function switchWeapon() {
-  if (!running || !player.alive || player.weapons.length < 2) return;
+  if (!running || !player.alive || down || player.weapons.length < 2) return;
   player.cur = 1 - player.cur;
   player.reloading = 0;
   swapT = 1; swapDone = false; SFX.swap();
 }
 function nearStation() {
-  for (const st of stations) if (Math.hypot(player.x - st.fx, player.z - st.fz) < 2.0) return st;
+  for (const st of stations) if (!st.gone && Math.hypot(player.x - st.fx, player.z - st.fz) < 2.0) return st;
   return null;
 }
 function buyShield(st) {
@@ -4348,6 +4433,12 @@ function buyPerk(st) {
   player.points -= st.cost;
   player.perks[st.perk] = true;
   if (st.perk === 'jug') player.hp = maxHp();                 // Juggernog tops you right up
+  if (st.perk === 'revive') {                                 // three bottles a game, then the machine is gone
+    revBought++;
+    const left = REV_MAX - revBought;
+    toast(P.icon + ' ' + P.name + ' — ' + (left ? 'باقي في الماكينة ' + left : 'هذي آخر وحدة!'));
+    if (!left) { machineSet(st, false); for (let i = 0; i < 16; i++) emit(st.x + jit(0.7), 0.3 + rnd() * 2, st.z + jit(0.5), jit(1.5), 0.5 + rnd(), jit(1.5), 0.9, 0.3, 2, 0.93, 0.28, 0.6, 0.5, 1, -0.5, 2); whoosh(0, 1.2, 0.2, 1600, 180, false); }
+  } else
   toast(P.icon + ' ' + P.name + ' — ' + P.desc + '!');
   tone(330, 0.12, 'triangle', 0.08);
   setTimeout(() => tone(440, 0.12, 'triangle', 0.08), 120);
@@ -4367,6 +4458,7 @@ function buyPaP(st) {
   if (player.points < PAP_COST) { toast('ما عندك نقاط كافية 💰 ' + PAP_COST); tone(150, 0.08, 'square', 0.05); return; }
   player.points -= PAP_COST;
   w.def = papDef(WEAPONS[w.id], w.id);
+  if (w.id === 'pistol') player.papPistol = true;
   w.ammo = w.def.mag; w.reserve = w.def.reserve; player.reloading = 0;
   applyGunModel(w.def);
   toast('⚙️ ' + w.def.name + ' — ضرر مضاعف!');
@@ -4376,7 +4468,7 @@ function buyPaP(st) {
   setTimeout(() => tone(880, 0.45, 'triangle', 0.09, 400), 420);
 }
 function interact() {
-  if (!running || !player.alive) return;
+  if (!running || !player.alive || down) return;
   if (nearBox() && (box.state === 'idle' || box.state === 'offer')) { useBox(); return; }
   const st = nearStation();
   if (!st) { const B = nearBarrier(); if (B) { repairing = B; repT = 0.25; } return; }
@@ -4462,7 +4554,7 @@ function updateBoxUI() {
     }
   }
   let note = '', desc = '';
-  if (!btn && player.alive) {
+  if (!btn && player.alive && !down) {
     const st = nearStation();
     if (st && st.type === 'pap') {
       const w = cw();
@@ -4472,12 +4564,12 @@ function updateBoxUI() {
     else if (st && st.type === 'perk') {
       const P = PERKS[st.perk];
       if (player.perks[st.perk]) btn = P.icon + ' ' + P.name + ' — عندك';
-      else { btn = 'اشتري ' + P.icon + ' ' + P.name + ' ' + st.cost + ' 💰'; desc = P.desc; note = P.icon + ' ' + P.name + ' — ' + P.desc; }
+      else { btn = 'اشتري ' + P.icon + ' ' + P.name + ' ' + st.cost + ' 💰'; desc = P.desc + (st.perk === 'revive' ? ' (باقي ' + (REV_MAX - revBought) + ')' : ''); note = P.icon + ' ' + P.name + ' — ' + P.desc; }
     }
     else if (st && st.type === 'shield') btn = player.shield >= 100 ? 'الدرع كامل 🛡️' : 'اشتري درع ' + st.cost + ' 💰';
     else if (st) btn = player.weapons.some(w => w.id === st.id) ? 'ذخيرة ' + WEAPONS[st.id].name + ' ' + st.ammoCost + ' 💰' : 'اشتري ' + WEAPONS[st.id].name + ' ' + st.cost + ' 💰';
   }
-  if (!btn && player.alive) {
+  if (!btn && player.alive && !down) {
     const B = nearBarrier();
     if (B) { btn = repairing === B ? 'جاري تثبيت الألواح… ' + B.boards + '/' + BOARDS : 'ثبّت الألواح 🔨 ' + B.boards + '/' + BOARDS; desc = 'كل لوح +10'; }
   }
@@ -4576,10 +4668,10 @@ function explode(x, y, z, R, dmg, r, g, b, fxOnly) {
     if (d < R) { addPoints(10); applyDamage(bot, Math.round(dmg * (1 - d / R * 0.7)), false); if (!bot.dead && bot.zombie && d < R * 0.7 && Math.random() < 0.6) makeCrawler(bot); }      // survivors of a blast lose their legs
   }
   const dp = Math.hypot(player.x - x, player.z - z, player.y + 1 - y);
-  if (dp < R * 0.55 && player.alive) { if (mode === 'tdm') { lastHit = { self: true, kind: 'nade' }; netKiller = null; } damagePlayer(mode === 'tdm' ? 45 : 30); }
+  if (dp < R * 0.55 && player.alive) { if (mode === 'tdm') { lastHit = { self: true, kind: 'nade' }; netKiller = null; } else lastHit = null; damagePlayer(mode === 'tdm' ? 45 : 30); }
 }
 function knife() {
-  if (!running || !player.alive || knifeT > 0 || throwT > 0) return;
+  if (!running || !player.alive || down || knifeT > 0 || throwT > 0) return;
   knifeT = 0.34; knifeHit = false;
   click(0, 900, 0.14, 0.16, 0.7);            // the blade through the air
 }
@@ -4607,7 +4699,7 @@ function knifeStrike() {
   best.knifed = false;
 }
 function throwGear(type) {
-  if (!running || !player.alive || knifeT > 0 || throwT > 0) return;
+  if (!running || !player.alive || down || knifeT > 0 || throwT > 0) return;
   if (type === 'decoy' && mode === 'tdm') return;
   const key = type === 'nade' ? 'nades' : 'decoys';
   if (player[key] <= 0) { toast(type === 'nade' ? 'ما عندك قنابل 💣' : 'ما عندك طُعم 📻'); tone(150, 0.06, 'square', 0.05); return; }
@@ -4907,6 +4999,7 @@ function tryFire() {
 let shakeT = 0, hbT = 0;
 function damagePlayer(d, melee) {
   if (!player.alive) return;
+  if (mode !== 'tdm' && (safeT > 0 || (down && down.t < 1))) return;
   sinceHit = 0;
   if (melee) shakeT = 0.3;
   if (melee && player.shield > 0) {           // against zombies the shield is worth exactly one hit
@@ -4933,17 +5026,115 @@ function damagePlayer(d, melee) {
   if (player.hp <= 0) {
     player.hp = 0;
     if (mode === 'tdm') { playerDiedTdm(); return; }
-    player.alive = false;
-    running = false;
-    $('hurt').style.opacity = 0.9; gameOverMusic();
-    E.endTitle.textContent = 'انتهت اللعبة';
-    saveBest();
-    E.endTxt.innerHTML = statTiles([[wave, 'الجولة'], [kills, 'زومبي قتلتهم'], [bests[currentMap], 'أفضل جولة لك']]);
-    E.endScr.style.display = 'flex'; setMenu(true);
-    if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
-    updateLockHint();
-    E.endScr.focus && E.endScr.focus();
+    if (player.perks.revive && !down) goDown(); else zDie();
   }
+}
+function zHit(b) { lastHit = { obj: b }; damagePlayer(50, true); }
+
+// ---------- Zombies: the last stand, and the death that follows ----------
+// Quick Revive works the way it does alone in Black Ops 1: it is spent the moment you drop. You crawl with a pistol
+// while the bar fills, then get back up hurt. A hit while you are on the ground is the end.
+const REV_MAX = 3, DOWN_TIME = 8;
+let down = null, zDeath = null, revBought = 0, safeT = 0;
+function machineSet(st, on) {                 // take a perk machine out of the map (or put it back for a new game)
+  if (!st.objs || !!st.gone === !on) return;
+  st.gone = !on;
+  for (const o of st.objs) o.visible = on;
+  for (const [arr, items] of [[obstacles, st.obst], [obstacleMeshes, st.oms], [glows, st.gl]]) for (const it of items) {
+    const i = arr.indexOf(it);
+    if (on && i < 0) arr.push(it); else if (!on && i >= 0) arr.splice(i, 1);
+  }
+}
+function goDown() {
+  delete player.perks.revive;
+  player.hp = 1; sinceHit = 0;
+  down = { t: 0, weapons: player.weapons, cur: player.cur };
+  const pw = mkWeapon('pistol');
+  if (player.papPistol) { pw.def = papDef(WEAPONS.pistol, 'pistol'); pw.ammo = pw.def.mag; pw.reserve = pw.def.reserve; }
+  player.weapons = [pw]; player.cur = 0; player.reloading = 0;
+  applyGunModel(pw.def); swapT = 1; swapDone = false; SFX.swap();
+  slideT = 0; diving = false; proneT = 0; mantle = null; mantleK = 0; stance = 'crouch'; sprintToggle = false; repairing = null;
+  $('runBtn').classList.remove('on');
+  pvx = pvz = 0; shakeT = 0.5; landT = 1;
+  // falling throws everything close off you: that is the few seconds the pistol has to work with
+  for (const b of enemies) {
+    if (b.ph || b.rise > 0) { b.cool = Math.max(b.cool || 0, 2.5); continue; }
+    const g = b.group.position, dx = g.x - player.x, dz = g.z - player.z, d = Math.hypot(dx, dz) || 1;
+    const out = 5.65 + (b.type === 'boss' ? 2.3 : b.type === 'tank' ? 1.7 : 1.35);      // same walk back for everyone, whatever their reach
+    if (d > out) continue;
+    const far = (out - d) / 6;
+    for (let i = 0; i < 6; i++) { collide(g.x + dx / d * far, g.z + dz / d * far, 0.5); g.x = clamp(_cx, -ARENA + 2, ARENA - 2); g.z = clamp(_cz, -ARENA + 2, ARENA - 2); }
+    b.stag = 3; b.hitT = 0.25; b.cool = Math.max(b.cool || 0, 2.5);
+    if (b.charge) { b.charge.phase = 'walk'; b.charge.cd = Math.max(b.charge.cd || 0, 7); }
+  }
+  for (let i = 0; i < 22; i++) { const a = i / 22 * 6.2832; emit(player.x + Math.cos(a) * 0.6, 0.15, player.z + Math.sin(a) * 0.6, Math.cos(a) * 7, 0.4, Math.sin(a) * 7, 0.55, 0.3, 2.4, 0.95, 0.3, 0.55, 0.45, 1, -0.2, 3); }
+  lowHit(0, 0.7); whoosh(0, 0.9, 0.22, 2200, 160, false); tone(180, 0.7, 'sawtooth', 0.1, -140);
+  sndMuffle(1500, 0.5);
+  document.body.classList.add('zdown');
+  hc.dnS = -1; toastT = 0; E.toast.style.opacity = 0;
+}
+function getUp() {
+  const d = down; down = null;
+  player.weapons = d.weapons; player.cur = d.cur; player.reloading = 0;
+  applyGunModel(cw().def); swapT = 1; swapDone = false; SFX.swap();
+  player.hp = Math.max(player.hp, Math.round(maxHp() * 0.3)); sinceHit = 0; safeT = 2;
+  stance = 'stand'; eyeH = Math.max(eyeH, 0.6);
+  sndMuffle(0, 0.6);
+  document.body.classList.remove('zdown');
+  whoosh(0, 0.8, 0.2, 250, 2400, true); tone(330, 0.14, 'triangle', 0.08); setTimeout(() => tone(495, 0.3, 'triangle', 0.09, 200), 140);
+  const left = REV_MAX - revBought;
+  toast(left ? '❤️ قمت! اشترِ شفاء سريع من جديد (باقي ' + left + ')' : '❤️ قمت! ما باقي شفاء سريع');
+}
+function downTick(dt) {
+  down.t += dt;
+  if (down.t >= DOWN_TIME) getUp();
+}
+function zDie() {
+  const lh = lastHit || {};
+  if (down) { player.weapons = down.weapons; player.cur = down.cur; down = null; }
+  player.alive = false; mouseFire = fireHeld = false; aimHeld = false; repairing = null;
+  death = { obj: lh.obj && !lh.obj.dead ? lh.obj : null, t: 0, y0: camera.position.y, yaw: player.yaw, pitch: player.pitch, dur: 0.8, low: 0.26, roll: 0.62 };
+  zDeath = { t: 0, k: 1, laugh: false };
+  $('scope').style.display = 'none'; hc.scoped = undefined;
+  $('hurt').style.opacity = 0.9;
+  document.body.classList.remove('zdown'); document.body.classList.add('zdead');
+  pauseOpen = false; updateLockHint();
+  stopAmbience();
+  lowHit(0, 0.9); tone(140, 1.1, 'sawtooth', 0.12, -100);
+  sndMuffle(380, 1.1);
+  saveBest();
+}
+function zDeathTick(rdt) {
+  const z = zDeath;
+  z.t += rdt;
+  z.k = 1 - 0.6 * Math.min(1, z.t / 0.9);                    // the world drags to a crawl
+  sndPitch = 1 - 0.45 * Math.min(1, z.t / 1.5);
+  if (!z.laugh && z.t > 0.5) { z.laugh = true; zLaugh(0); }
+  // the colour drains out of the world and the edges close in (driven from here, so it keeps time with the slow motion)
+  const u = Math.min(1, z.t / 2.6), key = Math.round(u * 40);
+  if (z.key !== key) {
+    z.key = key;
+    canvas.style.filter = 'grayscale(' + u.toFixed(2) + ') brightness(' + (1 - 0.22 * u * u).toFixed(2) + ') contrast(' + (1 + 0.18 * u).toFixed(2) + ')';
+    $('zFade').style.opacity = (0.75 * u * u).toFixed(2);
+    $('hurt').style.opacity = (0.9 - 0.55 * u).toFixed(2);
+  }
+  if (z.t >= 3.6) zEnd();
+}
+function zEnd() {
+  running = false; sndPitch = 1;
+  sndMuffle(0, 1.5); gameOverMusic();
+  E.endTitle.textContent = 'انتهت اللعبة';
+  E.endTxt.innerHTML = statTiles([[wave, 'الجولة'], [kills, 'زومبي قتلتهم'], [bests[currentMap], 'أفضل جولة لك']]);
+  E.endScr.style.display = 'flex'; setMenu(true);
+  if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
+  updateLockHint();
+  E.endScr.focus && E.endScr.focus();
+}
+function zClear() {                           // back to a clean slate: new game, or out to the menu
+  down = null; zDeath = null; safeT = 0; sndPitch = 1;
+  document.body.classList.remove('zdown', 'zdead');
+  canvas.style.filter = ''; $('zFade').style.opacity = 0;
+  sndMuffle(0, 0.05);
 }
 
 // ---------- Player update ----------
@@ -4972,7 +5163,7 @@ function updatePlayer(dt) {
   if (mantle) updateMantle(dt);
   else {
     // sprinting burns stamina; out of breath means walking until some of it is back
-    const wantSprint = (held('sprint') || sprintToggle) && moving && f > 0.3 && !isAiming() && !winded && slideT <= 0 && !diving && proneT <= 0;
+    const wantSprint = (held('sprint') || sprintToggle) && moving && f > 0.3 && !isAiming() && !winded && slideT <= 0 && !diving && proneT <= 0 && !down;
     if (wantSprint && stance === 'crouch') stance = 'stand';
     if (wantSprint && player.grounded && Math.hypot(pvx, pvz) > 4) {
       stamina -= dt * (player.perks.stam ? 8 : 16); stamWait = 0.7;
@@ -4998,7 +5189,7 @@ function updatePlayer(dt) {
       proneT -= dt;
       const fr = Math.max(0, 1 - dt * 7); pvx *= fr; pvz *= fr;
     } else {                                          // normal walking: speed builds up and bleeds off instead of snapping
-      const speed = (isAiming() ? (stance === 'crouch' ? 2.6 : 3.5) : stance === 'crouch' ? 3.2 : sprinting ? 9.5 : 6) * perk;
+      const speed = down ? 1.5 : (isAiming() ? (stance === 'crouch' ? 2.6 : 3.5) : stance === 'crouch' ? 3.2 : sprinting ? 9.5 : 6) * perk;
       const wx = (fwx * f + rtx * s) * speed, wz = (fwz * f + rtz * s) * speed;
       const acc = (player.grounded ? (moving ? 70 : 55) : 14) * dt;
       const ex = wx - pvx, ez = wz - pvz, el = Math.hypot(ex, ez);
@@ -5040,7 +5231,7 @@ function updatePlayer(dt) {
     }
   }
   // eye height follows what the body is doing; speed widens the view
-  const eyeT = mantle ? 1.35 : (diving || proneT > 0.32) ? 0.55 : slideT > 0 ? 0.85 : stance === 'crouch' ? 1.05 : 1.6;
+  const eyeT = down ? 0.48 : mantle ? 1.35 : (diving || proneT > 0.32) ? 0.55 : slideT > 0 ? 0.85 : stance === 'crouch' ? 1.05 : 1.6;
   eyeH += (eyeT - eyeH) * Math.min(1, dt * 11);
   moveFov += ((slideT > 0 ? 9 : diving ? 8 : sprinting ? 5 : 0) - moveFov) * Math.min(1, dt * 8);
   if (winded) { windT -= dt; if (windT <= 0) { windT = 0.75; click(0, 1000, 0.05, 0.3, 0.5); } }     // panting
@@ -5080,7 +5271,7 @@ function updatePlayer(dt) {
   const rd = Math.max(0, 1 - dt * 6.5), rf = Math.min(1, dt * 30);
   recPT *= rd; recYT *= rd; recP += (recPT - recP) * rf; recY += (recYT - recY) * rf;
   fovPunch = Math.max(0, fovPunch - dt * 14); landT = Math.max(0, landT - dt * 5);
-  camRoll += (-strafeIn * 0.016 + (slideT > 0 ? 0.055 : 0) + mantleK * 0.05 - camRoll) * Math.min(1, dt * 8);
+  camRoll += (-strafeIn * 0.016 + (slideT > 0 ? 0.055 : 0) + mantleK * 0.05 + (down ? 0.13 + Math.sin(down.t * 2.1) * 0.02 : 0) - camRoll) * Math.min(1, dt * 8);
   if (moving && player.grounded && slideT <= 0 && proneT <= 0 && !mantle) { const st = Math.floor(bobT / Math.PI); if (st !== lastStep) { lastStep = st; SFX.step(); } }
   camera.position.set(player.x + jit(shk), eyeH + player.y + bob + jit(shk) - landT * landT * 0.09, player.z + jit(shk));
   camera.rotation.set(Math.min(1.5, player.pitch + recP - mantleK * 0.1), player.yaw + recY, camRoll);
@@ -5283,6 +5474,13 @@ function hud() {
     E.hp.style.background = frac > 50 ? '#4ade80' : frac > 25 ? '#fbbf24' : '#ef4444';
   }
   setT('ammoMag', cw().ammo);
+  const dn = !!down && player.alive;
+  if (hc.dn !== dn) { hc.dn = dn; $('downBox').style.display = dn ? 'block' : 'none'; }
+  if (dn) {
+    const sec = Math.ceil(DOWN_TIME - down.t);
+    if (hc.dnS !== sec) { hc.dnS = sec; $('downSec').textContent = 'تقوم خلال ' + sec; }
+    $('downFill').style.transform = 'scaleX(' + clamp(down.t / DOWN_TIME, 0, 1).toFixed(3) + ')';
+  }
   setT('ammoRes', cw().reserve);
   setT('wname', cw().def.name + (player.weapons.length > 1 ? ' ⇄' : ''));
   setT('pts', player.points);
@@ -5344,6 +5542,7 @@ function drawRadar() {
   }
   if (box && box.group.visible) radarDot(box.x, box.z, '#22d3ee', 8);
   for (const st of stations) {
+    if (st.gone) continue;
     if (st.type === 'pap') radarDot(st.fx, st.fz, '#a855f7', 9);
   }
   for (const b of enemies) {
@@ -5454,6 +5653,7 @@ function previewMap(id) {
   pickMenuCam();
 }
 function openMenu() {
+  zClear();
   E.endScr.style.display = 'none'; E.startScr.style.display = 'flex';
   setMenu(true); menuCam = true;
   $('hurt').style.opacity = 0;
@@ -5637,9 +5837,10 @@ function resetGame() {
   for (const n of nades) scene.remove(n.mesh); nades.length = 0; knifeT = throwT = gearDip = 0; knifeObj.visible = false; boomLight.intensity = 0;
   player.nades = 2; player.decoys = isTdmMap(selectedMap) ? 0 : 1;
   recP = recPT = recY = recYT = fovPunch = landT = swapT = rlS = cycleT = sprT = 0; dropT = 0; dropMag.visible = false; swapDone = true; lastYaw = 0; lastPitch = 0;
+  zClear(); death = null; revBought = 0; for (const st of stations) machineSet(st, true);
   wave = 0; kills = 0; nextWaveIn = 3.5; spawnTimer = 12; zQueue = 0; groanT = 3; hbT = 0; shakeT = 0;
   Object.assign(player, { y: 0, vy: 0, grounded: true, x: 0, z: 0, yaw: 0, pitch: 0, hp: 100, reloading: 0, lastShot: 0, boost: 0, alive: true,
-                          points: 300, weapons: [mkWeapon('pistol')], cur: 0, instakill: 0, double: 0, shield: 0, perks: {} });
+                          points: 300, weapons: [mkWeapon('pistol')], cur: 0, instakill: 0, double: 0, shield: 0, perks: {}, papPistol: false });
   powerDrops = 0;
   applyGunModel(cw().def);
   menuCam = false; setMenu(false); gun.visible = true; hc.scoped = undefined;
@@ -5705,13 +5906,17 @@ let loopErrors = 0;
 function loop(now) {
   requestAnimationFrame(loop);               // schedule first: an error below can never stop the game
   const rawDt = (now - prev) / 1000;
-  const dt = Math.min(rawDt, 0.05);
+  const rdt = Math.min(rawDt, 0.05);
+  let dt = rdt;
   prev = now;
   try {
-    if (running && (player.alive || mode === 'tdm')) {
+    if (zDeath && running) { zDeathTick(rdt); dt = rdt * zDeath.k; }
+    if (safeT > 0) safeT -= dt;
+    if (running) {
       if (player.alive) {
         updatePlayer(dt);
         if (mouseFire || fireHeld) tryFire();
+        if (down) downTick(dt);
       }
       if (mode === 'tdm') {
         updateTdm(dt);
@@ -5728,7 +5933,7 @@ function loop(now) {
     }
     updateDying(dt);
     updateGunAndFx(dt);
-    if (mode === 'tdm' && running && !player.alive && death) deathCam(dt);
+    if (running && !player.alive && death && (mode === 'tdm' || zDeath)) deathCam(rdt);
     updateTracers(dt);
     updateFx(dt);
     updateGear(dt);
