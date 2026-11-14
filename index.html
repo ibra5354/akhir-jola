@@ -252,7 +252,7 @@
   .mTab { flex:1; border:0; border-radius:10px; padding:9px 10px 5px; background:transparent; color:var(--steel); font-family:var(--display); font-size:23px; line-height:1.2; cursor:pointer; transition:background .15s, color .15s; }
   .mTab.sel.z { background:var(--blood); color:#fff; box-shadow:0 0 18px rgba(193,18,31,.45); }
   .mTab.sel.m { background:#1d6fb8; color:#fff; box-shadow:0 0 18px rgba(56,150,230,.4); }
-  .mapBtn[hidden], .opt[hidden], #netBox[hidden] { display:none !important; }
+  .mapBtn[hidden], .opt[hidden], #netBox[hidden], #netModes[hidden] { display:none !important; }
   #netBox { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   #netModes { grid-column:1 / -1; display:flex; gap:6px; }
   .nMode { flex:1; border:1px solid rgba(141,151,170,.22); border-radius:10px; padding:8px 10px; background:rgba(20,28,46,.72); color:var(--steel); font:inherit; font-size:15px; font-weight:800; cursor:pointer; }
@@ -355,7 +355,7 @@
 <div id="zFade"></div>
 
 <div id="hud">
-  <div id="downBox" style="display:none"><b>النفس الأخير</b><span id="downSec"></span><div class="dbar"><i id="downFill"></i></div><small>ضربة وحدة وأنت طايح = موت</small></div>
+  <div id="downBox" style="display:none"><b id="downTitle">النفس الأخير</b><span id="downSec"></span><div class="dbar" id="downBar"><i id="downFill"></i></div><small id="downNote">ضربة وحدة وأنت طايح = موت</small></div>
   <div id="left">
     <div id="wpn"><div id="wname">مسدس</div><div id="ammoBox"><span id="ammoMag">12</span><span id="ammoRes">84</span></div><span id="reload"></span><div id="gearRow">🔪 &nbsp;💣 <b id="gN">2</b><span id="dRow"> &nbsp;📻 <b id="dN">1</b></span></div></div>
     <div id="vit"><span id="hpRow">✚ <b id="hpTxt">100</b></span><span id="shRow">🛡️ <b id="shTxt">0</b></span><span id="perkRow"></span><span id="boost"></span></div>
@@ -421,7 +421,7 @@
       <div class="secLbl">اختر سلاحك</div>
       <div id="classes"></div>
     </div>
-    <label class="opt" id="netOpt" for="netTgl" hidden><span>🌐 لعب أونلاين (تجريبي)<small id="netInfo">الكل ضد الكل مع اللي فاتحين اللعبة، بدون بوتات</small></span><input type="checkbox" id="netTgl"><span class="sw"></span></label>
+    <label class="opt" id="netOpt" for="netTgl" hidden><span><i id="netTitle" style="font-style:normal">🌐 لعب أونلاين (تجريبي)</i><small id="netInfo">الكل ضد الكل مع اللي فاتحين اللعبة، بدون بوتات</small></span><input type="checkbox" id="netTgl"><span class="sw"></span></label>
     <div id="netBox" hidden>
       <div id="netModes"><button class="nMode sel" data-q="t" type="button">فرق</button><button class="nMode" data-q="f" type="button">الكل ضد الكل</button></div>
       <input id="netName" type="text" maxlength="12" placeholder="اسمك" autocomplete="off">
@@ -1002,6 +1002,7 @@ function updateRepair(dt) {
   if (repT > 0) return;
   repT = player.perks.speed ? 0.36 : 0.6;
   setBoards(B, B.boards + 1);
+  if (coClient()) { const bi = barriers.indexOf(B); coEvent('r', bi); co.barHold[bi] = performance.now() + 800; }
   click(0, 1200, 0.24, 0.05, 3); clank(0, 520, 0.2); click(0.12, 1300, 0.2, 0.05, 3);      // hammer, twice
   if (repairPaid < 12) { repairPaid++; addPoints(10); }       // boards pay 10 each, up to 12 a round
   if (B.boards >= BOARDS) repairing = null;
@@ -3318,31 +3319,9 @@ function collect(p) {
     player.boost = 12;
     toast('⚡ ضرر مضاعف 12 ثانية');
     tone(300, 0.2, 'sawtooth', 0.07, 600);
-  } else if (p.type === 'maxammo') {
-    for (const w of player.weapons) { w.ammo = w.def.mag; w.reserve = Math.max(w.reserve, w.def.reserve); }
-    player.reloading = 0; player.nades = 4;
-    toast('🔫 ذخيرة كاملة!');
-    tone(440, 0.3, 'triangle', 0.09, 440);
-  } else if (p.type === 'instakill') {
-    player.instakill = 20;
-    toast('💀 ضربة قاتلة — 20 ثانية');
-    tone(180, 0.4, 'square', 0.08, -60);
-  } else if (p.type === 'double') {
-    player.double = 20;
-    toast('×2 نقاط مضاعفة — 20 ثانية');
-    tone(660, 0.3, 'triangle', 0.08, 660);
-  } else if (p.type === 'carpenter') {
-    for (const B of barriers) setBoards(B, BOARDS);
-    player.points += 200; popPoints(200, 'kill');
-    toast('🔨 النجّار — كل الشبابيك تسكّرت! +200');
-    click(0, 1200, 0.24, 0.05, 3); clank(0, 520, 0.22); click(0.14, 1300, 0.22, 0.05, 3); clank(0.14, 560, 0.2); click(0.28, 1250, 0.22, 0.05, 3); clank(0.28, 500, 0.2);
-  } else if (p.type === 'nuke') {
-    for (const b of enemies.slice()) if (b.type !== 'boss') killBot(b, false, true);
-    player.points += 400;
-    E.flash.style.background = 'rgba(255,240,200,.85)';
-    setTimeout(() => { E.flash.style.background = 'rgba(255,0,0,0)'; }, 250);
-    toast('☢️ قنبلة نووية! +400');
-    tone(60, 1.0, 'sawtooth', 0.15, -20);
+  } else if (POWERS.includes(p.type)) {
+    applyPower(p.type);
+    if (co.live) coEvent('p', p.type);
   }
   return true;
 }
@@ -4122,7 +4101,7 @@ function addBossParts(group) {
   group.add(h1, h2, e1, e2, p1, p2);
 }
 
-function spawnBot(forceType) {
+function spawnBot(forceType, mir) {
   let type = 'normal';
   const r = Math.random();
   if (wave >= 2 && r < 0.2) type = 'runner';
@@ -4141,13 +4120,15 @@ function spawnBot(forceType) {
   group.scale.setScalar(tall);
   // pick one of the windows closest to you and start out in the dark beyond it
   let bar = null;
-  if (barriers.length) {
-    const near = barriers.slice().sort((p, q) => Math.hypot(p.x - player.x, p.z - player.z) - Math.hypot(q.x - player.x, q.z - player.z));
+  const ref = mir ? null : coSpawnRef();
+  if (mir) { bar = mir.bar; group.position.set(mir.x, mir.y, mir.z); }
+  else if (barriers.length) {
+    const near = barriers.slice().sort((p, q) => Math.hypot(p.x - ref.x, p.z - ref.z) - Math.hypot(q.x - ref.x, q.z - ref.z));
     bar = near[Math.floor(Math.pow(Math.random(), 1.6) * Math.min(4, near.length))];
     const back = 9 + Math.random() * 9, side = jit(12);
     group.position.set(bar.x - bar.nx * back - bar.nz * side, 0, bar.z - bar.nz * back + bar.nx * side);
   } else {
-    collide(clamp(player.x + Math.cos(a) * rad, -ARENA + 3, ARENA - 3), clamp(player.z + Math.sin(a) * rad, -ARENA + 3, ARENA - 3), type === 'boss' ? 0.9 : 0.6);
+    collide(clamp(ref.x + Math.cos(a) * rad, -ARENA + 3, ARENA - 3), clamp(ref.z + Math.sin(a) * rad, -ARENA + 3, ARENA - 3), type === 'boss' ? 0.9 : 0.6);
     group.position.set(_cx, -1.9 * T.scale, _cz);          // no windows on this map: claws its way up out of the ground
   }
   scene.add(group);
@@ -4168,19 +4149,27 @@ function spawnBot(forceType) {
   body.userData.bot = bot;
   head.userData.bot = bot;
   enemies.push(bot);
+  bot.id = mir ? mir.id : ++zIdSeq;
+  if (mir) { bot.ph = mir.ph; bot.rise = 0; bot.hp = bot.maxHp = mir.hp; }
+  return bot;
 }
 
 let zQueue = 0, zSpawnT = 0;
 function startWave() {
   wave++;
-  powerDrops = 0;
   let n = Math.min(4 + wave * 2, 46);
+  if (co.live) n = Math.round(n * (1 + 0.5 * Math.min(3, coPeers.size)));      // more players, more zombies
   if (wave % 5 === 0) {
     spawnBot('boss');
     n = Math.ceil(n / 2);
-    toast('👹 جولة الزعيم!');
   }
-  zQueue = n; zSpawnT = 1.6; repairPaid = 0;
+  zQueue = n; zSpawnT = 1.6;
+  waveBegin();
+}
+function waveBegin() {                         // the part of a new round every player goes through
+  powerDrops = 0; repairPaid = 0;
+  if (co.out) coRespawn();
+  if (wave % 5 === 0) toast('👹 جولة الزعيم!');
   if (wave > 1) player.nades = Math.min(4, player.nades + 2);
   if (wave % 3 === 0 && player.decoys < 2) { player.decoys++; toast('📻 جاك طُعم جديد'); }
   showRound(wave);
@@ -4211,7 +4200,7 @@ function updateBoss(b, dt, dx, dz, d) {
     c.t -= dt;
     g.rotation.y = Math.atan2(c.dx, c.dz);
     g.scale.setScalar(b.scale * (1 + Math.sin(c.t * 40) * 0.05));
-    if (c.t <= 0) { c.phase = 'charge'; c.t = 1.3; c.hit = false; g.scale.setScalar(b.scale); }
+    if (c.t <= 0) { c.phase = 'charge'; c.t = 1.3; c.hit = false; c.hitP = []; g.scale.setScalar(b.scale); }
     return true;
   }
   // charging
@@ -4222,7 +4211,8 @@ function updateBoss(b, dt, dx, dz, d) {
   g.position.x = clamp(_cx, -ARENA + 2, ARENA - 2);
   g.position.z = clamp(_cz, -ARENA + 2, ARENA - 2);
   const moved = Math.hypot(g.position.x - ox, g.position.z - oz);
-  if (!c.hit && player.y < 1.0 && Math.hypot(player.x - g.position.x, player.z - g.position.z) < 2.0) {
+  if (co.live && co.role === 'host' && c.hitP) for (const o of coPeers.values()) if (coUp(o.st) && c.hitP.indexOf(o.peer) < 0 && Math.hypot(o.tx - g.position.x, o.tz - g.position.z) < 2.0) { c.hitP.push(o.peer); coAttack(o.peer, b, 1); }
+  if (!c.hit && player.alive && !(down && down.wait) && player.y < 1.0 && Math.hypot(player.x - g.position.x, player.z - g.position.z) < 2.0) {
     c.hit = true;
     zHit(b);
     collide(player.x + c.dx * 3, player.z + c.dz * 3, 0.4, player.y);      // knock-back
@@ -4249,7 +4239,7 @@ function pickPower(allowNuke) {
 function killBot(bot, head, quiet) {
   if (bot.dead) return;
   bot.dead = true;
-  kills++;
+  if (!coRemoteKill) { kills++; if (coClient() && bot.id) co.dead.set(bot.id, performance.now()); }
   const x = bot.group.position.x, z = bot.group.position.z;
   const boss = bot.type === 'boss';
   if (bot.bar && bot.bar.climber === bot) bot.bar.climber = null;
@@ -4264,7 +4254,8 @@ function killBot(bot, head, quiet) {
   }
   addBlood(x, z);
   dying.push({ group: bot.group, t: boss ? 0.9 : 0.4, dur: boss ? 0.9 : 0.4, crawl: bot.crawl });
-  if (boss) {
+  if (coRemoteKill) { /* someone else's kill: no points, nothing dropped here */ }
+  else if (boss) {
     addPoints(500, 'head'); killMark();
     toast('👹 قتلت الزعيم! +500');
     dropAt(pickPower(false), x, z, 30);
@@ -4357,7 +4348,8 @@ function updateEntry(b, dt) {
       if (b.tearT <= 0) { tearBoard(B); b.tearT = (b.type === 'boss' ? 0.3 : 1.2) + Math.random() * 0.5; }
     } else if (!B.climber) { B.climber = b; b.ph = 3; b.climbT = 0; b.sx = g.position.x; b.sz = g.position.z; }
     // anyone standing right at the window gets grabbed through it
-    if (b.cool <= 0 && player.alive && player.y < 1.5 && Math.abs(b.slot) < 1.2 && Math.hypot(player.x - (B.x + B.nx * 0.9), player.z - (B.z + B.nz * 0.9)) < 1.25) {
+    if (b.cool <= 0 && co.live && co.role === 'host' && Math.abs(b.slot) < 1.2) for (const o of coPeers.values()) if (coUp(o.st) && Math.hypot(o.tx - (B.x + B.nx * 0.9), o.tz - (B.z + B.nz * 0.9)) < 1.25) { b.cool = 1.3; b.swipe = 0.35; zVoice('attack', g.position.x, g.position.z); coAttack(o.peer, b, 0); break; }
+    if (b.cool <= 0 && player.alive && !(down && down.wait) && player.y < 1.5 && Math.abs(b.slot) < 1.2 && Math.hypot(player.x - (B.x + B.nx * 0.9), player.z - (B.z + B.nz * 0.9)) < 1.25) {
       b.cool = 1.3; b.swipe = 0.35;
       zVoice('attack', g.position.x, g.position.z);
       zHit(b); hitFrom(g.position.x, g.position.z);
@@ -4465,11 +4457,12 @@ function navStep(b, dt, px, pz, tx, tz) {
 }
 let groanT = 3;
 function updateBots(dt) {
-  const lure = lureSpot(), tgX = lure ? lure.x : player.x, tgZ = lure ? lure.z : player.z;
+  if (coClient()) { coMirror(dt); return; }
+  const lure = coLure(), tgX0 = lure ? lure.x : player.x, tgZ0 = lure ? lure.z : player.z, team = co.live && co.role === 'host' && coPeers.size > 0;
   const sig = currentMap + ARENA + '|' + obstacles.length + '|' + (box ? box.x + ',' + box.z : '');
   if (NAV.sig !== sig) { NAV.sig = sig; navRebuild(); NAV.t = 0; }
   NAV.t -= dt;
-  if (NAV.t <= 0 && enemies.length) { NAV.t = 0.25; navFlow(tgX, tgZ); }
+  if (NAV.t <= 0 && enemies.length) { NAV.t = 0.25; navFlow(tgX0, tgZ0); if (team && !lure) coNav(); }
   for (const b of enemies) {
     const g = b.group;
     if (b.ph) { updateEntry(b, dt); continue; }
@@ -4479,6 +4472,9 @@ function updateBots(dt) {
       if (Math.random() < 0.35) emit(g.position.x + jit(0.7), 0.05, g.position.z + jit(0.7), jit(1.5), 1 + rnd() * 1.5, jit(1.5), 0.5 + rnd() * 0.4, 0.14, 1.5, 0.33, 0.26, 0.18, 0.7, 0, 6, 1);
       continue;
     }
+    let tgX = tgX0, tgZ = tgZ0, T = null;                  // T: a mate this one is after (null = me, or the radio)
+    if (team && !lure) { T = coPick(b, dt); if (T && !T.me) { tgX = T.tx; tgZ = T.tz; b.dist = T.dist; } else { T = null; b.dist = null; } }
+    else if (b.dist) b.dist = null;
     const dx = tgX - g.position.x, dz = tgZ - g.position.z;
     const d = Math.hypot(dx, dz) || 1;
     g.rotation.y = Math.atan2(dx, dz);
@@ -4495,14 +4491,14 @@ function updateBots(dt) {
         const tx = ux * c - uz * sn; uz = ux * sn + uz * c; ux = tx;
       } else if (nav === 1 && !lure && d > 3.5) {   // open ground: aim where you are heading and fan out to the sides
         const k = Math.min(1, (d - 3.5) / 6);
-        const ax = tgX + pvx * 0.4 * k - uz * b.flank * k - ox, az = tgZ + pvz * 0.4 * k + ux * b.flank * k - oz, al = Math.hypot(ax, az) || 1;
+        const ax = tgX + (T ? T.vx : pvx) * 0.4 * k - uz * b.flank * k - ox, az = tgZ + (T ? T.vz : pvz) * 0.4 * k + ux * b.flank * k - oz, al = Math.hypot(ax, az) || 1;
         ux = ax / al; uz = az / al;
       }
       b.hx += (ux - b.hx) * Math.min(1, dt * 9); b.hz += (uz - b.hz) * Math.min(1, dt * 9);    // turn smoothly instead of snapping
       const hl = Math.hypot(b.hx, b.hz) || 1;
       ux = b.hx / hl; uz = b.hz / hl;
       g.rotation.y = Math.atan2(ux, uz);
-      const step = (down ? Math.min(b.speed * 0.35, 1.1) : b.speed * (b.stag > 0 ? 0.35 : 1)) * dt;          // they close in slowly on someone who is already on the ground
+      const step = ((T ? T.st === 3 : down) ? Math.min(b.speed * 0.35, 1.1) : b.speed * (b.stag > 0 ? 0.35 : 1)) * dt;          // they close in slowly on someone who is already on the ground
       let nx = ox + ux * step, nz = oz + uz * step;
       for (const o of enemies) {               // don't stack on top of each other
         if (o === b || o.rise > 0 || o.ph) continue;
@@ -4527,7 +4523,8 @@ function updateBots(dt) {
 
     b.cool -= dt;
     if (lure) { if (d < reach && b.cool <= 0) { b.cool = 0.9; b.swipe = 0.35; } }     // clawing at the radio instead of you
-    else if (d < reach * (evading() ? 0.55 : 1) && b.cool <= 0 && player.alive && player.y < 3) {     // close enough: swipe (hard to land on someone sliding past)
+    else if (T) { if (d < reach && b.cool <= 0) { b.cool = 1.1; b.swipe = 0.35; zVoice('attack', g.position.x, g.position.z); coAttack(T.peer, b, 0); } }
+    else if (d < reach * (evading() ? 0.55 : 1) && b.cool <= 0 && player.alive && player.y < 3 && !(down && down.wait)) {     // close enough: swipe (hard to land on someone sliding past)
       b.cool = 1.1; b.swipe = 0.35;
       zVoice('attack', g.position.x, g.position.z);
       zHit(b);
@@ -4540,6 +4537,419 @@ function updateBots(dt) {
     const b = enemies[Math.floor(Math.random() * enemies.length)];
     zVoice('groan', b.group.position.x, b.group.position.z);
   }
+}
+
+// ---------- Zombies together ----------
+// Same room and presence channel as team play. One device is the host: it runs the zombies, the waves and the windows
+// and publishes them about 15 times a second; everyone else draws what it says and sends back the damage they deal.
+// Each player stays the authority on their own body: where they are, their shots, their health, going down.
+const CO_BLEED = 30, CO_REVIVE = 3, ZT = ['normal', 'runner', 'tank', 'boss'];
+const co = { live: false, role: '', age: 0, t: 0, noHost: 0, hits: [], hitSeq: 0, pend: new Map(), ev: [], evSeq: 0, at: [], atSeq: 0,
+             seenHit: new Map(), seenEv: new Map(), seenShot: new Map(), seenAt: -1, hostId: '', dead: new Map(), barHold: [],
+             out: false, over: false, synced: false, navI: 0, hudT: 0 };
+const coPeers = new Map();
+let zIdSeq = 0, coRemoteKill = false, coQuietCrawl = false, reviving = null;
+const coClient = () => co.live && co.role === 'client';
+const coTeam = () => co.live && coPeers.size > 0;
+const coState = () => !player.alive ? 0 : down ? (down.wait ? 2 : 3) : 1;
+const coUp = st => st === 1 || st === 3;                       // someone zombies still go for
+function coEvent(type, arg) { co.ev.push([++co.evSeq, type, arg]); if (co.ev.length > 8) co.ev.shift(); co.t = 0; }
+function coHit(bot, d, flags) {                                // damage I dealt, summed per zombie until the next send
+  if (!bot.id) return;
+  const p = co.pend.get(bot.id) || [0, 0]; p[0] += d; p[1] |= flags; co.pend.set(bot.id, p);
+}
+function coAttack(peer, b, kind) { co.at.push([++co.atSeq, peer, b.id, kind]); if (co.at.length > 10) co.at.shift(); co.t = 0; }
+function coNearDown() {
+  const now = performance.now();
+  for (const o of coPeers.values()) if (o.st === 2 && !(o.revT > now) && Math.hypot(o.tx - player.x, o.tz - player.z) < 2.3) return o;
+  return null;
+}
+function coLure() {
+  const l = lureSpot(); if (l || !co.live) return l;
+  for (const o of coPeers.values()) if (o.lure) return o.lure;
+  return null;
+}
+function coSpawnRef() {                                        // whose windows the next zombie comes through
+  if (!coTeam()) return player;
+  const c = [];
+  if (coUp(coState())) c.push(player);
+  for (const o of coPeers.values()) if (coUp(o.st)) c.push({ x: o.tx, z: o.tz });
+  return c.length ? c[Math.floor(Math.random() * c.length)] : player;
+}
+const coMeT = { me: true };
+function coPick(b, dt) {                                       // nearest player still standing, with a little loyalty to the current one
+  b.tgT = (b.tgT || 0) - dt;
+  const cur = b.tg, ms = coState();
+  if (cur && b.tgT > 0 && (cur.me ? coUp(ms) : (coPeers.get(cur.peer) === cur && coUp(cur.st)))) return cur;
+  b.tgT = 0.8 + Math.random() * 0.6;
+  const g = b.group.position; let best = null, bd = 1e9;
+  if (coUp(ms)) { bd = Math.hypot(player.x - g.x, player.z - g.z) * (cur && cur.me ? 0.8 : 1); best = coMeT; }
+  for (const o of coPeers.values()) {
+    if (!coUp(o.st)) continue;
+    const d = Math.hypot(o.tx - g.x, o.tz - g.z) * (cur === o ? 0.8 : 1);
+    if (d < bd) { bd = d; best = o; }
+  }
+  return b.tg = best;
+}
+function coNav() {                                             // one mate's route map per tick, in turn
+  const list = []; for (const o of coPeers.values()) if (coUp(o.st)) list.push(o);
+  if (!list.length) return;
+  const o = list[co.navI++ % list.length], cells = NAV.n * NAV.n;
+  if (!o.dist || o.dist.length !== cells) o.dist = new Int16Array(cells);
+  navFlow(o.tx, o.tz, o.dist);
+}
+function coStart() {
+  Object.assign(co, { live: true, role: 'wait', age: 0, t: 0, noHost: 0, hits: [], ev: [], at: [], hostId: '', seenAt: -1, out: false, over: false, synced: false, hudT: 0 });
+  co.pend.clear(); co.seenHit.clear(); co.seenEv.clear(); co.seenShot.clear(); co.dead.clear(); co.barHold.length = 0;
+}
+function coStop() {
+  for (const o of coPeers.values()) scene.remove(o.group);
+  coPeers.clear(); co.live = false; co.role = ''; reviving = null;
+  if (netRoom) { try { netRoom.presence({ g: null }).catch(() => {}); } catch (e) {} }
+  $('netHud').textContent = '';
+  if (running && mode !== 'tdm' && !zDeath) {                  // the room went away mid-game: carry on alone
+    if (co.out) { co.out = false; zDie(); } else if (down && down.wait) zDie();
+  }
+  co.out = false;
+}
+function coGhost(peer) {
+  const group = new THREE.Group();
+  let seed = 0; for (let i = 0; i < peer.length; i++) seed = (seed * 31 + peer.charCodeAt(i)) % 9973;
+  const rig = opRig(group, 'blue', 'assault', seed);
+  const tag = new THREE.Mesh(bg(0.2, 0.2, 0.2), glowMat(0x60a5fa)); tag.position.y = 2.3; group.add(tag);
+  scene.add(group);
+  const o = Object.assign(rig, { group, tag, peer, hitT: 0, scale: 1, st: 1, bl: 0, tx: 0, tz: 0, ty: 0, tw: 0, vx: 0, vz: 0, lt: 0, dist: null, lure: null, name: 'لاعب', fresh: true });
+  coPeers.set(peer, o);
+  return o;
+}
+function coBecomeClient() {
+  for (const b of enemies) scene.remove(b.group);
+  enemies = []; rebuildTargets(); zQueue = 0;
+  Object.assign(co, { role: 'client', noHost: 0, synced: false, seenAt: -1, hostId: '' }); co.dead.clear(); co.pend.clear();
+}
+function coBecomeHost(quiet) {
+  co.role = 'host';
+  let mx = zIdSeq;
+  for (const b of enemies) {
+    mx = Math.max(mx, b.id || 0);
+    const P = b.group.position;
+    if (b.ph === 3 || (b.ph && !b.bar)) { if (b.bar) { P.x = b.bar.x + b.bar.nx * 2.05; P.z = b.bar.z + b.bar.nz * 2.05; } b.ph = 0; }
+    if (!b.ph) P.y = b.crawl ? 0.1 : 0;
+    b.rise = 0; b.px = undefined; b.tg = null; b.tx = undefined; b.wind = false;
+    if (b.charge) { b.charge.phase = 'walk'; b.charge.cd = 4; }
+  }
+  zIdSeq = mx;
+  if (!quiet) toast('🌐 صرت أنت المضيف');
+}
+function coEncode() {
+  const z = [];
+  for (const b of enemies) {
+    if (b.dead || !b.id) continue;
+    if (b.swipe > (b._sw || 0) + 0.01) b.swN = ((b.swN || 0) + 1) & 3;
+    b._sw = b.swipe;
+    const g = b.group, P = g.position;
+    const f = (b.ph & 3) | (b.rise > 0 ? 4 : 0) | (b.crawl ? 8 : 0) | (b.stag > 0 ? 16 : 0) | (b.charge && b.charge.phase === 'windup' ? 32 : 0) |
+              ((b.swN || 0) << 6) | ((b.bar ? barriers.indexOf(b.bar) + 1 : 0) << 8);
+    const e = [b.id, Math.max(0, ZT.indexOf(b.type)), Math.round(P.x * 10), Math.round(P.z * 10), Math.round(Math.atan2(Math.sin(g.rotation.y), Math.cos(g.rotation.y)) * 10), f, Math.ceil(b.hp)];
+    if (Math.abs(P.y) > 0.05 && !(b.crawl && !b.ph)) e.push(Math.round(P.y * 10));
+    z.push(e);
+  }
+  let bs = ''; for (const B of barriers) bs += B.boards;
+  return { w: wave, nw: +Math.max(0, nextWaveIn).toFixed(1), q: zQueue, z, b: bs, bx: box && isFinite(box.x) ? [box.x, box.z] : 0, at: co.at, ov: co.over ? 1 : 0 };
+}
+function coApply(hs, hostId) {                                 // draw the host's world
+  if (!hs || typeof hs !== 'object' || !Array.isArray(hs.z)) return;
+  const first = !co.synced; co.synced = true;
+  if (co.hostId !== hostId) { co.hostId = hostId; co.seenAt = -1; }
+  const w = clamp(Math.floor(+hs.w || 0), 0, 999);
+  if (w !== wave) {
+    wave = w;
+    if (wave > 0) waveBegin();
+    if (first && wave > 1) { const bonus = Math.min(4000, 250 * (wave - 1)); player.points += bonus; toast('🌐 دخلت في الجولة ' + wave + ' · +' + bonus + ' نقطة'); }
+  }
+  nextWaveIn = +hs.nw || 0; zQueue = clamp(Math.floor(+hs.q || 0), 0, 300);
+  const now = performance.now(), have = new Map(), seen = new Set();
+  for (const b of enemies) if (b.id) have.set(b.id, b);
+  let made = false;
+  for (const e of hs.z) {
+    if (!Array.isArray(e) || e.length < 7 || !e.every(v => typeof v === 'number' && isFinite(v))) continue;
+    const id = e[0]; seen.add(id);
+    if (co.dead.has(id)) continue;
+    const f = e[5], ph = f & 3, x = clamp(e[2] / 10, -ARENA - 40, ARENA + 40), z = clamp(e[3] / 10, -ARENA - 40, ARENA + 40), y = e.length > 7 ? clamp(e[7] / 10, -5, 3) : 0;
+    let b = have.get(id);
+    if (!b) {
+      if (enemies.length >= 40) continue;
+      b = spawnBot(ZT[e[1]] || 'normal', { id, x, z, y, ph, bar: barriers[(f >> 8) - 1] || null, hp: Math.max(1, e[6]) });
+      b.swN = (f >> 6) & 3; b.wind = !!(f & 32); made = true;
+    }
+    b.tx = x; b.tz = z; b.ty = y; b.tr = e[4] / 10; b.ph = ph; b.rise = f & 4 ? 1 : 0;
+    if ((f & 8) && !b.crawl) { coQuietCrawl = true; makeCrawler(b); coQuietCrawl = false; }
+    if (f & 16) b.stag = Math.max(b.stag, 0.12);
+    const wind = !!(f & 32);
+    if (wind && !b.wind) { toast('⚠️ الزعيم بيهجم! تحرك على الجنب'); tone(110, 0.6, 'sawtooth', 0.1, 120); }
+    b.wind = wind;
+    const sn = (f >> 6) & 3;
+    if (sn !== b.swN) { b.swN = sn; b.swipe = 0.35; if (!ph) zVoice('attack', b.group.position.x, b.group.position.z); }
+    if (e[6] < b.hp) b.hp = e[6];
+  }
+  for (const b of enemies.slice()) if (b.id && !seen.has(b.id) && !b.dead) { coRemoteKill = true; killBot(b, !!b.headHit, true); coRemoteKill = false; }
+  for (const [id, t] of co.dead) if (!seen.has(id) || now - t > 4000) co.dead.delete(id);
+  if (made) rebuildTargets();
+  if (typeof hs.b === 'string') for (let i = 0; i < barriers.length && i < hs.b.length; i++) {
+    const n = +hs.b[i], B = barriers[i];
+    if (!(n >= 0) || B.boards === n || co.barHold[i] > now) continue;
+    if (n < B.boards && !first && B.boards - n <= 2) { while (B.boards > n) tearBoard(B); } else setBoards(B, n);
+  }
+  if (Array.isArray(hs.bx) && box && box.state === 'idle' && isFinite(hs.bx[0]) && isFinite(hs.bx[1]) && (box.x !== hs.bx[0] || box.z !== hs.bx[1])) boxMoveTo(hs.bx[0], hs.bx[1]);
+  if (Array.isArray(hs.at)) {
+    const init = co.seenAt < 0; let last = init ? 0 : co.seenAt;
+    for (const a of hs.at) {
+      if (!Array.isArray(a) || typeof a[0] !== 'number' || a[0] <= last) continue;
+      last = a[0];
+      if (!init && a[1] === netMe) coGotHit(a[2], a[3]);
+    }
+    co.seenAt = last;
+  }
+  if (hs.ov && !zDeath) zDie();
+}
+function coGotHit(zid, kind) {                                 // the host says this zombie reached me
+  if (!player.alive || (down && down.wait)) return;
+  let b = null; for (const e of enemies) if (e.id === zid) { b = e; break; }
+  if (!b) return;                                              // it died on the way
+  const P = b.group.position, d = Math.hypot(P.x - player.x, P.z - player.z);
+  if (d > (kind ? 4.5 : 3.6) || player.y > 3) return;          // I had already got clear
+  zHit(b); hitFrom(P.x, P.z);
+  if (kind === 1) {
+    const k = d || 1;
+    collide(player.x + (player.x - P.x) / k * 3, player.z + (player.z - P.z) / k * 3, 0.4, player.y);
+    player.x = clamp(_cx, -ARENA + 1.5, ARENA - 1.5); player.z = clamp(_cz, -ARENA + 1.5, ARENA - 1.5);
+  }
+}
+function coReadHits(peer, g) {                                 // host: damage a mate dealt
+  if (!Array.isArray(g.zh)) return;
+  const first = !co.seenHit.has(peer); let last = first ? 0 : co.seenHit.get(peer);
+  for (const h of g.zh) {
+    if (!Array.isArray(h) || typeof h[0] !== 'number' || h[0] <= last) continue;
+    last = h[0];
+    if (first) continue;
+    let b = null; for (const e of enemies) if (e.id === h[1]) { b = e; break; }
+    if (!b || b.dead) continue;
+    const d = clamp(+h[2] || 0, 0, 20000), f = +h[3] || 0;
+    if (d > 0) { b.hp -= d; b.hitT = 0.08; b.stag = Math.min(0.4, b.stag + (d > 40 ? 0.22 : 0.13)); if (f & 1) b.headHit = true; }
+    if (f & 2) makeCrawler(b);
+    if (b.hp <= 0) { coRemoteKill = true; killBot(b, !!b.headHit, true); coRemoteKill = false; }
+  }
+  co.seenHit.set(peer, last);
+}
+function coReadEv(peer, g, o) {
+  if (!Array.isArray(g.ev)) return;
+  const first = !co.seenEv.has(peer); let last = first ? 0 : co.seenEv.get(peer);
+  for (const e of g.ev) {
+    if (!Array.isArray(e) || typeof e[0] !== 'number' || e[0] <= last) continue;
+    last = e[0];
+    if (first) continue;
+    if (e[1] === 'p' && POWERS.includes(e[2])) applyPower(e[2]);
+    else if (e[1] === 'v' && e[2] === netMe && down && down.wait) getUp(o.name);
+    else if (e[1] === 'r' && co.role === 'host') { const B = barriers[e[2]]; if (B && B.boards < BOARDS) setBoards(B, B.boards + 1); }
+  }
+  co.seenEv.set(peer, last);
+}
+function coMirror(dt) {                                        // not the host: glide every zombie to where the host last put it
+  const k = Math.min(1, dt * 10);
+  for (const b of enemies) {
+    const g = b.group, P = g.position;
+    if (b.tx !== undefined) {
+      if (Math.hypot(b.tx - P.x, b.tz - P.z) > 6) { P.x = b.tx; P.z = b.tz; b.px = undefined; }
+      else { P.x += (b.tx - P.x) * k; P.z += (b.tz - P.z) * k; }
+      P.y += ((b.crawl && !b.ty ? 0.1 : b.ty) - P.y) * Math.min(1, dt * 14);
+      let da = b.tr - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+      g.rotation.y += da * k;
+    }
+    if (b.hitT > 0) b.hitT -= dt;
+    g.scale.setScalar(b.scale * (b.hitT > 0 ? 1.1 : 1) * (b.wind ? 1 + Math.sin(performance.now() / 25) * 0.05 : 1));
+    animBot(b, dt);
+    if (b.stag > 0) b.stag -= dt;
+    b.lean += ((b.crawl ? 1.2 : b.stag > 0 ? -0.3 : 0) - b.lean) * Math.min(1, dt * 12);
+    g.rotation.x = b.ph === 3 ? 0 : b.lean;
+  }
+  groanT -= dt;
+  if (groanT <= 0 && enemies.length) {
+    groanT = 0.8 + Math.random() * 2.2;
+    const b = enemies[Math.floor(Math.random() * enemies.length)];
+    zVoice('groan', b.group.position.x, b.group.position.z);
+  }
+}
+function coOut() {                                             // out until the next round, if the team holds
+  const lh = lastHit || {};
+  if (down) { player.weapons = down.weapons; player.cur = down.cur; down = null; }
+  player.alive = false; mouseFire = fireHeld = false; aimHeld = false; repairing = null; reviving = null;
+  death = { obj: lh.obj && !lh.obj.dead ? lh.obj : null, t: 0, y0: camera.position.y, yaw: player.yaw, pitch: player.pitch, dur: 0.8, low: 0.26, roll: 0.62 };
+  co.out = true; co.t = 0;
+  $('scope').style.display = 'none'; hc.scoped = undefined;
+  document.body.classList.remove('zdown');
+  $('hurt').style.opacity = 0.55;
+  lowHit(0, 0.8); tone(140, 0.9, 'sawtooth', 0.1, -100); sndMuffle(900, 0.8);
+}
+function coRespawn() {
+  co.out = false; death = null; down = null;
+  let x = 0, z = 0;
+  for (const o of coPeers.values()) if (o.st === 1) { x = o.tx + 1.2; z = o.tz + 0.6; break; }
+  collide(x, z, 0.5);
+  Object.assign(player, { x: clamp(_cx, -ARENA + 2, ARENA - 2), z: clamp(_cz, -ARENA + 2, ARENA - 2), y: 0, vy: 0, grounded: true, alive: true, hp: 100, reloading: 0, weapons: [mkWeapon('pistol')], cur: 0, perks: {}, shield: 0 });
+  applyGunModel(cw().def); gun.visible = true; swapT = 1; swapDone = false;
+  stance = 'stand'; safeT = 3; sinceHit = 99;
+  $('hurt').style.opacity = 0; hc.hurt = undefined;
+  sndMuffle(0, 0.6);
+  toast('💪 رجعت! بدايتك من جديد بالمسدس');
+}
+function coTick(dt) {
+  const live = netOn && mode !== 'tdm' && running && !menuCam && !!netRoom;
+  if (!live) { if (co.live) coStop(); return; }
+  if (!co.live) coStart();
+  co.age += dt;
+  const now = performance.now();
+  if (player.lastShot !== netLastShot) { netLastShot = player.lastShot; netShots++; }
+  let peers = [];
+  try { peers = netRoom.peers(); } catch (e) {}
+  if (!netMe) for (const p of peers) if (p.sameTab) { netMe = p.peer; break; }
+  co.t -= dt;
+  if (co.t <= 0) {
+    co.t = 0.066;
+    for (const [id, p] of co.pend) co.hits.push([++co.hitSeq, id, Math.round(p[0]), p[1]]);
+    co.pend.clear();
+    while (co.hits.length > 20) co.hits.shift();
+    const l = lureSpot();
+    const g = { m: currentMap, q: 'z', x: +player.x.toFixed(2), z: +player.z.toFixed(2), y: +player.y.toFixed(2), w: +player.yaw.toFixed(2), p: +player.pitch.toFixed(2),
+                a: coState(), c: stance === 'stand' && !down ? 0 : 1, s: netShots, n: netMyName(), wp: cw().id, r: player.reloading > 0 ? 1 : 0,
+                zh: co.hits, ev: co.ev, lu: l ? [+l.x.toFixed(1), +l.z.toFixed(1)] : 0, bl: down && down.wait ? Math.ceil(CO_BLEED - down.t) : 0 };
+    if (co.role === 'host') { g.ho = 1; g.hs = coEncode(); }
+    try { netRoom.presence({ g }).catch(() => {}); } catch (e) {}
+  }
+  const here = new Set();
+  let hostP = '', hostG = null;
+  for (const p of peers) {
+    if (p.sameTab || p.kind !== 'viewer') continue;
+    const g = p.presence && p.presence.g;
+    if (!g || g.q !== 'z' || g.m !== currentMap || typeof g.x !== 'number' || typeof g.z !== 'number' || !isFinite(g.x) || !isFinite(g.z)) continue;
+    let o = coPeers.get(p.peer);
+    if (!o) { if (coPeers.size >= 3) continue; o = coGhost(p.peer); }
+    here.add(p.peer);
+    const gx = clamp(g.x, -ARENA, ARENA), gz = clamp(g.z, -ARENA, ARENA);
+    o.name = cleanName(g.n);
+    if (o.fresh) { o.fresh = false; o.group.position.set(gx, 0, gz); o.tx = gx; o.tz = gz; o.lt = now; toast('🌐 ' + o.name + ' دخل معك'); }
+    if (gx !== o.tx || gz !== o.tz) {
+      const e = Math.max(0.05, (now - o.lt) / 1000);
+      o.vx = clamp((gx - o.tx) / e, -8, 8); o.vz = clamp((gz - o.tz) / e, -8, 8); o.lt = now;
+    } else if (now - o.lt > 300) o.vx = o.vz = 0;
+    o.st = g.a === 1 || g.a === 2 || g.a === 3 ? g.a : 0; o.bl = clamp(Math.floor(+g.bl || 0), 0, 99);
+    o.tx = gx; o.tz = gz; o.ty = clamp(+g.y || 0, 0, 8); o.tw = (+g.w || 0) + Math.PI; o.crouch = !!g.c || o.st > 1; o.aimP = clamp(+g.p || 0, -1.2, 1.2); o.reload = !!g.r;
+    o.lure = Array.isArray(g.lu) && isFinite(g.lu[0]) && isFinite(g.lu[1]) ? { x: clamp(+g.lu[0], -ARENA, ARENA), z: clamp(+g.lu[1], -ARENA, ARENA) } : null;
+    const sh = +g.s || 0, ps = co.seenShot.get(p.peer);        // their shots: flash, tracer and a bang that fades with distance
+    if (ps !== undefined && sh > ps && o.st) {
+      const w = +g.w || 0, pt = clamp(+g.p || 0, -1.5, 1.5), P = o.group.position;
+      _m.set(P.x, P.y + 1.3, P.z);
+      _e.set(P.x - Math.sin(w) * Math.cos(pt) * 30, P.y + 1.3 + Math.sin(pt) * 30, P.z - Math.cos(w) * Math.cos(pt) * 30);
+      o.kick = 1;
+      addTracer(_m, _e, 0x7dd3fc);
+      fxMuzzle(_m, null, 1, 0.8, 0.45, false); shotNoise(0.035, 0.12, 2600);
+      const near = Math.hypot(P.x - player.x, P.z - player.z);
+      if (near < 34) tone(160, 0.08, 'square', 0.05 * Math.max(0.12, 1 - near / 34), -60);
+    }
+    co.seenShot.set(p.peer, sh);
+    coReadEv(p.peer, g, o);
+    if (co.role === 'host') coReadHits(p.peer, g);
+    if (g.ho === 1 && g.hs && typeof g.hs === 'object' && (!hostP || p.peer < hostP)) { hostP = p.peer; hostG = g; }
+  }
+  for (const id of [...coPeers.keys()]) if (!here.has(id)) { const o = coPeers.get(id); if (!o.fresh) toast('🌐 ' + o.name + ' طلع'); scene.remove(o.group); coPeers.delete(id); co.seenHit.delete(id); co.seenEv.delete(id); co.seenShot.delete(id); }
+  // who runs the zombies
+  if (co.role === 'wait') { if (hostP) coBecomeClient(); else if (co.age > 1.2) coBecomeHost(true); }
+  else if (co.role === 'host') {
+    const hw = hostP ? (+hostG.hs.w || 0) : -1;
+    if (hostP && (hw > wave || (hw === wave && hostP < (netMe || '')))) coBecomeClient();     // two hosts: the further game wins, then the lower name
+  } else if (hostP) co.noHost = 0;
+  else {
+    co.noHost += dt;
+    const ids = [netMe || '', ...coPeers.keys()].sort();
+    if (co.noHost > 2.5 && (ids[0] === (netMe || '') || co.noHost > 6)) coBecomeHost();
+  }
+  if (co.role === 'client' && hostP) coApply(hostG.hs, hostP);
+  if (co.role === 'host' && coPeers.size && co.age > 2 && !zDeath) {      // everyone on the ground at once: that is the end
+    let up = coUp(coState());
+    for (const o of coPeers.values()) if (coUp(o.st)) up = true;
+    if (!up) { co.over = true; co.t = 0; zDie(); }
+  }
+  if (!coPeers.size && !zDeath && co.age > 2) {                // left alone
+    if (co.out) { co.out = false; zDie(); } else if (down && down.wait) zDie();
+  }
+  if (reviving) {
+    const o = coPeers.get(reviving.peer);
+    if (!o || o.st !== 2 || !player.alive || down || Math.hypot(o.tx - player.x, o.tz - player.z) > 2.8) reviving = null;
+    else {
+      reviving.t += dt;
+      if (reviving.t >= (player.perks.revive ? CO_REVIVE / 2 : CO_REVIVE)) {
+        coEvent('v', o.peer); o.revT = now + 1500; reviving = null;
+        addPoints(50); toast('❤️ قوّمت ' + o.name);
+        tone(330, 0.14, 'triangle', 0.08); setTimeout(() => tone(495, 0.3, 'triangle', 0.09, 200), 140);
+      }
+    }
+  }
+  const k = Math.min(1, dt * 12);
+  for (const o of coPeers.values()) {
+    const P = o.group.position, dn = o.st > 1;
+    o.group.visible = o.st !== 0;
+    P.x += (o.tx - P.x) * k; P.z += (o.tz - P.z) * k; P.y += (o.ty - P.y) * k;
+    let da = o.tw - o.group.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+    o.group.rotation.y += da * k;
+    if (dn !== o.tagDown) { o.tagDown = dn; o.tag.material = glowMat(dn ? 0xff4d4d : 0x60a5fa); }
+    o.tag.scale.setScalar(dn ? 1.7 + Math.sin(now / 150) * 0.5 : 1);
+    o.tag.rotation.y += dt * 2;
+    animBot(o, dt);
+  }
+  co.hudT -= dt;
+  if (co.hudT <= 0) {
+    co.hudT = 0.5;
+    let txt = '🌐 ';
+    if (!coPeers.size) txt += 'بانتظار أصحابك';
+    else txt += 'معك: ' + [...coPeers.values()].map(o => o.name + (o.st === 2 ? ' ⬇️' + o.bl : o.st === 3 ? ' ⬇️' : o.st === 0 ? ' 💀' : '')).join('، ');
+    $('netHud').textContent = txt + (netCodeNow ? ' · غرفة ' + netCodeNow : '');
+  }
+}
+function applyPower(type) {                                    // a power-up is for everyone in the game
+  if (type === 'maxammo') {
+    for (const w of player.weapons) { w.ammo = w.def.mag; w.reserve = Math.max(w.reserve, w.def.reserve); }
+    player.reloading = 0; player.nades = 4;
+    toast('🔫 ذخيرة كاملة!');
+    tone(440, 0.3, 'triangle', 0.09, 440);
+  } else if (type === 'instakill') {
+    player.instakill = 20;
+    toast('💀 ضربة قاتلة — 20 ثانية');
+    tone(180, 0.4, 'square', 0.08, -60);
+  } else if (type === 'double') {
+    player.double = 20;
+    toast('×2 نقاط مضاعفة — 20 ثانية');
+    tone(660, 0.3, 'triangle', 0.08, 660);
+  } else if (type === 'carpenter') {
+    const hold = performance.now() + 900;
+    for (let i = 0; i < barriers.length; i++) { setBoards(barriers[i], BOARDS); co.barHold[i] = hold; }
+    player.points += 200; popPoints(200, 'kill');
+    toast('🔨 النجّار — كل الشبابيك تسكّرت! +200');
+    click(0, 1200, 0.24, 0.05, 3); clank(0, 520, 0.22); click(0.14, 1300, 0.22, 0.05, 3); clank(0.14, 560, 0.2); click(0.28, 1250, 0.22, 0.05, 3); clank(0.28, 500, 0.2);
+  } else if (type === 'nuke') {
+    for (const b of enemies.slice()) if (b.type !== 'boss') killBot(b, false, true);
+    player.points += 400;
+    E.flash.style.background = 'rgba(255,240,200,.85)';
+    setTimeout(() => { E.flash.style.background = 'rgba(255,0,0,0)'; }, 250);
+    toast('☢️ قنبلة نووية! +400');
+    tone(60, 1.0, 'sawtooth', 0.15, -20);
+  }
+}
+function boxMoveTo(x, z) {
+  removeBoxCollider();
+  box.x = x; box.z = z;
+  box.group.position.set(x, 0, z);
+  box.aabb = { minX: x - 0.85, maxX: x + 0.85, minZ: z - 0.6, maxZ: z + 0.6, top: 0.98 };
+  obstacles.push(box.aabb);
+  box.uses = 0;
 }
 
 // ---------- Mystery box ----------
@@ -4726,6 +5136,7 @@ function buyPaP(st) {
 }
 function interact() {
   if (!running || !player.alive || down) return;
+  if (co.live) { const mt = coNearDown(); if (mt) { if (!reviving) reviving = { peer: mt.peer, t: 0 }; return; } }
   if (nearBox() && (box.state === 'idle' || box.state === 'offer')) { useBox(); return; }
   const st = nearStation();
   if (!st) { const B = nearBarrier(); if (B) { repairing = B; repT = 0.25; } return; }
@@ -4793,11 +5204,12 @@ function updateBox(dt) {
   } else if (box.state === 'teddy') {
     if (box.t >= 2.2) { box.state = 'moving'; box.t = 0; box.group.visible = false; removeBoxCollider(); }
   } else if (box.state === 'moving') {
-    if (box.t >= 1.5) { placeBox(); box.group.visible = true; box.state = 'idle'; toast('📦 الصندوق ظهر بمكان ثاني'); }
+    if (box.t >= 1.5) { if (!coClient()) placeBox(); box.group.visible = true; box.state = 'idle'; toast('📦 الصندوق ظهر بمكان ثاني'); }
   }
 }
 function updateBoxUI() {
   let msg = '', btn = '';
+  if (co.live && player.alive && !down) { const mt = coNearDown(); if (mt) btn = reviving ? 'جاري التقويم… ' + Math.round(reviving.t / (player.perks.revive ? CO_REVIVE / 2 : CO_REVIVE) * 100) + '%' : 'قوّم ' + mt.name + ' ❤️'; }
   if (box && box.group.visible) {
     const dist = Math.hypot(player.x - box.x, player.z - box.z);
     if (dist < 14) {
@@ -4805,7 +5217,7 @@ function updateBoxUI() {
       else if (box.state === 'offer') msg = '🎁 ' + WEAPONS[box.roll].name + ' — ' + Math.ceil(9 - box.t) + 'ث';
       else if (box.state === 'teddy') msg = '🧸 دبدوب! رجعت لك نقاطك والصندوق بيتنقل';
     }
-    if (dist < 2.6) {
+    if (dist < 2.6 && !btn) {
       if (box.state === 'idle') btn = 'افتح الصندوق ' + BOX_COST + ' 💰';
       else if (box.state === 'offer') btn = 'خذ ' + WEAPONS[box.roll].name;
     }
@@ -5098,6 +5510,7 @@ function applyDamage(bot, dmg, head, low) {
   }
   let d = dmg * (player.boost > 0 ? 2 : 1) * (player.perks.dtap ? 1.15 : 1);
   if (player.instakill > 0) d = bot.type === 'boss' ? d * 2 : bot.hp + 1;   // bosses resist insta-kill
+  if (coClient()) coHit(bot, d, head ? 1 : 0);
   bot.hp -= d;
   bot.hitT = 0.08;
   if (head) bot.headHit = true;
@@ -5110,6 +5523,7 @@ function applyDamage(bot, dmg, head, low) {
 }
 function makeCrawler(bot) {
   if (bot.crawl || bot.dead || bot.type === 'boss') return;
+  if (coClient() && !coQuietCrawl) coHit(bot, 0, 2);
   bot.crawl = true; bot.speed *= 0.45;
   bot.legL.visible = bot.legR.visible = false;
   const p = bot.group.position;
@@ -5138,7 +5552,7 @@ function addBlood(x, z) {
 resetBlood();
 
 function tryFire() {
-  if (!running || !player.alive || player.reloading > 0 || swapT > 0.2 || knifeT > 0 || throwT > 0.15 || mantle || repairing) return;
+  if (!running || !player.alive || player.reloading > 0 || swapT > 0.2 || knifeT > 0 || throwT > 0.15 || mantle || repairing || reviving) return;
   const w = cw(), def = w.def;
   const now = performance.now();
   if (now - player.lastShot < def.rate * (player.perks.dtap ? 0.72 : 1)) return;
@@ -5256,7 +5670,7 @@ function tryFire() {
 let shakeT = 0, hbT = 0;
 function damagePlayer(d, melee) {
   if (!player.alive) return;
-  if (mode !== 'tdm' && (safeT > 0 || (down && down.t < 1))) return;
+  if (mode !== 'tdm' && (safeT > 0 || (down && (down.wait || down.t < 1)))) return;
   sinceHit = 0;
   if (melee) shakeT = 0.3;
   if (melee && player.shield > 0) {           // against zombies the shield is worth exactly one hit
@@ -5283,7 +5697,10 @@ function damagePlayer(d, melee) {
   if (player.hp <= 0) {
     player.hp = 0;
     if (mode === 'tdm') { playerDiedTdm(); return; }
-    if (player.perks.revive && !down) goDown(); else zDie();
+    if (down) { if (coTeam()) coOut(); else zDie(); }          // hit again on the ground
+    else if (player.perks.revive) goDown();
+    else if (coTeam()) goDown(true);                           // no bottle, but a mate can pick me up
+    else zDie();
   }
 }
 function zHit(b) { lastHit = { obj: b }; damagePlayer(50, true); }
@@ -5302,10 +5719,11 @@ function machineSet(st, on) {                 // take a perk machine out of the 
     if (on && i < 0) arr.push(it); else if (!on && i >= 0) arr.splice(i, 1);
   }
 }
-function goDown() {
-  delete player.perks.revive;
+function goDown(wait) {
+  if (!wait) delete player.perks.revive;
   player.hp = 1; sinceHit = 0;
-  down = { t: 0, weapons: player.weapons, cur: player.cur };
+  down = { t: 0, wait: !!wait, weapons: player.weapons, cur: player.cur };
+  co.t = 0; reviving = null;
   const pw = mkWeapon('pistol');
   if (player.papPistol) { pw.def = papDef(WEAPONS.pistol, 'pistol'); pw.ammo = pw.def.mag; pw.reserve = pw.def.reserve; }
   player.weapons = [pw]; player.cur = 0; player.reloading = 0;
@@ -5314,7 +5732,7 @@ function goDown() {
   $('runBtn').classList.remove('on');
   pvx = pvz = 0; shakeT = 0.5; landT = 1;
   // falling throws everything close off you: that is the few seconds the pistol has to work with
-  for (const b of enemies) {
+  if (!coClient() && !wait) for (const b of enemies) {
     if (b.ph || b.rise > 0) { b.cool = Math.max(b.cool || 0, 2.5); continue; }
     const g = b.group.position, dx = g.x - player.x, dz = g.z - player.z, d = Math.hypot(dx, dz) || 1;
     const out = 5.65 + (b.type === 'boss' ? 2.3 : b.type === 'tank' ? 1.7 : 1.35);      // same walk back for everyone, whatever their reach
@@ -5330,7 +5748,7 @@ function goDown() {
   document.body.classList.add('zdown');
   hc.dnS = -1; toastT = 0; E.toast.style.opacity = 0;
 }
-function getUp() {
+function getUp(by) {
   const d = down; down = null;
   player.weapons = d.weapons; player.cur = d.cur; player.reloading = 0;
   applyGunModel(cw().def); swapT = 1; swapDone = false; SFX.swap();
@@ -5339,14 +5757,19 @@ function getUp() {
   sndMuffle(0, 0.6);
   document.body.classList.remove('zdown');
   whoosh(0, 0.8, 0.2, 250, 2400, true); tone(330, 0.14, 'triangle', 0.08); setTimeout(() => tone(495, 0.3, 'triangle', 0.09, 200), 140);
+  co.t = 0;
+  if (by) { toast('❤️ قوّمك ' + by); return; }
   const left = REV_MAX - revBought;
   toast(left ? '❤️ قمت! اشترِ شفاء سريع من جديد (باقي ' + left + ')' : '❤️ قمت! ما باقي شفاء سريع');
 }
 function downTick(dt) {
   down.t += dt;
-  if (down.t >= DOWN_TIME) getUp();
+  if (down.wait) { if (down.t >= CO_BLEED) coOut(); }
+  else if (down.t >= DOWN_TIME) getUp();
 }
 function zDie() {
+  if (zDeath) return;
+  co.out = false;
   const lh = lastHit || {};
   if (down) { player.weapons = down.weapons; player.cur = down.cur; down = null; }
   player.alive = false; mouseFire = fireHeld = false; aimHeld = false; repairing = null;
@@ -5670,9 +6093,10 @@ function updateGunAndFx(dt) {
 }
 
 function updateWave(dt) {
+  if (co.live && co.role !== 'host') return;
   if (zQueue > 0) {                 // zombies trickle in a few at a time instead of all at once
     zSpawnT -= dt;
-    if (zSpawnT <= 0 && enemies.length < Math.min(6 + wave, isCoarse ? 16 : 22)) {
+    if (zSpawnT <= 0 && enemies.length < Math.min(6 + wave + (co.live ? coPeers.size * 3 : 0), (isCoarse ? 16 : 22) + (co.live ? Math.min(4, coPeers.size * 2) : 0))) {
       spawnBot(); rebuildTargets(); zQueue--;
       zSpawnT = Math.max(0.35, 1.7 - wave * 0.08) * (0.6 + Math.random() * 0.8);
     }
@@ -5731,12 +6155,22 @@ function hud() {
     E.hp.style.background = frac > 50 ? '#4ade80' : frac > 25 ? '#fbbf24' : '#ef4444';
   }
   setT('ammoMag', cw().ammo);
-  const dn = !!down && player.alive;
+  const dn = (!!down && player.alive) || co.out;
   if (hc.dn !== dn) { hc.dn = dn; $('downBox').style.display = dn ? 'block' : 'none'; }
   if (dn) {
-    const sec = Math.ceil(DOWN_TIME - down.t);
-    if (hc.dnS !== sec) { hc.dnS = sec; $('downSec').textContent = 'تقوم خلال ' + sec; }
-    $('downFill').style.transform = 'scaleX(' + clamp(down.t / DOWN_TIME, 0, 1).toFixed(3) + ')';
+    const kind = co.out ? 2 : down.wait ? 1 : 0;             // out for the round / waiting for a mate / getting up alone
+    if (hc.dnK !== kind) {
+      hc.dnK = kind; hc.dnS = -1;
+      $('downTitle').textContent = kind === 2 ? 'طحت 💀' : kind ? 'طايح!' : 'النفس الأخير';
+      $('downNote').textContent = kind === 2 ? 'ترجع أول الجولة الجاية إذا صمد فريقك' : kind ? 'تقدر تطلق بالمسدس لين يوصلك صاحبك' : 'ضربة وحدة وأنت طايح = موت';
+      $('downBar').style.display = kind === 2 ? 'none' : '';
+    }
+    if (kind === 2) { if (hc.dnS !== -2) { hc.dnS = -2; $('downSec').textContent = ''; } }
+    else {
+      const total = kind ? CO_BLEED : DOWN_TIME, sec = Math.ceil(total - down.t);
+      if (hc.dnS !== sec) { hc.dnS = sec; $('downSec').textContent = (kind ? 'لازم صاحبك يقوّمك خلال ' : 'تقوم خلال ') + sec; }
+      $('downFill').style.transform = 'scaleX(' + clamp(kind ? 1 - down.t / total : down.t / total, 0, 1).toFixed(3) + ')';
+    }
   }
   setT('ammoRes', cw().reserve);
   setT('wname', cw().def.name + (player.weapons.length > 1 ? ' ⇄' : ''));
@@ -5806,6 +6240,7 @@ function drawRadar() {
     const col = mode === 'tdm' ? (b.team === 'blue' ? '#60a5fa' : '#ff4d4d') : b.type === 'boss' ? '#b91c1c' : '#ff4d4d';
     radarDot(b.group.position.x, b.group.position.z, col, b.type === 'boss' ? 12 : 7);
   }
+  for (const o of coPeers.values()) if (o.st) radarDot(o.group.position.x, o.group.position.z, o.st > 1 ? '#fbbf24' : '#60a5fa', o.st > 1 ? 11 : 8);
   rctx.fillStyle = '#fff';
   rctx.beginPath();
   rctx.moveTo(c, c - 11); rctx.lineTo(c - 8, c + 8); rctx.lineTo(c + 8, c + 8);
@@ -5840,7 +6275,7 @@ const lastMap = { z: 'arena', m: 'port' };
 function setSection(sec) {
   document.querySelectorAll('.mTab').forEach(t => { const on = t.dataset.sec === sec; t.classList.toggle('sel', on); t.setAttribute('aria-selected', on); });
   document.querySelectorAll('.mapBtn').forEach(b => { b.hidden = b.dataset.sec !== sec; });
-  $('grainOpt').hidden = sec !== 'z'; $('netOpt').hidden = sec !== 'm'; $('netBox').hidden = sec !== 'm' || !$('netTgl').checked;
+  $('grainOpt').hidden = sec !== 'z'; $('netOpt').hidden = false; $('netBox').hidden = !$('netTgl').checked; $('netModes').hidden = sec !== 'm'; $('netTitle').textContent = sec === 'm' ? '🌐 لعب أونلاين (تجريبي)' : '🌐 العب الزومبي مع أصحابك (تجريبي)';
   $('tagline').textContent = sec === 'z' ? 'كم جولة تصمد قبل ما يوصلونك؟' : 'فريقك ضد فريقهم، والفوز لأول ' + TDM_LIMIT + ' قتلة';
 }
 function selectMap(id) {
@@ -6120,6 +6555,7 @@ function resetGame() {
     box && (box.group.visible = false);
     startTdm();
   } else {
+    netOn = $('netTgl').checked; netReset(); zIdSeq = 0;
     box && (box.group.visible = true);
     for (let i = 0; i < 2; i++) { const [x, z] = randomSpot(); spawnPickup('health', x, z); }
     { const [x, z] = randomSpot(); spawnPickup('ammo', x, z); }
@@ -6190,7 +6626,7 @@ function loop(now) {
     }
     updateDying(dt);
     updateGunAndFx(dt);
-    if (running && !player.alive && death && (mode === 'tdm' || zDeath)) deathCam(rdt);
+    if (running && !player.alive && death && (mode === 'tdm' || zDeath || co.out)) deathCam(rdt);
     updateTracers(dt);
     updateFx(dt);
     updateGear(dt);
@@ -6203,6 +6639,7 @@ function loop(now) {
   }
   if (menuCam && !running) updateMenuCam();
   try { netTick(dt); } catch (e) {}
+  try { coTick(dt); } catch (e) { if (loopErrors++ < 5) console.error('co-op error:', e); }
   updateLit();
   skyGroup.position.copy(camera.position);
   renderer.render(scene, camera);
