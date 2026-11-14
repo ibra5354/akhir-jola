@@ -1842,6 +1842,7 @@ const WEAPONS = {
 };
 const BOX_POOL = [['smg', 18], ['ar', 18], ['shotgun', 16], ['sniper', 12], ['lmg', 10], ['magnum', 14], ['ray', 6]];
 const BOX_COST = 500;
+for (const k in WEAPONS) WEAPONS[k].id = k;
 const mkWeapon = id => ({ id, def: WEAPONS[id], ammo: WEAPONS[id].mag, reserve: WEAPONS[id].reserve });
 
 // ---------- Pack-a-Punch ----------
@@ -2184,28 +2185,284 @@ const GB = { kind: 'mag', showMag: false, boltZ: 0, long: false, pump: false, bo
 const KICK = { pistol: 0.020, smg: 0.011, ar: 0.015, shotgun: 0.075, sniper: 0.095, hunting: 0.065, lmg: 0.016, magnum: 0.065, ray: 0.03 };
 let recP = 0, recPT = 0, recY = 0, recYT = 0, fovPunch = 0, landT = 0, sprinting = false, strafeIn = 0, camRoll = 0, lastStep = 0;
 let swapT = 0, swapDone = true, rlS = 0, lastRlP = -1, cycleT = 0, cycleSnd = true, swY = 0, swX = 0, lastYaw = 0, lastPitch = 0, sprT = 0, gunRoll = 0, mvS = 0;
+// ---------- First-person weapon models ----------
+// Every weapon is built once, out of boxes and tubes, into a few vertex-coloured meshes: the fixed body, a glow layer,
+// and the parts the animations move (magazine, slide, bolt handle, pump). They all sit in the frame the hands and the
+// reloads were tuned on: receiver centred on z = -0.1, barrel along y = 0.02, -z forward, +x to the right.
+const gunVC = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 38, specular: 0x4a4a4a });
+const gunGlowMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+const _gO = new THREE.Object3D(), _gC = new THREE.Color(), gunModels = {};
+function gunPart(ox, oy, oz) {
+  const o = { p: [], n: [], c: [] };
+  const put = (geo, col, x, y, z, rx, ry, rz) => {
+    _gO.position.set(x - ox, y - oy, z - oz); _gO.rotation.set(rx || 0, ry || 0, rz || 0); _gO.updateMatrix();
+    const g = geo.index ? geo.toNonIndexed() : geo;
+    g.applyMatrix4(_gO.matrix);
+    const pa = g.attributes.position.array, na = g.attributes.normal.array; _gC.setHex(col);
+    for (let j = 0; j < pa.length; j += 3) { o.p.push(pa[j], pa[j + 1], pa[j + 2]); o.n.push(na[j], na[j + 1], na[j + 2]); o.c.push(_gC.r, _gC.g, _gC.b); }
+    g.dispose(); if (g !== geo) geo.dispose();
+  };
+  o.box = (col, w, h, d, x, y, z, rx, ry, rz) => put(new THREE.BoxGeometry(w, h, d), col, x, y, z, rx, ry, rz);
+  // tube along the barrel: rf = radius at the front end, rr = at the rear end
+  o.cyl = (col, rf, rr, len, x, y, z, seg, rx, ry, rz) => put(new THREE.CylinderGeometry(rr, rf, len, seg || 10).rotateX(Math.PI / 2), col, x, y, z, rx, ry, rz);
+  o.cx = (col, r, len, x, y, z, seg) => put(new THREE.CylinderGeometry(r, r, len, seg || 8).rotateZ(Math.PI / 2), col, x, y, z);      // across
+  o.cy = (col, r, len, x, y, z, seg) => put(new THREE.CylinderGeometry(r, r, len, seg || 8), col, x, y, z);                           // upright
+  o.ball = (col, r, x, y, z) => put(new THREE.SphereGeometry(r, 8, 6), col, x, y, z);
+  o.geo = () => {
+    if (!o.p.length) return null;
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.Float32BufferAttribute(o.p, 3));
+    out.setAttribute('normal', new THREE.Float32BufferAttribute(o.n, 3));
+    out.setAttribute('color', new THREE.Float32BufferAttribute(o.c, 3));
+    out.computeBoundingSphere();
+    return out;
+  };
+  return o;
+}
+function gunModel(def) {
+  const key = def.id + (def.pap ? '+' : '');
+  if (gunModels[key]) return gunModels[key];
+  const th = def.th, bl = def.bl, gl = def.gl, hh = 0.075 * th, long = bl >= 0.42, pap = !!def.pap, PI = Math.PI;
+  const rear = -0.1 + bl / 2, front = -0.1 - bl / 2, muz = front - gl, by = 0.02, sy = hh - 0.035 * th + 0.004;
+  // palette: an upgraded weapon keeps its shape but turns violet, its steel goes gold and its wood goes black
+  const C = def.col, DK = 0x15161a, MD = 0x2b2d33, BLK = 0x050608, PAD = 0x0c0c0e, BR = 0xc9a23a;
+  const ST = pap ? 0xd9b24a : 0x9aa1ab, WD = pap ? 0x241640 : 0x7a4a24, WD2 = pap ? 0x170d2b : 0x55331a, GLW = 0xc084fc, RED = 0xff3b30;
+  const B = gunPart(0, 0, 0), G = gunPart(0, 0, 0), MAG = gunPart(0, 0, 0), SL = gunPart(0, sy, -0.1),
+        BO = gunPart(-0.05 * th - 0.02, hh * 0.3, rear - 0.16), GU = gunPart(0, 0.005, front - gl * 0.27);
+  const bX = -0.05 * th - 0.02, bY = hh * 0.3, bZ = rear - 0.16;                  // where the bolt handle sits
+  const papG = (x, y, z0, z1, mr) => {                                           // the glowing lines of an upgraded weapon
+    if (!pap) return;
+    for (const s of [-1, 1]) G.box(GLW, 0.003, 0.007, z0 - z1, s * x, y, (z0 + z1) / 2);
+    for (let i = 0; i < 3; i++) for (const s of [-1, 1]) G.box(GLW, 0.003, 0.02, 0.006, s * x, y + 0.012, z1 + (z0 - z1) * (0.25 + i * 0.25));
+    if (mr) { G.cyl(GLW, mr, mr, 0.01, 0, by, muz + 0.03, 10); G.cyl(GLW, mr, mr, 0.006, 0, by, muz + 0.05, 10); }
+  };
+  const tguard = (col, z, y) => { B.box(col, 0.012, 0.008, 0.085, 0, y - 0.05, z); B.box(col, 0.012, 0.05, 0.008, 0, y - 0.027, z - 0.04); B.box(DK, 0.007, 0.03, 0.008, 0, y - 0.018, z + 0.012, 0.3); };
+  const id = def.id;
+
+  if (id === 'pistol') {
+    const SLC = pap ? 0x3a2466 : 0x1b1c20;
+    B.box(C, 0.084, hh + 0.01, bl - 0.02, 0, (0.01 - hh) / 2, -0.11);                                     // frame
+    for (let i = 0; i < 3; i++) B.box(DK, 0.05, 0.012, 0.012, 0, -hh - 0.003, front + 0.035 + i * 0.03);  // light rail
+    tguard(C, rear - 0.165, -hh);
+    B.box(C, 0.072, 0.17, 0.085, 0, -hh - 0.06, rear - 0.07, -0.3);                                       // grip
+    B.box(DK, 0.08, 0.11, 0.052, 0, -hh - 0.066, rear - 0.068, -0.3);                                     // grip panels
+    B.box(DK, 0.07, 0.014, 0.092, 0, -hh - 0.146, rear - 0.043, -0.3);                                    // magazine floor
+    B.box(DK, 0.005, 0.012, 0.05, -0.0435, -0.006, -0.1); B.cx(ST, 0.006, 0.09, 0, -0.016, front + 0.1);   // slide stop, takedown pin
+    B.box(DK, 0.016, 0.03, 0.014, 0, 0.03, rear + 0.004, -0.5);                                           // hammer
+    B.cyl(ST, 0.014, 0.014, 0.085, 0, by + 0.004, muz + 0.04); B.cyl(DK, 0.017, 0.017, 0.012, 0, by + 0.004, muz + 0.006);
+    const sl = bl + 0.09, sz = rear - sl / 2, sh = 0.07 * th;
+    SL.box(SLC, 0.09, sh, sl, 0, sy, sz);
+    SL.box(pap ? 0x4a2f80 : 0x26272c, 0.05, 0.004, sl - 0.1, 0, sy + sh / 2, sz);                          // flat top
+    for (let i = 0; i < 5; i++) SL.box(BLK, 0.094, sh * 0.72, 0.006, 0, sy - 0.003, rear - 0.022 - i * 0.013);
+    for (let i = 0; i < 3; i++) SL.box(BLK, 0.094, sh * 0.72, 0.006, 0, sy - 0.003, sz - sl / 2 + 0.03 + i * 0.013);
+    SL.box(ST, 0.03, 0.004, 0.06, 0.02, sy + sh / 2 + 0.0005, -0.12);                                      // barrel hood in the port
+    for (const s of [-1, 1]) { SL.box(DK, 0.016, 0.018, 0.016, s * 0.018, sy + sh / 2 + 0.008, rear - 0.02); SL.box(0xf2f2f2, 0.006, 0.006, 0.002, s * 0.018, sy + sh / 2 + 0.01, rear - 0.011); }
+    SL.box(DK, 0.01, 0.018, 0.014, 0, sy + sh / 2 + 0.008, sz - sl / 2 + 0.015); SL.box(RED, 0.006, 0.006, 0.002, 0, sy + sh / 2 + 0.011, sz - sl / 2 + 0.0225);
+    MAG.box(MD, 0.05, 0.17, 0.06, 0, 0.005, 0); MAG.box(DK, 0.064, 0.016, 0.08, 0, -0.085, 0);
+    papG(0.0433, -0.03, rear - 0.12, front + 0.02, 0.018);
+  } else if (id === 'magnum') {
+    const CY = pap ? ST : 0xcfd2d6, FL = pap ? 0x8a6a1c : 0x707278, ca = -0.008, cz = -0.085;
+    B.box(C, 0.066, 0.11, 0.09, 0, -0.012, rear - 0.045);                                                 // frame behind the cylinder
+    B.cyl(C, 0.05, 0.05, 0.012, 0, ca, -0.021, 12);                                                       // recoil shield
+    B.cyl(CY, 0.048, 0.048, 0.12, 0, ca, cz, 12);
+    for (let i = 0; i < 6; i++) { const a = i * PI / 3 + PI / 6; B.cyl(FL, 0.0095, 0.0095, 0.075, Math.sin(a) * 0.0425, ca + Math.cos(a) * 0.0425, cz - 0.02, 6); }
+    B.box(C, 0.03, 0.014, 0.2, 0, 0.049, -0.075);                                                         // top strap
+    B.box(C, 0.058, 0.09, 0.06, 0, 0.003, -0.175);                                                        // crane
+    B.box(C, 0.018, 0.012, 0.13, 0, -0.062, -0.085);
+    tguard(C, -0.03, -0.055);
+    B.cyl(C, 0.02, 0.022, -0.205 - muz, 0, by, (muz - 0.205) / 2, 10);
+    B.cyl(C, 0.014, 0.014, 0.25, 0, by - 0.032, -0.33, 8); B.box(C, 0.012, 0.03, 0.25, 0, by - 0.016, -0.33);   // lug under the barrel
+    B.box(DK, 0.014, 0.008, 0.3, 0, by + 0.024, -0.37);                                                   // rib
+    B.box(DK, 0.008, 0.024, 0.032, 0, by + 0.036, muz + 0.03, 0.3); B.box(RED, 0.009, 0.008, 0.004, 0, by + 0.043, muz + 0.046);
+    B.box(DK, 0.036, 0.012, 0.02, 0, 0.061, 0.045); B.cyl(DK, 0.012, 0.012, 0.004, 0, by, muz);
+    B.box(WD, 0.06, 0.17, 0.075, 0, -hh - 0.045, rear - 0.06, -0.35); B.box(WD2, 0.068, 0.1, 0.048, 0, -hh - 0.06, rear - 0.058, -0.35);
+    B.cx(BR, 0.01, 0.071, 0, -hh - 0.03, rear - 0.052, 8);
+    SL.box(DK, 0.014, 0.04, 0.014, 0, 0.047, rear + 0.002, -0.6); SL.box(DK, 0.022, 0.01, 0.022, 0, 0.066, rear + 0.016);    // hammer
+    MAG.box(BR, 0.02, 0.02, 0.02, 0, 0, 0);
+    papG(0.034, 0.02, rear - 0.01, rear - 0.085, 0.024);
+    if (pap) for (let i = 0; i < 6; i++) { const a = i * PI / 3; G.cyl(GLW, 0.004, 0.004, 0.06, Math.sin(a) * 0.0485, ca + Math.cos(a) * 0.0485, cz, 4); }
+  } else if (id === 'ray') {
+    const RB = pap ? 0x3a2466 : 0x2f6b24, RB2 = pap ? 0x271848 : 0x1f4a18, GLO = def.tracer, A = by;
+    B.cyl(RB, 0.058, 0.058, 0.2, 0, A, -0.08, 14); B.cyl(RB, 0.058, 0.03, 0.05, 0, A, 0.045, 14); B.cyl(RB, 0.028, 0.058, 0.07, 0, A, -0.215, 14);
+    for (const z of [-0.01, -0.15]) B.cyl(ST, 0.061, 0.061, 0.012, 0, A, z, 14);
+    for (const s of [-1, 1]) G.box(GLO, 0.004, 0.018, 0.1, s * 0.0575, A, -0.08);
+    G.cyl(GLO, 0.014, 0.014, 0.09, 0, A + 0.075, -0.08, 8);                                              // power cell on top
+    for (const z of [-0.03, -0.13]) B.box(ST, 0.022, 0.04, 0.012, 0, A + 0.065, z);
+    B.cyl(ST, 0.011, 0.013, 0.31, 0, A, -0.405, 8);
+    for (let i = 0; i < 4; i++) { const r = 0.042 - i * 0.007; B.cyl(RB2, r, r, 0.012, 0, A, -0.29 - i * 0.055, 12); G.cyl(GLO, 0.016, 0.016, 0.008, 0, A, -0.3175 - i * 0.055, 8); }
+    B.cyl(ST, 0.036, 0.012, 0.03, 0, A, muz + 0.035, 12); G.ball(GLO, 0.016, 0, A, muz + 0.022);          // emitter dish
+    B.box(ST, 0.008, 0.05, 0.11, 0, A + 0.07, 0.03, 0.4);                                                 // tail fin
+    B.box(RB2, 0.05, 0.07, 0.1, 0, -0.065, rear - 0.09);
+    B.box(DK, 0.06, 0.16, 0.075, 0, -hh - 0.05, rear - 0.07, -0.3); B.box(pap ? ST : 0x8a8f7a, 0.066, 0.09, 0.045, 0, -hh - 0.055, rear - 0.07, -0.3);
+    tguard(ST, rear - 0.165, -hh + 0.01);
+    SL.cyl(ST, 0.022, 0.022, 0.05, 0, A, rear + 0.0, 10); SL.ball(pap ? 0xd9b3ff : 0x9dff7a, 0.02, 0, A, rear + 0.035);   // plunger
+    MAG.box(0x4a4a4a, 0.04, 0.15, 0.05, 0, 0, 0); MAG.box(GLO, 0.044, 0.08, 0.054, 0, 0, 0);
+  } else if (id === 'smg') {
+    B.box(C, 0.078, 0.085, bl, 0, -0.03, -0.1);                                                           // lower
+    B.cyl(C, 0.036, 0.036, bl + 0.02, 0, 0.035, -0.1, 12); B.cyl(DK, 0.03, 0.03, 0.012, 0, 0.035, rear + 0.014, 12);   // tube receiver
+    B.box(C, 0.066, 0.06, 0.075, 0, -hh - 0.03, -0.1 - bl * 0.12 + 0.004, 0.15);                          // magazine well
+    B.box(BLK, 0.004, 0.03, 0.07, 0.0375, 0.035, -0.1);
+    B.cyl(MD, 0.013, 0.013, 0.2, -0.028, 0.067, -0.2, 8);                                                 // cocking tube
+    B.cx(DK, 0.009, 0.012, -0.041, -0.035, rear - 0.1); B.box(RED, 0.002, 0.006, 0.006, -0.0395, -0.02, rear - 0.1);
+    B.box(DK, 0.066, 0.16, 0.075, 0, -hh - 0.06, rear - 0.07, -0.3);
+    tguard(DK, rear - 0.165, -hh);
+    for (const s of [-1, 1]) B.cyl(MD, 0.008, 0.008, 0.2, s * 0.03, 0.03, rear + 0.1, 6);                  // sliding stock
+    B.box(DK, 0.08, 0.13, 0.025, 0, 0.0, rear + 0.205); B.box(PAD, 0.082, 0.1, 0.008, 0, 0.0, rear + 0.221);
+    GU.cyl(DK, 0.04, 0.042, 0.13, 0, 0.012, front - 0.06, 8, 0, 0, PI / 8);
+    for (let i = 0; i < 3; i++) GU.box(BLK, 0.079, 0.012, 0.02, 0, 0.022, front - 0.028 - i * 0.032);
+    B.cyl(0x1b1c20, 0.03, 0.03, 0.17, 0, by, muz + 0.085, 12);                                            // suppressor
+    for (const z of [0.005, 0.06, 0.115, 0.165]) B.cyl(MD, 0.0312, 0.0312, 0.008, 0, by, muz + z, 12);
+    B.box(DK, 0.03, 0.008, 0.2, 0, 0.073, -0.12);
+    B.box(DK, 0.03, 0.014, 0.06, 0, 0.082, -0.08); B.cyl(DK, 0.023, 0.023, 0.07, 0, 0.11, -0.08, 10);      // red dot
+    B.cyl(0x1d3140, 0.019, 0.019, 0.002, 0, 0.11, -0.0445, 10); G.cyl(RED, 0.004, 0.004, 0.002, 0, 0.11, -0.043, 6);
+    B.box(DK, 0.006, 0.03, 0.01, 0, 0.09, front + 0.03);
+    BO.cx(ST, 0.008, 0.035, bX + 0.012, bY, bZ); BO.ball(DK, 0.013, bX - 0.012, bY, bZ);
+    MAG.box(DK, 0.04, 0.25, 0.05, 0, -0.02, 0); MAG.box(DK, 0.04, 0.09, 0.05, 0, -0.175, -0.014, 0.2); MAG.box(MD, 0.046, 0.012, 0.058, 0, -0.222, -0.024, 0.2);
+    for (let i = 0; i < 3; i++) MAG.box(MD, 0.043, 0.006, 0.053, 0, -0.05 - i * 0.045, 0);
+    papG(0.0405, -0.02, rear - 0.03, front + 0.03, 0.0325);
+  } else if (id === 'ar') {
+    B.box(C, 0.07, 0.07, bl, 0, 0.03, -0.1);                                                              // upper
+    B.box(C, 0.064, 0.075, bl * 0.7, 0, -0.04, rear - bl * 0.35);                                         // lower
+    B.box(C, 0.07, 0.1, 0.085, 0, -0.055, -0.1 - bl * 0.12);                                              // magazine well
+    B.box(BLK, 0.004, 0.025, 0.09, 0.036, 0.03, -0.12);
+    B.box(DK, 0.006, 0.03, 0.015, -0.035, -0.012, -0.11); B.cx(DK, 0.009, 0.01, -0.034, -0.04, rear - 0.11); B.box(RED, 0.002, 0.006, 0.006, -0.033, -0.026, rear - 0.11);
+    for (const z of [rear - 0.05, -0.19]) B.cx(ST, 0.005, 0.068, 0, -0.022, z);
+    B.box(DK, 0.03, 0.008, bl, 0, 0.069, -0.1);
+    for (let i = 0; i < Math.floor(bl / 0.035); i++) B.box(DK, 0.034, 0.008, 0.016, 0, 0.077, rear - 0.02 - i * 0.035);   // rail teeth
+    B.box(DK, 0.062, 0.16, 0.07, 0, -hh - 0.06, rear - 0.07, -0.3); B.box(DK, 0.05, 0.03, 0.04, 0, -hh + 0.005, rear - 0.02);
+    tguard(DK, rear - 0.155, -hh);
+    B.cyl(MD, 0.02, 0.02, 0.22, 0, 0.025, rear + 0.11, 10); B.cyl(DK, 0.026, 0.026, 0.012, 0, 0.025, rear + 0.008, 8);     // buffer tube
+    B.box(DK, 0.06, 0.1, 0.15, 0, 0.0, rear + 0.16); B.box(DK, 0.05, 0.06, 0.1, 0, -0.06, rear + 0.19, 0.5); B.box(PAD, 0.064, 0.15, 0.02, 0, -0.015, rear + 0.245);
+    GU.cyl(DK, 0.04, 0.04, 0.2, 0, by + 0.005, front - 0.1, 8, 0, 0, PI / 8);                              // handguard
+    for (let i = 0; i < 3; i++) GU.box(BLK, 0.077, 0.012, 0.04, 0, by + 0.005, front - 0.04 - i * 0.06);
+    GU.box(DK, 0.03, 0.012, 0.2, 0, 0.067, front - 0.1);
+    for (let i = 0; i < 5; i++) GU.box(DK, 0.034, 0.008, 0.016, 0, 0.077, front - 0.025 - i * 0.035);
+    GU.box(DK, 0.03, 0.014, 0.04, 0, 0.088, front - 0.175);                                               // folded front sight
+    B.cyl(MD, 0.014, 0.016, gl, 0, by, front - gl / 2, 8);
+    B.cyl(DK, 0.02, 0.02, 0.06, 0, by, muz + 0.03, 8); B.box(BLK, 0.042, 0.006, 0.035, 0, by, muz + 0.026); B.box(BLK, 0.006, 0.042, 0.035, 0, by, muz + 0.026);   // flash hider
+    B.box(DK, 0.04, 0.02, 0.09, 0, 0.091, -0.08);                                                         // holo sight
+    for (const s of [-1, 1]) B.box(DK, 0.006, 0.05, 0.06, s * 0.024, 0.125, -0.09);
+    B.box(DK, 0.054, 0.006, 0.06, 0, 0.152, -0.09); B.box(0x22404a, 0.042, 0.044, 0.003, 0, 0.125, -0.11);
+    G.cyl(RED, 0.0035, 0.0035, 0.002, 0, 0.125, -0.1075, 6);
+    B.box(DK, 0.03, 0.012, 0.035, 0, 0.087, rear - 0.03);
+    BO.box(DK, 0.03, 0.014, 0.03, bX + 0.02, bY + 0.008, bZ); BO.box(ST, 0.012, 0.02, 0.022, bX + 0.002, bY + 0.008, bZ);
+    MAG.box(MD, 0.046, 0.13, 0.085, 0, 0.025, 0); MAG.box(MD, 0.046, 0.12, 0.085, 0, -0.085, -0.016, 0.22); MAG.box(DK, 0.05, 0.012, 0.092, 0, -0.148, -0.03, 0.22);
+    for (const y of [0.0, -0.035]) for (const z of [-0.022, 0.022]) MAG.box(DK, 0.049, 0.05, 0.008, 0, y, z);
+    papG(0.0365, 0.03, rear - 0.03, front + 0.03, 0.022);
+  } else if (id === 'shotgun') {
+    const RC = pap ? C : 0x26282d, WS = pap ? WD : C;
+    B.box(RC, 0.075, 0.105, 0.3, 0, -0.008, -0.2); B.cyl(RC, 0.0375, 0.0375, 0.3, 0, 0.03, -0.2, 10);     // receiver
+    B.box(RC, 0.06, 0.07, 0.06, 0, -0.01, -0.03);
+    B.box(WS, 0.056, 0.085, 0.2, 0, -0.058, 0.07, -0.34);                                                 // wrist
+    B.box(WS, 0.06, 0.13, 0.22, 0, -0.08, 0.26, -0.12); B.box(PAD, 0.062, 0.14, 0.02, 0, -0.095, 0.376, -0.12);
+    tguard(RC, -0.07, -0.055);
+    B.cyl(MD, 0.021, 0.022, 0.36, 0, by + 0.012, front - 0.17, 10);                                       // barrel
+    B.cyl(MD, 0.019, 0.019, 0.3, 0, -0.024, front - 0.15, 10); B.cyl(ST, 0.021, 0.021, 0.015, 0, -0.024, front - 0.305, 10);   // magazine tube
+    B.box(MD, 0.03, 0.08, 0.014, 0, 0.004, front - 0.27);
+    B.box(DK, 0.012, 0.006, 0.34, 0, 0.056, front - 0.17); B.ball(BR, 0.007, 0, 0.062, muz + 0.012);       // rib and bead
+    GU.cyl(WS, 0.036, 0.036, 0.15, 0, -0.022, front - 0.092, 8, 0, 0, PI / 8);                             // pump
+    for (let i = 0; i < 5; i++) GU.cyl(WD2, 0.0375, 0.0375, 0.007, 0, -0.022, front - 0.04 - i * 0.026, 8, 0, 0, PI / 8);
+    GU.box(ST, 0.05, 0.005, 0.1, 0, -0.022, front + 0.02);
+    B.box(DK, 0.006, 0.06, 0.16, -0.0405, 0.0, -0.2);                                                     // shells carried on the side
+    for (let i = 0; i < 4; i++) { B.cy(0xb3261e, 0.011, 0.045, -0.053, 0.012, -0.145 - i * 0.037, 8); B.cy(BR, 0.0116, 0.014, -0.053, -0.017, -0.145 - i * 0.037, 8); }
+    B.box(BLK, 0.04, 0.004, 0.1, 0, -0.061, -0.22);
+    BO.box(ST, 0.022, 0.014, 0.03, bX + 0.022, bY, bZ);
+    MAG.box(BR, 0.02, 0.02, 0.02, 0, 0, 0);
+    papG(0.0385, 0.035, -0.07, front + 0.03, 0.026);
+  } else if (id === 'sniper') {
+    const ys = 0.098, SC = 0x16171b;
+    B.cyl(MD, 0.03, 0.03, 0.36, 0, 0.02, -0.13, 10);                                                      // action
+    B.box(C, 0.066, 0.075, 0.5, 0, -0.03, -0.16);                                                         // chassis
+    B.box(C, 0.05, 0.04, 0.34, 0, -0.005, 0.25); B.box(C, 0.05, 0.035, 0.24, 0, -0.125, 0.31, 0.2);           // thumbhole stock
+    B.box(C, 0.056, 0.17, 0.05, 0, -0.05, 0.435); B.box(PAD, 0.058, 0.18, 0.018, 0, -0.05, 0.468);
+    B.box(DK, 0.052, 0.03, 0.14, 0, 0.04, 0.29); for (const z of [0.25, 0.33]) B.cy(ST, 0.005, 0.03, 0, 0.02, z, 6);   // cheek rest
+    B.box(DK, 0.058, 0.15, 0.065, 0, -hh - 0.06, rear - 0.07, -0.25);
+    tguard(DK, rear - 0.15, -hh);
+    GU.box(C, 0.06, 0.05, 0.36, 0, -0.02, front - 0.13);                                                   // fore-end
+    for (let i = 0; i < 3; i++) GU.box(BLK, 0.063, 0.01, 0.05, 0, -0.02, front - 0.05 - i * 0.08);
+    GU.box(MD, 0.06, 0.02, 0.03, 0, -0.05, front - 0.08);
+    for (const s of [-1, 1]) GU.cyl(DK, 0.008, 0.008, 0.22, s * 0.022, -0.058, front - 0.2, 6);            // folded bipod
+    B.cyl(MD, 0.017, 0.021, gl, 0, by, front - gl / 2, 10);
+    B.box(DK, 0.05, 0.04, 0.07, 0, by, muz + 0.035); for (const z of [0.02, 0.05]) B.box(BLK, 0.054, 0.018, 0.012, 0, by, muz + z);   // muzzle brake
+    B.box(DK, 0.03, 0.01, 0.3, 0, 0.054, -0.12);
+    for (const z of [-0.03, -0.2]) { B.box(DK, 0.022, 0.03, 0.022, 0, 0.068, z); B.cyl(DK, 0.034, 0.034, 0.022, 0, ys, z, 10); }
+    B.cyl(SC, 0.027, 0.027, 0.4, 0, ys, -0.12, 12); B.cyl(SC, 0.03, 0.036, 0.07, 0, ys, 0.085, 12); B.cyl(0x0a0a0c, 0.038, 0.038, 0.02, 0, ys, 0.128, 12);
+    B.cyl(SC, 0.044, 0.027, 0.1, 0, ys, -0.34, 12); B.cyl(0x0a0a0c, 0.046, 0.046, 0.02, 0, ys, -0.4, 12);
+    B.cy(DK, 0.016, 0.03, 0, ys + 0.04, -0.12, 10); B.cy(ST, 0.017, 0.006, 0, ys + 0.056, -0.12, 10);
+    B.cx(DK, 0.016, 0.03, 0.04, ys, -0.12, 10); B.cx(DK, 0.014, 0.024, -0.036, ys, -0.12, 10);
+    G.cyl(pap ? 0x9a6fe0 : 0x3f8fb8, 0.031, 0.031, 0.002, 0, ys, 0.139, 12); G.cyl(pap ? 0x9a6fe0 : 0x3f8fb8, 0.04, 0.04, 0.002, 0, ys, -0.411, 12);
+    BO.cx(ST, 0.007, 0.05, bX + 0.01, bY, bZ); BO.ball(DK, 0.016, bX - 0.02, bY - 0.008, bZ);
+    MAG.box(DK, 0.05, 0.12, 0.1, 0, 0.03, 0); MAG.box(MD, 0.054, 0.012, 0.106, 0, -0.033, 0);
+    papG(0.0345, -0.03, 0.06, front + 0.03, 0.03);
+  } else if (id === 'hunting') {
+    const RS = pap ? 0x3a2466 : 0x34363c, WH = pap ? WD : C;
+    B.cyl(RS, 0.026, 0.026, 0.34, 0, 0.025, -0.16, 10); B.box(RS, 0.03, 0.02, 0.06, 0, 0.03, 0.03); B.cyl(ST, 0.014, 0.014, 0.03, 0, 0.025, 0.03, 8);   // receiver
+    B.box(WH, 0.06, 0.07, 0.5, 0, -0.03, -0.14);
+    B.box(WH, 0.052, 0.075, 0.19, 0, -0.06, 0.16, -0.32); B.box(WH, 0.055, 0.13, 0.24, 0, -0.075, 0.34, -0.1);                 // wrist and butt
+    B.box(ST, 0.057, 0.14, 0.012, 0, -0.088, 0.464, -0.1); B.box(WD2, 0.04, 0.03, 0.14, 0, 0.003, 0.34, -0.1);
+    tguard(RS, 0.03, -0.055);
+    GU.box(WH, 0.052, 0.05, 0.46, 0, -0.012, front - 0.18);                                                // wood under the barrel
+    for (const z of [0.14, 0.38]) GU.box(ST, 0.056, 0.062, 0.014, 0, -0.002, front - z);
+    GU.box(ST, 0.054, 0.056, 0.02, 0, -0.01, front - 0.415); GU.cyl(ST, 0.004, 0.004, 0.12, 0, -0.03, front - 0.48, 6);
+    B.cyl(RS, 0.012, 0.016, gl, 0, by, front - gl / 2, 8);
+    B.box(RS, 0.02, 0.012, 0.03, 0, by + 0.016, muz + 0.04); B.box(DK, 0.004, 0.02, 0.012, 0, by + 0.03, muz + 0.04);
+    for (const s of [-1, 1]) B.box(DK, 0.004, 0.024, 0.02, s * 0.012, by + 0.03, muz + 0.04);
+    B.box(RS, 0.024, 0.008, 0.07, 0, 0.055, -0.36, -0.1); B.box(DK, 0.024, 0.014, 0.006, 0, 0.062, -0.33);    // leaf sight
+    BO.cx(ST, 0.007, 0.04, bX + 0.02, bY, bZ); BO.box(ST, 0.008, 0.035, 0.008, bX, bY - 0.015, bZ); BO.ball(ST, 0.014, bX, bY - 0.036, bZ);
+    MAG.box(RS, 0.036, 0.07, 0.09, 0, 0.06, 0); MAG.box(ST, 0.04, 0.008, 0.096, 0, 0.023, 0);
+    papG(0.0315, -0.03, 0.08, front + 0.03, 0.02);
+  } else {                                                                                              // lmg
+    B.box(C, 0.1, 0.15, bl, 0, -0.01, -0.1);
+    B.box(MD, 0.094, 0.03, 0.3, 0, 0.08, -0.12);                                                          // feed cover
+    for (let i = 0; i < 5; i++) B.box(DK, 0.098, 0.006, 0.02, 0, 0.097, -0.02 - i * 0.05);
+    B.cx(ST, 0.008, 0.1, 0, 0.07, -0.28); B.box(ST, 0.03, 0.02, 0.02, 0, 0.085, 0.04);
+    B.box(BLK, 0.01, 0.03, 0.08, -0.047, 0.045, -0.15);                                                   // feed tray and the belt hanging out of it
+    for (let i = 0; i < 6; i++) B.cyl(BR, 0.005, 0.007, 0.05, -0.06 - (i > 3 ? (i - 3) * 0.004 : 0), 0.04 - i * 0.022, -0.15, 6);
+    B.box(DK, 0.004, 0.13, 0.02, -0.058, -0.015, -0.14);
+    B.box(DK, 0.066, 0.16, 0.075, 0, -hh - 0.06, rear - 0.07, -0.3);
+    tguard(DK, rear - 0.165, -hh + 0.02);
+    B.cyl(MD, 0.02, 0.02, 0.08, 0, 0.02, rear + 0.02, 8); B.box(DK, 0.07, 0.11, 0.2, 0, -0.01, rear + 0.1);                  // stock
+    B.box(ST, 0.05, 0.008, 0.07, 0, 0.05, rear + 0.17); B.box(PAD, 0.074, 0.15, 0.02, 0, -0.02, rear + 0.21);
+    GU.box(MD, 0.07, 0.02, 0.18, 0, 0.058, front - 0.1);                                                  // heat shield
+    for (const s of [-1, 1]) GU.box(MD, 0.008, 0.05, 0.18, s * 0.035, 0.03, front - 0.1);
+    for (let i = 0; i < 5; i++) { GU.box(BLK, 0.03, 0.0215, 0.014, 0, 0.058, front - 0.03 - i * 0.035); GU.box(BLK, 0.0795, 0.014, 0.014, 0, 0.032, front - 0.03 - i * 0.035); }
+    GU.box(DK, 0.07, 0.05, 0.18, 0, -0.025, front - 0.1);
+    for (const z of [0.02, 0.14]) B.box(DK, 0.012, 0.05, 0.012, 0.03, 0.09, front + z);                   // carry handle
+    B.cyl(DK, 0.01, 0.01, 0.14, 0.03, 0.118, front + 0.08, 6);
+    B.cyl(MD, 0.021, 0.023, gl, 0, by, front - gl / 2, 10); B.cyl(DK, 0.027, 0.018, 0.06, 0, by, muz + 0.03, 8);
+    B.cyl(MD, 0.012, 0.012, 0.26, 0, -0.032, front - 0.13, 6);
+    B.box(DK, 0.02, 0.05, 0.02, 0, by + 0.04, front - 0.24); B.box(DK, 0.004, 0.02, 0.008, 0, by + 0.07, front - 0.24);
+    B.box(MD, 0.07, 0.02, 0.025, 0, -0.052, front - 0.25);
+    for (const s of [-1, 1]) B.cyl(DK, 0.008, 0.008, 0.2, s * 0.03, -0.062, front - 0.14, 6);              // folded bipod
+    B.box(DK, 0.04, 0.02, 0.03, 0, 0.105, rear - 0.06);
+    BO.box(ST, 0.03, 0.014, 0.02, bX + 0.012, bY, bZ); BO.box(DK, 0.016, 0.02, 0.03, bX - 0.008, bY, bZ);
+    const AB = pap ? 0x2a1b4a : 0x3c4a36;
+    MAG.box(AB, 0.11, 0.15, 0.15, -0.02, 0.035, 0); MAG.box(pap ? 0x1d1236 : 0x2e3a2a, 0.114, 0.014, 0.154, -0.02, 0.115, 0);     // ammo box
+    MAG.box(ST, 0.004, 0.03, 0.03, -0.077, 0.085, 0); MAG.box(0xd9c36a, 0.002, 0.012, 0.08, -0.0755, 0.015, 0);
+    papG(0.0515, 0.0, rear - 0.03, front + 0.03, 0.03);
+  }
+  return gunModels[key] = { body: B.geo(), glow: G.geo(), mag: MAG.geo(), slide: SL.geo(), bolt: BO.geo(), guard: GU.geo() };
+}
+const gunGlow = new THREE.Mesh(gunBody.geometry, gunGlowMat);
+gun.add(gunGlow);
+barrel.visible = false;
+for (const k of ['grip', 'stock', 'rail', 'rear', 'post', 'scope']) GP[k].visible = false;       // all part of the body mesh now
+gunBody.material = GP.mag.material = GP.mag2.material = GP.slide.material = GP.bolt.material = GP.guard.material = dropMag.material = gunVC;
 function applyGunModel(def) {
-  gunMat.color.setHex(def.col);
-  gunMat2.color.setHex(def.splash ? 0x2c7a1a : 0x111111);
-  gunBody.scale.set(def.th, def.th, def.bl / 0.5);
-  gunBody.position.set(0, 0, -0.1);
+  const M = gunModel(def);
+  gunBody.geometry = M.body;
+  gunGlow.visible = !!M.glow; if (M.glow) gunGlow.geometry = M.glow;
+  GP.mag.geometry = GP.mag2.geometry = dropMag.geometry = M.mag;
   const front = -0.1 - def.bl / 2;
-  barrel.scale.set(def.th, def.th, def.gl / 0.3);
-  barrel.position.set(0, 0.02, front - def.gl / 2 + 0.03);
   flashMesh.position.set(0, 0.02, front - def.gl - 0.04);
   flashMesh.material.color.setHex(def.tracer);
   muzzleLight.position.copy(flashMesh.position);
   muzzleLight.color.setHex(def.splash ? def.tracer : 0xffc266);
-  // details around the body: grip, magazine, stock, sights and the two hands
+  // where the moving parts and the two hands rest
   const long = def.bl >= 0.42, rear = -0.1 + def.bl / 2, hh = 0.075 * def.th;
-  GP.grip.position.set(0, -hh - 0.06, rear - 0.07); GP.grip.rotation.x = -0.3;
   GP.mag.visible = long; GP.mag.position.set(0, -hh - 0.08, -0.1 - def.bl * 0.12); GP.mag.rotation.x = 0.15;
-  GP.stock.visible = long; GP.stock.position.set(0, -0.015, rear + 0.11);
-  GP.guard.visible = long; GP.guard.scale.set(def.th, def.th, def.gl * 0.55 / 0.2); GP.guard.position.set(0, 0.005, front - def.gl * 0.27);
-  GP.rail.scale.z = def.bl * 0.8 / 0.2; GP.rail.position.set(0, hh + 0.008, -0.1);
-  GP.scope.visible = !!def.scope; GP.scope.position.set(0, hh + 0.05, -0.1);
-  GP.rear.visible = GP.post.visible = !def.scope;
-  GP.rear.position.set(0, hh + 0.025, rear - 0.04); GP.post.position.set(0, hh + 0.03, front + 0.02);
+  GP.guard.visible = long && !!M.guard; if (M.guard) GP.guard.geometry = M.guard;
+  GP.guard.position.set(0, 0.005, front - def.gl * 0.27);
   GP.handR.position.set(0, -hh - 0.07, rear - 0.07);
   GP.sleeveR.position.set(0.01, -hh - 0.1, rear - 0.05); GP.sleeveR.rotation.set(-1.0, 0, 0.3);
   GP.handL.visible = GP.sleeveL.visible = long;
@@ -2218,10 +2475,10 @@ function applyGunModel(def) {
   GB.kind = def.rl || 'mag'; GB.showMag = long && GB.kind === 'mag';
   if (GB.kind === 'shell') GP.mag.position.set(0, -hh - 0.005, -0.1 - def.bl * 0.1);                 // loading port under the receiver
   if (GB.kind === 'rev') { GP.mag.position.set(0, -hh - 0.01, -0.1); GP.mag.rotation.x = 0; }        // where the cylinder opens
-  const ms = def.mag >= 100 ? [1.9, 0.85, 1.6] : def.rate < 100 ? [0.9, 1.25, 0.9] : def.scope ? [1, 0.6, 1.1] : [1, 1, 1];
-  GP.mag.scale.set(ms[0], ms[1], ms[2]); GP.mag2.scale.copy(GP.mag.scale);
-  GP.bolt.visible = long; GP.bolt.position.set(-0.05 * def.th - 0.02, hh * 0.3, rear - 0.16); GB.boltZ = GP.bolt.position.z;
-  GP.slide.visible = !long; GP.slide.scale.set(def.th, def.th, def.bl / 0.5); GP.slide.position.set(0, hh - 0.035 * def.th + 0.004, -0.1);
+  GP.bolt.visible = long; if (M.bolt) GP.bolt.geometry = M.bolt;
+  GP.bolt.position.set(-0.05 * def.th - 0.02, hh * 0.3, rear - 0.16); GB.boltZ = GP.bolt.position.z;
+  GP.slide.visible = !long && !!M.slide; if (M.slide) GP.slide.geometry = M.slide;
+  GP.slide.position.set(0, hh - 0.035 * def.th + 0.004, -0.1);
   GB.long = long; GB.pump = def.pellets > 1; GB.bolt = def.rate > 600 && def.pellets === 1; GB.guardZ = GP.guard.position.z;
   GB.mag.copy(GP.mag.position); GB.handL.copy(GP.handL.position); GB.sleeveOff.copy(GP.sleeveL.position).sub(GP.handL.position);
 }
