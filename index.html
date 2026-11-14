@@ -113,6 +113,7 @@
   #runBtn { bottom:200px; left:62px; }
   #lockHint { position:fixed; left:50%; top:60%; transform:translateX(-50%); background:rgba(0,0,0,.78); padding:12px 16px; border-radius:12px; font-size:16px; display:none; pointer-events:none; text-align:center; direction:rtl; max-width:92vw; z-index:6; }
   #lockHint .row { display:flex; gap:8px; justify-content:center; margin-top:10px; }
+  #lockHint .row { border-bottom:0; padding:0; flex-wrap:wrap; }
   #lockHint .row:first-child { margin-top:0; }
   #lockHint button { white-space:nowrap; }
   body.touch #lockHint { top:36%; }
@@ -289,6 +290,28 @@
   .row b { color:var(--ember); font-weight:800; }
   kbd { display:inline-block; min-width:1.5em; text-align:center; font-family:ui-monospace,Menlo,monospace; font-size:13px; background:rgba(141,151,170,.16); border:1px solid rgba(141,151,170,.35); border-bottom-width:2px; border-radius:6px; padding:1px 7px; color:var(--bone); direction:ltr; }
   body:not(.touch) .onlyTouch, body.touch .onlyKeys { display:none; }
+  /* settings */
+  #setScr { position:fixed; inset:0; z-index:45; display:none; flex-direction:column; background:rgba(5,7,13,.985); color:var(--bone); font-family:var(--body); touch-action:pan-y; direction:rtl; }
+  #setTabs.one { display:none; }
+  .sHead { margin:16px 0 2px; font-size:13px; font-weight:800; color:var(--steel); letter-spacing:.02em; }
+  .sHead:first-child { margin-top:0; }
+  .sRow { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; padding:11px 0; border-bottom:1px solid rgba(141,151,170,.16); font-size:15px; font-weight:700; }
+  .sRow output { font-family:ui-monospace,Menlo,monospace; font-size:14px; color:var(--ember); direction:ltr; min-width:3ch; text-align:end; }
+  .sRow input[type=range] { grid-column:1 / -1; width:100%; height:28px; accent-color:var(--blood-hi); direction:ltr; margin:0; }
+  .sRow small { display:block; font-weight:500; font-size:12px; color:var(--steel); }
+  .kRow { display:grid; grid-template-columns:1fr 104px 104px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid rgba(141,151,170,.12); font-size:15px; font-weight:700; }
+  .kRow.none > span { color:#fca5a5; }
+  .kHead { font-size:12px; color:var(--steel); font-weight:700; border-bottom:0; padding-bottom:0; }
+  .kHead span:not(:first-child) { text-align:center; }
+  .kSlot { min-width:0; height:36px; border-radius:8px; border:1px solid rgba(141,151,170,.35); border-bottom-width:2px; background:rgba(141,151,170,.12); color:var(--bone); font-family:ui-monospace,Menlo,monospace; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 6px; }
+  .kSlot.empty { color:var(--steel); border-style:dashed; font-weight:400; }
+  .kSlot.cap { border-color:var(--ember); background:rgba(245,158,11,.18); color:#fff; font-family:var(--body); animation:kCap .7s ease-in-out infinite alternate; }
+  .kSlot:focus-visible, #setReset:focus-visible { outline:2px solid var(--ember); outline-offset:2px; }
+  @keyframes kCap { to { background:rgba(245,158,11,.34); } }
+  .sNote { font-size:12.5px; line-height:1.7; color:var(--steel); padding:10px 0 2px; }
+  #setReset { margin:14px 0 6px; align-self:flex-start; background:transparent; border:1px solid rgba(248,113,113,.5); color:#fecaca; border-radius:10px; font:inherit; font-size:14px; font-weight:700; padding:9px 16px; cursor:pointer; }
+  .setBtn { pointer-events:auto; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); color:#fff; border-radius:9px; font:inherit; font-size:13px; font-weight:800; padding:7px 14px; cursor:pointer; white-space:nowrap; }
+  @media (max-width: 400px) { .kRow { grid-template-columns:1fr 84px 84px; } }
   /* end of match */
   .endBox { margin:auto 0; display:flex; flex-direction:column; gap:16px; }
   #endTitle { margin:0; font-family:var(--display); font-weight:400; font-size:clamp(46px, 15vw, 72px); line-height:1; color:var(--bone); text-shadow:0 4px 0 #000; }
@@ -353,7 +376,7 @@
 </div>
 <div id="scope"></div>
 <div id="flash"></div>
-<div id="lockHint"><div class="onlyKeys">🖱️ اضغط على الشاشة عشان ترجع تلعب</div><div class="row"><button id="resumeBtn" class="onlyTouch" type="button">كمّل اللعب</button><button class="quitBtn" id="pQuit" type="button">خروج للقائمة</button></div></div>
+<div id="lockHint"><div class="onlyKeys">🖱️ اضغط على الشاشة عشان ترجع تلعب</div><div class="row"><button id="resumeBtn" class="onlyTouch" type="button">كمّل اللعب</button><button class="setBtn" id="pSet" type="button">⚙️ الإعدادات</button><button class="quitBtn" id="pQuit" type="button">خروج للقائمة</button></div></div>
 <button id="pauseBtn" type="button" aria-label="قائمة">☰</button>
 <div id="fps"></div>
 
@@ -391,10 +414,17 @@
     <div class="actions">
       <button class="big" id="startBtn" type="button">ابدأ اللعب</button>
       <button class="ghost" id="helpBtn" type="button">طريقة اللعب</button>
+      <button class="ghost" id="setBtn" type="button">⚙️ الإعدادات</button>
     </div>
   </div>
 </div>
 
+<div id="setScr" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="helpIn">
+    <div class="helpHead"><h2 id="setTitle">الإعدادات</h2><button class="xBtn" id="setClose" type="button" aria-label="إغلاق">✕</button></div>
+    <div class="tabs" id="setTabs"></div>
+  </div>
+</div>
 <div id="helpScr" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="helpIn">
     <div class="helpHead"><h2 id="helpTitle">طريقة اللعب</h2><button class="xBtn" id="helpClose" type="button" aria-label="إغلاق">✕</button></div>
@@ -409,12 +439,13 @@
       <div class="row onlyTouch"><span>الحركة</span><span>العصا الدائرية يسار الشاشة، وكل ما دفعتها أكثر تمشي أسرع</span></div>
       <div class="row onlyTouch"><span>القتال</span><span><b>نار</b> للإطلاق، <b>تصويب</b> للتصويب الدقيق، <b>تعبئة</b> و<b>تبديل</b> للسلاح</span></div>
       <div class="row onlyTouch"><span>الأزرار</span><span><b>ركض</b>، <b>قفز</b>، <b>نزول</b>، والسكين والقنبلة والطُعم يمين الشاشة</span></div>
-      <div class="row onlyKeys"><span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span><span>الحركة، و<kbd>Shift</kbd> للركض</span></div>
-      <div class="row onlyKeys"><span>الماوس</span><span>الزر الأيسر نار، والأيمن تصويب دقيق. اضغط على الشاشة مرة عشان يتقفل المؤشر</span></div>
-      <div class="row onlyKeys"><span><kbd>Space</kbd> <kbd>C</kbd></span><span>القفز، والنزول</span></div>
-      <div class="row onlyKeys"><span><kbd>R</kbd> <kbd>Q</kbd> <kbd>E</kbd></span><span>تعبئة، تبديل السلاح، واستخدام الصندوق والمكائن</span></div>
-      <div class="row onlyKeys"><span><kbd>V</kbd> <kbd>G</kbd> <kbd>X</kbd></span><span>سكين، قنبلة، طُعم</span></div>
-      <div class="row onlyKeys"><span><kbd>M</kbd> <kbd>F</kbd> <kbd>[</kbd> <kbd>]</kbd></span><span>كتم الصوت، عدّاد الإطارات، وحساسية الماوس</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="fwd"></kbd> <kbd data-act="left"></kbd> <kbd data-act="back"></kbd> <kbd data-act="right"></kbd></span><span>الحركة، و<kbd data-act="sprint"></kbd> للركض</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="fire"></kbd> <kbd data-act="aim"></kbd></span><span>نار، وتصويب دقيق. اضغط على الشاشة مرة عشان يتقفل المؤشر</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="jump"></kbd> <kbd data-act="crouch"></kbd></span><span>القفز، والنزول</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="reload"></kbd> <kbd data-act="swap"></kbd> <kbd data-act="use"></kbd></span><span>تعبئة، تبديل السلاح، واستخدام الصندوق والمكائن</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="knife"></kbd> <kbd data-act="nade"></kbd> <kbd data-act="decoy"></kbd></span><span>سكين، قنبلة، طُعم</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="mute"></kbd> <kbd data-act="fps"></kbd></span><span>كتم الصوت، وعدّاد الإطارات</span></div>
+      <div class="row"><span>⚙️</span><span>الحساسية وتغيير الأزرار من <b>الإعدادات</b> في القائمة الرئيسية</span></div>
     </div>
     <div class="pane" id="pZom">
       <div class="row"><span>حياتك</span><span><b>ضربتين</b> وتطيح. ابتعد عنهم كم ثانية وترجع صحتك. الشاشة تحمرّ لما تكون على ضربة</span></div>
@@ -2550,25 +2581,103 @@ const keys = {};
 const joy = { x: 0, y: 0 };   // analog stick, each axis -1..1
 let running = false, lookId = null, lookType = 'mouse', lx = 0, ly = 0, mouseFire = false, fireHeld = false;
 
+// ---------- Settings: one saved object for every option; each menu tab reads and writes it ----------
+const SET_KEY = 'fps-settings';
+const SET_DEF = { sens: 1, ads: 1, touch: 1, invY: false, keys: {} };
+const settings = Object.assign({}, SET_DEF, { keys: {} });
+function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(Object.assign({ v: 1 }, settings))); } catch (e) {} }
+const numIn = (v, lo, hi, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, lo, hi) : d);
+
+// ---------- Controls: every command the player can give is one entry here. A new command = one new line,
+// and it shows up in the settings menu and the how-to-play sheet by itself. Codes are KeyboardEvent.code or Mouse0..4.
+const ACTIONS = [
+  { id: 'fwd',    name: 'قدّام',            def: ['KeyW', 'ArrowUp'] },
+  { id: 'back',   name: 'ورا',              def: ['KeyS', 'ArrowDown'] },
+  { id: 'left',   name: 'يسار',             def: ['KeyA', 'ArrowLeft'] },
+  { id: 'right',  name: 'يمين',             def: ['KeyD', 'ArrowRight'] },
+  { id: 'sprint', name: 'ركض',              def: ['ShiftLeft', 'ShiftRight'] },
+  { id: 'jump',   name: 'قفز',              def: ['Space'],  down: () => jump() },
+  { id: 'crouch', name: 'نزول / انزلاق',    def: ['KeyC'],   down: () => crouchPress() },
+  { id: 'fire',   name: 'نار',              def: ['Mouse0'], down: () => { mouseFire = true; }, up: () => { mouseFire = false; } },
+  { id: 'aim',    name: 'تصويب دقيق',       def: ['Mouse2'], down: () => { aimHeld = true; },   up: () => { aimHeld = false; } },
+  { id: 'reload', name: 'تعبئة',            def: ['KeyR'],   down: () => startReload(), rep: true },
+  { id: 'use',    name: 'استخدام / شراء',   def: ['KeyE'],   down: () => interact(), rep: true },
+  { id: 'swap',   name: 'تبديل السلاح',     def: ['KeyQ'],   down: () => switchWeapon(), rep: true },
+  { id: 'knife',  name: 'سكين',             def: ['KeyV'],   down: () => knife() },
+  { id: 'nade',   name: 'قنبلة',            def: ['KeyG'],   down: () => throwGear('nade') },
+  { id: 'decoy',  name: 'طُعم',             def: ['KeyX'],   down: () => throwGear('decoy') },
+  { id: 'score',  name: 'لوحة النتائج',     def: ['Tab'] },
+  { id: 'fps',    name: 'عدّاد الإطارات',   def: ['KeyF'],   down: () => { showFps = !showFps; $('fps').style.display = showFps ? 'block' : 'none'; } },
+  { id: 'mute',   name: 'كتم الصوت',        def: ['KeyM'],   down: () => { muted = !muted; } }
+];
+const ACT = {}; for (const a of ACTIONS) ACT[a.id] = a;
+const KEY_BLOCK = /^(Escape|Backspace|Delete|Digit[1-5]|Meta.*|OS.*|ContextMenu|F\d+|PrintScreen|.*Lock)$/;      // never bindable
+const okCode = c => typeof c === 'string' && c.length < 24 && /^[A-Za-z0-9]+$/.test(c) && !KEY_BLOCK.test(c);
+const bind = {};                                   // action id -> [main, alt]   ('' = empty slot)
+let codeMap = {};                                  // code -> action, rebuilt after every change
+function bindRefresh() {
+  codeMap = {};
+  for (const a of ACTIONS) for (const c of bind[a.id]) if (c) codeMap[c] = a;
+  document.querySelectorAll('kbd[data-act]').forEach(k => { k.textContent = keyName(bind[k.dataset.act] && (bind[k.dataset.act][0] || bind[k.dataset.act][1])); });
+}
+function bindLoad() {
+  const used = new Set();
+  for (const a of ACTIONS) {
+    const sv = settings.keys[a.id];
+    const src = Array.isArray(sv) ? sv : a.def;
+    bind[a.id] = [0, 1].map(i => { const c = src[i]; if (!c || !okCode(c) || used.has(c)) return ''; used.add(c); return c; });
+  }
+  bindRefresh();
+}
+function bindSave() {
+  settings.keys = {};
+  for (const a of ACTIONS) if (bind[a.id][0] !== (a.def[0] || '') || bind[a.id][1] !== (a.def[1] || '')) settings.keys[a.id] = bind[a.id].slice();   // only what differs from the defaults
+  saveSettings();
+}
+const KEY_NAMES = { Mouse0: 'ماوس يسار', Mouse1: 'ماوس وسط', Mouse2: 'ماوس يمين', Mouse3: 'ماوس 4', Mouse4: 'ماوس 5', ShiftLeft: 'Shift', ShiftRight: 'Shift يمين',
+  ControlLeft: 'Ctrl', ControlRight: 'Ctrl يمين', AltLeft: 'Alt', AltRight: 'Alt يمين', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+  BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", Backquote: '`', Backslash: '\\' };
+function keyName(c) {
+  if (!c) return '—';
+  if (KEY_NAMES[c]) return KEY_NAMES[c];
+  let m;
+  if ((m = /^Key([A-Z])$/.exec(c))) return m[1];
+  if ((m = /^Digit(\d)$/.exec(c))) return m[1];
+  if ((m = /^Numpad(.+)$/.exec(c))) return 'Num ' + m[1];
+  return c;
+}
+const held = id => { const b = bind[id]; return !!(keys[b[0]] || keys[b[1]]); };
+function codeDown(code, repeat) {
+  keys[code] = true;
+  const a = codeMap[code];
+  if (a && a.down && (!repeat || a.rep)) a.down();
+}
+function codeUp(code) {
+  keys[code] = false;
+  const a = codeMap[code];
+  if (a && a.up && !held(a.id)) a.up();
+}
+function keysClear() { for (const k in keys) keys[k] = false; mouseFire = false; aimHeld = false; }
+try {
+  const sv = JSON.parse(localStorage.getItem(SET_KEY) || 'null');
+  if (sv && typeof sv === 'object') {
+    settings.sens = numIn(sv.sens, 0.3, 3, 1); settings.ads = numIn(sv.ads, 0.3, 2, 1); settings.touch = numIn(sv.touch, 0.3, 3, 1); settings.invY = sv.invY === true;
+    if (sv.keys && typeof sv.keys === 'object') for (const a of ACTIONS) if (Array.isArray(sv.keys[a.id])) settings.keys[a.id] = sv.keys[a.id].slice(0, 2).map(c => (typeof c === 'string' ? c : ''));
+  } else settings.sens = numIn(+localStorage.getItem('fps-sens') || 1, 0.3, 3, 1);       // the old single-number setting
+} catch (e) {}
+bindLoad();
+const lookK = () => 1 + (settings.ads - 1) * aimT;       // the zoomed-in sensitivity fades in with the aim
+const lookY = () => (settings.invY ? -1 : 1);
+
+let setOpen = false, keyCap = null;
 addEventListener('keydown', e => {
+  if (setOpen) return;                                                                 // the settings sheet owns the keyboard while it is up
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;   // typing a name, not playing
-  keys[e.code] = true;
-  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
-  if (e.code === 'KeyR') startReload();
-  if (e.code === 'KeyE') interact();
-  if (e.code === 'KeyQ') switchWeapon();
-  if (e.code === 'KeyC' && !e.repeat) crouchPress();
-  if (e.code === 'KeyV' && !e.repeat) knife();
-  if (e.code === 'KeyG' && !e.repeat) throwGear('nade');
-  if (e.code === 'KeyX' && !e.repeat) throwGear('decoy');
-  if (e.code === 'Space' && !e.repeat) jump();
-  if (e.code === 'BracketRight' || e.code === 'Equal') setSens(mouseSens + 0.1);
-  if (e.code === 'BracketLeft' || e.code === 'Minus') setSens(mouseSens - 0.1);
-  if (e.code === 'KeyF') { showFps = !showFps; $('fps').style.display = showFps ? 'block' : 'none'; }
-  if (e.code === 'KeyM') muted = !muted;
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) || (running && codeMap[e.code] && !e.ctrlKey && !e.metaKey)) e.preventDefault();
+  codeDown(e.code, e.repeat);
   if (/^Digit[1-5]$/.test(e.code) && running && mode === 'tdm' && !player.alive) { const c = CLASSES[+e.code.slice(5) - 1]; if (c) selectClass(c.id); }
 });
-addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('keyup', e => { codeUp(e.code); });
 addEventListener('contextmenu', e => e.preventDefault());
 let wheelLock = 0;
 addEventListener('wheel', e => { const t = performance.now(); if (t - wheelLock > 250) { wheelLock = t; switchWeapon(); } });
@@ -2591,22 +2700,15 @@ document.addEventListener('mousemove', e => {
     my = lastMY === null ? 0 : e.clientY - lastMY;
   }
   lastMX = e.clientX; lastMY = e.clientY;
-  if (!running || isCoarse) return;
+  if (!running || isCoarse || setOpen) return;
   if (Math.abs(mx) > 250 || Math.abs(my) > 250) return;     // ignore the jump some browsers send when locking
-  const sens = 0.0024 * mouseSens * (camera.fov / 75);
+  const sens = 0.0024 * settings.sens * lookK() * (camera.fov / 75);
   player.yaw -= mx * sens;
-  player.pitch = clamp(player.pitch - my * sens, -1.4, 1.4);
+  player.pitch = clamp(player.pitch - my * sens * lookY(), -1.4, 1.4);
 });
-canvas.addEventListener('mousedown', e => { if (e.button === 0) { mouseFire = true; lockMouse(); } if (e.button === 2) aimHeld = true; });
-addEventListener('mouseup', e => { if (e.button === 0) mouseFire = false; if (e.button === 2) aimHeld = false; });
-addEventListener('blur', () => { mouseFire = false; aimHeld = false; for (const k in keys) keys[k] = false; });
-let mouseSens = 1;
-try { mouseSens = +localStorage.getItem('fps-sens') || 1; } catch (e) {}
-function setSens(v) {
-  mouseSens = clamp(Math.round(v * 10) / 10, 0.3, 3);
-  try { localStorage.setItem('fps-sens', String(mouseSens)); } catch (e) {}
-  toast('حساسية الماوس: ' + mouseSens);
-}
+canvas.addEventListener('mousedown', e => { if (e.button === 0) lockMouse(); if (e.button > 2) e.preventDefault(); codeDown('Mouse' + e.button, false); });
+addEventListener('mouseup', e => { codeUp('Mouse' + e.button); });
+addEventListener('blur', keysClear);
 let pauseOpen = false;
 function updateLockHint() {
   const show = running && (isCoarse ? pauseOpen : !locked());
@@ -2641,14 +2743,14 @@ canvas.addEventListener('pointerdown', e => {
 });
 let fireId = null, fx = 0, fy = 0;   // the finger held on the fire button can also aim
 addEventListener('pointermove', e => {
-  const sens = 0.006 * (camera.fov / 75);
+  const sens = 0.006 * settings.touch * lookK() * (camera.fov / 75);
   if (e.pointerId === lookId) {
     player.yaw -= (e.clientX - lx) * sens;
-    player.pitch = clamp(player.pitch - (e.clientY - ly) * sens, -1.4, 1.4);
+    player.pitch = clamp(player.pitch - (e.clientY - ly) * sens * lookY(), -1.4, 1.4);
     lx = e.clientX; ly = e.clientY;
   } else if (e.pointerId === fireId) {
     player.yaw -= (e.clientX - fx) * sens;
-    player.pitch = clamp(player.pitch - (e.clientY - fy) * sens, -1.4, 1.4);
+    player.pitch = clamp(player.pitch - (e.clientY - fy) * sens * lookY(), -1.4, 1.4);
     fx = e.clientX; fy = e.clientY;
   }
 });
@@ -3234,7 +3336,7 @@ function updateTdmBots(dt) {
     let acc = 0.6 - clamp((d - 5) / 22, 0, 1) * 0.32;
     if (atPlayer) {
       if (!player.grounded) acc *= 0.45;
-      else if (moving) acc *= (keys.ShiftLeft || keys.ShiftRight || sprintToggle) ? 0.5 : 0.7;
+      else if (moving) acc *= (held('sprint') || sprintToggle) ? 0.5 : 0.7;
     }
     const hit = Math.random() < acc;
     _m.set(g.position.x, 1.3, g.position.z);
@@ -3623,7 +3725,7 @@ function netTick(dt) {
   }
   if (netSeen !== netPeers.size) { netSeen = netPeers.size; $('netHud').textContent = '🌐 لاعبين معك: ' + netSeen + (netCodeNow ? ' · غرفة ' + netCodeNow : ''); }
   // the table shows while you wait to respawn, or while Tab is held
-  const show = player.alive && !!keys.Tab;          // while you wait to respawn the table sits on the death card instead
+  const show = player.alive && held('score');          // while you wait to respawn the table sits on the death card instead
   if (show) { netBoardT -= dt; if (netBoardT <= 0 || board.style.display !== 'block') { netBoardT = 0.5; netBoardFill(board); } }
   board.style.display = show ? 'block' : 'none';
 }
@@ -4380,7 +4482,7 @@ function updateBoxUI() {
     if (B) { btn = repairing === B ? 'جاري تثبيت الألواح… ' + B.boards + '/' + BOARDS : 'ثبّت الألواح 🔨 ' + B.boards + '/' + BOARDS; desc = 'كل لوح +10'; }
   }
   setT('boxMsg', msg || note);
-  setT('prompt', isCoarse ? '' : (btn ? '[E] ' + btn + (desc ? '  —  ' + desc : '') : ''));
+  setT('prompt', isCoarse ? '' : (btn ? '[' + keyName(bind.use[0] || bind.use[1]) + '] ' + btn + (desc ? '  —  ' + desc : '') : ''));
   setT('useBtn', btn);
   const disp = (isCoarse && btn) ? 'block' : 'none';
   if (hc.useDisp !== disp) { hc.useDisp = disp; E.useBtn.style.display = disp; }
@@ -4860,8 +4962,8 @@ function updatePlayer(dt) {
   if (player.instakill > 0) player.instakill = Math.max(0, player.instakill - dt);
   if (player.double > 0) player.double = Math.max(0, player.double - dt);
 
-  let f = ((keys.KeyW || keys.ArrowUp) ? 1 : 0) - ((keys.KeyS || keys.ArrowDown) ? 1 : 0) - joy.y;
-  let s = ((keys.KeyD || keys.ArrowRight) ? 1 : 0) - ((keys.KeyA || keys.ArrowLeft) ? 1 : 0) + joy.x;
+  let f = (held('fwd') ? 1 : 0) - (held('back') ? 1 : 0) - joy.y;
+  let s = (held('right') ? 1 : 0) - (held('left') ? 1 : 0) + joy.x;
   const mag = Math.hypot(f, s);
   if (mag > 1) { f /= mag; s /= mag; }   // diagonals are not faster; stick stays proportional
   moving = mag > 0.05; strafeIn = moving ? s : 0; sprinting = false;
@@ -4870,7 +4972,7 @@ function updatePlayer(dt) {
   if (mantle) updateMantle(dt);
   else {
     // sprinting burns stamina; out of breath means walking until some of it is back
-    const wantSprint = (keys.ShiftLeft || keys.ShiftRight || sprintToggle) && moving && f > 0.3 && !isAiming() && !winded && slideT <= 0 && !diving && proneT <= 0;
+    const wantSprint = (held('sprint') || sprintToggle) && moving && f > 0.3 && !isAiming() && !winded && slideT <= 0 && !diving && proneT <= 0;
     if (wantSprint && stance === 'crouch') stance = 'stand';
     if (wantSprint && player.grounded && Math.hypot(pvx, pvz) > 4) {
       stamina -= dt * (player.perks.stam ? 8 : 16); stamWait = 0.7;
@@ -5376,6 +5478,129 @@ function updateMenuCam() {
   tg.checked = on; apply();
   tg.addEventListener('change', () => { apply(); try { localStorage.setItem('fps-grain', tg.checked ? '1' : '0'); } catch (e) {} });
 }
+// ---------- Settings sheet. Each tab is one entry in SET_TABS with a build(pane) function; sound and picture slot in the same way ----------
+function setSlider(pane, key, label, note, lo, hi, cls) {
+  const row = document.createElement('label'); row.className = 'sRow' + (cls ? ' ' + cls : '');
+  const t = document.createElement('span'); t.textContent = label;
+  if (note) { const sm = document.createElement('small'); sm.textContent = note; t.appendChild(sm); }
+  const out = document.createElement('output'), r = document.createElement('input');
+  r.type = 'range'; r.min = lo; r.max = hi; r.step = 0.1;
+  const show = () => { r.value = settings[key]; out.textContent = (+settings[key]).toFixed(1); };
+  r.addEventListener('input', () => { settings[key] = clamp(Math.round(+r.value * 10) / 10, lo, hi); out.textContent = settings[key].toFixed(1); saveSettings(); });
+  row.append(t, out, r); pane.appendChild(row); setShow.push(show);
+}
+function setToggle(pane, key, label, note) {
+  const row = document.createElement('label'); row.className = 'opt'; row.style.marginTop = '10px';
+  const t = document.createElement('span'); t.textContent = label;
+  if (note) { const sm = document.createElement('small'); sm.textContent = note; t.appendChild(sm); }
+  const c = document.createElement('input'); c.type = 'checkbox';
+  const sw = document.createElement('span'); sw.className = 'sw';
+  c.addEventListener('change', () => { settings[key] = c.checked; saveSettings(); });
+  row.append(t, c, sw); pane.appendChild(row); setShow.push(() => { c.checked = !!settings[key]; });
+}
+function setHead(pane, txt, cls) { const h = document.createElement('div'); h.className = 'sHead' + (cls ? ' ' + cls : ''); h.textContent = txt; pane.appendChild(h); }
+const setShow = [];                                 // one "show the saved value" function per control
+function keyCapEnd() { if (keyCap) { keyCap.btn.classList.remove('cap'); keyCap = null; } keysShow(); }
+function keysShow() {
+  for (const a of ACTIONS) {
+    const row = document.getElementById('kr-' + a.id); if (!row) continue;
+    row.classList.toggle('none', !bind[a.id][0] && !bind[a.id][1]);
+    row.querySelectorAll('.kSlot').forEach((b, i) => { const c = bind[a.id][i]; b.textContent = c ? keyName(c) : 'فاضي'; b.classList.toggle('empty', !c); });
+  }
+}
+function keyAssign(code) {
+  const { act, slot } = keyCap;
+  if (code === 'Escape') { keyCapEnd(); return; }
+  if (code === 'Backspace' || code === 'Delete') { bind[act][slot] = ''; }
+  else if (/^Digit[1-5]$/.test(code)) { toast('الأرقام 1 إلى 5 محجوزة لاختيار الكلاس'); return; }
+  else if (!okCode(code)) { toast('هذا الزر ما ينفع، جرّب غيره'); return; }
+  else {
+    for (const a of ACTIONS) for (let i = 0; i < 2; i++) if (bind[a.id][i] === code && !(a.id === act && i === slot)) {
+      bind[a.id][i] = '';                                                             // a key does one thing: it moves here
+      if (a.id !== act) toast('«' + keyName(code) + '» كان على «' + a.name + '» وانتقل');
+    }
+    bind[act][slot] = code;
+  }
+  keysClear(); bindRefresh(); bindSave(); keyCapEnd();
+}
+let swallowClick = false;
+addEventListener('keydown', e => {
+  if (!setOpen) return;
+  if (keyCap) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) keyAssign(e.code); return; }
+  if (e.code === 'Escape') setClose();
+}, true);
+addEventListener('mousedown', e => {
+  swallowClick = false;
+  if (!keyCap) return;
+  e.preventDefault(); e.stopImmediatePropagation(); swallowClick = true;
+  keyAssign('Mouse' + e.button);
+}, true);
+addEventListener('click', e => { if (swallowClick) { swallowClick = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+addEventListener('auxclick', e => { swallowClick = false; if (setOpen) e.preventDefault(); }, true);
+const SET_TABS = [
+  { id: 'ctl', name: 'التحكم', build(pane) {
+    setHead(pane, 'النظر');
+    setSlider(pane, 'sens', 'حساسية الماوس', '', 0.3, 3, 'onlyKeys');
+    setSlider(pane, 'touch', 'حساسية اللمس', 'سرعة لفّ النظر بالإصبع', 0.3, 3, 'onlyTouch');
+    setSlider(pane, 'ads', 'حساسية التصويب الدقيق', '1.0 = نفس الإحساس. أقل = أهدأ وأنت مصوّب', 0.3, 2);
+    setToggle(pane, 'invY', 'عكس المحور الرأسي', 'تسحب لتحت فتطالع فوق');
+    setHead(pane, 'الأزرار', 'onlyKeys');
+    const hd = document.createElement('div'); hd.className = 'kRow kHead onlyKeys';
+    for (const t of ['', 'أساسي', 'بديل']) { const sp = document.createElement('span'); sp.textContent = t; hd.appendChild(sp); }
+    pane.appendChild(hd);
+    for (const a of ACTIONS) {
+      const row = document.createElement('div'); row.className = 'kRow onlyKeys'; row.id = 'kr-' + a.id;
+      const nm = document.createElement('span'); nm.textContent = a.name; row.appendChild(nm);
+      for (let i = 0; i < 2; i++) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'kSlot';
+        b.setAttribute('aria-label', a.name + (i ? ' — الزر البديل' : ' — الزر الأساسي'));
+        b.addEventListener('click', () => { keyCapEnd(); keyCap = { act: a.id, slot: i, btn: b }; b.classList.add('cap'); b.classList.remove('empty'); b.textContent = 'اضغط الزر…'; });
+        row.appendChild(b);
+      }
+      pane.appendChild(row);
+    }
+    const note = document.createElement('div'); note.className = 'sNote onlyKeys';
+    note.textContent = 'اضغط على الخانة ثم الزر الجديد (كيبورد أو ماوس). Backspace يفضّي الخانة، و Esc يلغي. عجلة الماوس تبدّل السلاح دائمًا، والأرقام 1 إلى 5 لاختيار الكلاس.';
+    pane.appendChild(note);
+    const rs = document.createElement('button'); rs.type = 'button'; rs.id = 'setReset'; rs.textContent = 'رجّع الافتراضي';
+    rs.addEventListener('click', () => {
+      keyCapEnd();
+      settings.sens = SET_DEF.sens; settings.ads = SET_DEF.ads; settings.touch = SET_DEF.touch; settings.invY = SET_DEF.invY; settings.keys = {};
+      keysClear(); bindLoad(); saveSettings(); setRefresh(); toast('رجعت إعدادات التحكم للافتراضي');
+    });
+    pane.appendChild(rs);
+    setShow.push(keysShow);
+  } }
+];
+function setRefresh() { for (const f of setShow) f(); }
+let setBack = null;
+(function setBuild() {
+  const tabs = $('setTabs'), host = tabs.parentNode;
+  tabs.classList.toggle('one', SET_TABS.length < 2);
+  SET_TABS.forEach((t, i) => {
+    const tb = document.createElement('button'); tb.type = 'button'; tb.className = 'tab' + (i ? '' : ' sel'); tb.textContent = t.name; tb.dataset.pane = 'set-' + t.id;
+    const pane = document.createElement('div'); pane.className = 'pane' + (i ? '' : ' sel'); pane.id = 'set-' + t.id;
+    tb.addEventListener('click', () => {
+      keyCapEnd();
+      tabs.querySelectorAll('.tab').forEach(o => o.classList.toggle('sel', o === tb));
+      host.querySelectorAll('.pane').forEach(p => p.classList.toggle('sel', p === pane));
+    });
+    tabs.appendChild(tb); host.appendChild(pane); t.build(pane);
+  });
+})();
+function setOpenNow(from) {
+  setBack = from || null; setOpen = true; keysClear(); setRefresh();
+  if (locked()) { try { document.exitPointerLock(); } catch (e) {} }                // the sheet needs a free cursor
+  $('setScr').style.display = 'flex'; $('setClose').focus();
+}
+function setClose() {
+  keyCapEnd(); setOpen = false; keysClear();
+  $('setScr').style.display = 'none';
+  if (setBack && setBack.focus) setBack.focus();
+}
+$('setBtn').addEventListener('click', () => setOpenNow($('setBtn')));
+$('pSet').addEventListener('click', () => setOpenNow($('pSet')));
+$('setClose').addEventListener('click', setClose);
 // how-to-play sheet
 $('helpBtn').addEventListener('click', () => { $('helpScr').style.display = 'flex'; $('helpClose').focus(); });
 $('helpClose').addEventListener('click', () => { $('helpScr').style.display = 'none'; $('helpBtn').focus(); });
