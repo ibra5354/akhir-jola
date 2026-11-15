@@ -456,6 +456,29 @@
   #padCur { position:fixed; width:22px; height:22px; margin:-11px 0 0 -11px; border:2px solid #fde68a; border-radius:50%; display:none; z-index:45; pointer-events:none; box-shadow:0 0 8px #f59e0b; }
   .padFocus { outline:3px solid #f59e0b !important; outline-offset:2px; }
   .onlyPad { display:none; } body.pad .onlyPad { display:block; } body.pad .noPad { display:none !important; }
+  /* 3D lobby */
+  #lookBar { display:none; }
+  body.lby #lookBar { display:flex; position:fixed; z-index:3; align-items:center; gap:10px; left:calc((100vw - min(470px, 50vw)) / 2); transform:translateX(-50%); bottom:max(18px, env(safe-area-inset-bottom));
+    background:rgba(8,10,16,.75); border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:6px 8px; direction:rtl; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  #lookBar button { width:42px; height:42px; border-radius:10px; border:0; background:rgba(255,255,255,.1); color:#fff; font-size:16px; cursor:pointer; }
+  #lookBar div { text-align:center; min-width:118px; } #lookBar small { display:block; font-size:11px; color:var(--steel); } #lookBar b { font-size:16px; color:#fde68a; }
+  @media (min-width: 760px) and (orientation: landscape) {
+    body.lby #startScr { background:linear-gradient(270deg, rgba(5,7,13,.93) 0, rgba(5,7,13,.82) min(470px, 50vw), rgba(5,7,13,0) calc(min(470px, 50vw) + 140px)); }
+    body.lby #startScr .menu { margin:0 0 0 auto; max-width:min(470px, 50vw); }
+  }
+  @media (max-width: 759px), (orientation: portrait) {
+    body.lby #startScr { background:linear-gradient(180deg, rgba(5,7,13,0) 0, rgba(5,7,13,0) 38vh, rgba(5,7,13,.86) 50vh, var(--ink) 100%); }
+    body.lby #startScr .menu { padding-top:46vh; }
+    body.lby #startScr .brand { padding-top:0; }
+    body.lby #lookBar { left:50%; top:calc(38vh - 30px); bottom:auto; }
+  }
+  @media (max-height: 520px) and (orientation: landscape) {
+    body.lby #startScr .menu { display:flex; flex-direction:column; gap:10px; max-width:min(470px, 54vw); margin:0 0 0 auto; padding-top:10px; }
+    body.lby #startScr .brand { grid-row:auto; }
+    body.lby #startScr .logo { font-size:clamp(40px, 7vw, 60px); }
+    body.lby #lookBar { left:calc((100vw - min(470px, 54vw)) / 2); bottom:10px; }
+    body.lby #startScr { background:linear-gradient(270deg, rgba(5,7,13,.93) 0, rgba(5,7,13,.82) min(470px, 54vw), rgba(5,7,13,0) calc(min(470px, 54vw) + 100px)); }
+  }
   /* credit */
   .credit { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--steel); letter-spacing:.3px; }
   .credit i { display:block; height:1px; width:22px; background:linear-gradient(90deg, transparent, rgba(245,158,11,.75)); }
@@ -563,6 +586,7 @@
   <div id="ldCredit">آخر جولة · تطوير <b>إبراهيم العزي</b></div>
   <div id="ldFade"></div></div>
 <div class="overlay" id="startScr">
+  <div id="lookBar"><button id="lookPrev" type="button" aria-label="الشكل السابق">▶</button><div><small>شكلك في اللوبي</small><b id="lookName"></b></div><button id="lookNext" type="button" aria-label="الشكل الجاي">◀</button></div>
   <div class="menu">
     <div class="brand">
       <svg class="tally" viewBox="0 0 112 78" aria-hidden="true"><path d="M20 8 L17 70"/><path d="M42 6 L45 72"/><path d="M66 9 L63 70"/><path d="M88 7 L91 71"/><path d="M4 56 L108 18"/></svg>
@@ -4138,7 +4162,7 @@ function gsmClose() {
   GSM.on = false; $('gsm').style.display = 'none';
   const n = cleanLoName($('gsmName').value); if (n) GSM.lo.name = n;
   loSave(); loRender();
-  if (GSM.r) { try { GSM.r.dispose(); GSM.r.forceContextLoss(); } catch (e) {} GSM.r = null; GSM.scene = null; }
+  // the preview renderer stays: a canvas whose context was thrown away can never draw again
 }
 function gsmGl() {
   const c = $('gsmCan');
@@ -6530,7 +6554,7 @@ const NET_MAT = { body: lam(0x16a34a), head: lam(0xf1c27d) };
 // ---- lobby: everyone with online on in the same room is in one lobby; whoever came in first is the leader ----
 const LD = { on: false, t: 0, dur: 5, shots: [], cut: [0, 1.9, 3.5], fromLobby: false };
 const LB = { j: performance.now(), go: 0, seen: new Map(), mem: [], isLead: true, lead: null, t: 0, code: null, sig: '', wasOn: false };
-function lbMine() { return { a: +((performance.now() - LB.j) / 1000).toFixed(1), n: netMyName(), s: { m: selectedMap, gm: gmId, b: botN }, go: LB.go, ig: running || LD.on ? 1 : 0 }; }
+function lbMine() { return { a: +((performance.now() - LB.j) / 1000).toFixed(1), n: netMyName(), s: { m: selectedMap, gm: gmId, b: botN }, go: LB.go, ig: running || LD.on ? 1 : 0, lk: LBY.look }; }
 function netPres(r, o) {
   if (!r) return Promise.resolve();
   o.lb = $('netTgl').checked ? lbMine() : null;
@@ -9798,6 +9822,195 @@ function ksEndBoard(live) {
   return box;
 }
 
+
+// ================= The 3D lobby: your character (and your friends) in front of a scene for each section =================
+const LOOKS = [
+  { id: 'desert',   name: 'صقر الصحراء', cls: 'assault', kit: { cloth: 0xc2a06a, cloth2: 0x9c7f52, gear: 0x5e4f36, accent: 0xe9dcc0 } },
+  { id: 'ghost',    name: 'الشبح',       cls: 'rusher',  kit: { cloth: 0x202328, cloth2: 0x2c3036, gear: 0x121316, accent: 0xff3b3b } },
+  { id: 'jungle',   name: 'الغابة',      cls: 'sniper',  kit: { cloth: 0x4f6b3a, cloth2: 0x3a5230, gear: 0x5a4a32, accent: 0x9fbf6a } },
+  { id: 'heavy',    name: 'الثقيل',      cls: 'heavy',   kit: { cloth: 0x3b4048, cloth2: 0x2b2f35, gear: 0x51565e, accent: 0xf59e0b } },
+  { id: 'commando', name: 'الكوماندوز',  cls: 'breach',  kit: { cloth: 0x5b6346, cloth2: 0x464d36, gear: 0x2f3326, accent: 0x4ade80 } }
+];
+for (const L of LOOKS) TEAM_KIT['L_' + L.id] = L.kit;
+const LBY = { on: false, sec: '', sc: null, cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), scenes: {}, chars: new Map(), t: 0, look: 'desert', fx: [], vw: 0, vh: 0, lights: {} };
+try { const l = localStorage.getItem('fps-look'); if (LOOKS.some(x => x.id === l)) LBY.look = l; } catch (e) {}
+const LBY_SLOTS = [[0, 0], [-1.35, 0.35], [1.35, 0.35], [-2.65, 0.8], [2.65, 0.8], [-3.9, 1.3], [3.9, 1.3]];
+const lookOf = id => LOOKS.find(l => l.id === id) || LOOKS[0];
+// ---- a character for the lobby only: the soldier plus a few pieces that make each look its own ----
+function lbyChar(lookId) {
+  const L = lookOf(lookId), g = new THREE.Group(), r = opRig(g, 'L_' + L.id, L.cls, 3);
+  const H = r.op.head, U = r.op.up, glow = c => new THREE.MeshBasicMaterial({ color: c });
+  const add = (p, geo, mat, x, y, z, rx, ry, rz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, rz || 0); p.add(m); m.castShadow = true; return m; };
+  if (L.id === 'desert') {                                   // shemagh round the neck and over the back of the head
+    const w = lam(0xd9cfbd), red = lam(0x9a3030);
+    add(H, bg(0.36, 0.11, 0.33), w, 0, -0.16, 0.01); add(H, bg(0.3, 0.26, 0.06), w, 0, -0.06, -0.17);
+    add(H, bg(0.37, 0.012, 0.34), red, 0, -0.13, 0.01);
+  } else if (L.id === 'ghost') {                             // balaclava and a red visor
+    add(H, bg(0.31, 0.26, 0.31), lam(0x101114), 0, -0.04, 0.01);
+    add(H, bg(0.25, 0.045, 0.02), glow(0xff2a2a), 0, 0.02, 0.163);
+  } else if (L.id === 'jungle') {                            // a beret and face paint
+    add(H, new THREE.CylinderGeometry(0.17, 0.18, 0.06, 14), lam(0x2f4a2a), 0.02, 0.17, -0.01, 0, 0, -0.18);
+    add(H, bg(0.24, 0.04, 0.01), lam(0x2a3a22), 0, -0.02, 0.152);
+  } else if (L.id === 'heavy') {                             // shoulder armour
+    for (const s of [-1, 1]) add(U, bg(0.16, 0.08, 0.24), lam(0x51565e), s * 0.26, 0.47, 0, 0, 0, s * 0.35);
+    add(U, bg(0.36, 0.22, 0.05), lam(0x3b4048), 0, 0.28, 0.17);
+  } else if (L.id === 'commando') {                          // night-vision goggles flipped down
+    for (const s of [-1, 1]) { add(H, new THREE.CylinderGeometry(0.026, 0.026, 0.08, 10), lam(0x1a1c1f), s * 0.04, 0.05, 0.19, Math.PI / 2); add(H, new THREE.CircleGeometry(0.022, 10), glow(0x4ade80), s * 0.04, 0.05, 0.232); }
+  }
+  g.traverse(o => { if (o.isMesh && o.visible) o.castShadow = true; });
+  return { g, op: r.op, pb: { op: r.op, head: r.head, body: r.body, walkT: 0, aimP: 0 }, look: L.id };
+}
+// ---- the two stages ----
+function lbyScene(sec) {
+  if (LBY.scenes[sec]) return LBY.scenes[sec];
+  const S = new THREE.Scene(), add = (geo, mat, x, y, z, rx, ry, rz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, rz || 0); m.castShadow = m.receiveShadow = true; S.add(m); return m; };
+  const L = {};
+  if (sec === 'z') {
+    S.background = new THREE.Color(0x0a0c12); S.fog = new THREE.FogExp2(0x10131a, 0.045);
+    S.add(new THREE.HemisphereLight(0x5a6a8c, 0x1a130e, 0.8));
+    const key = new THREE.SpotLight(0xc8d6ff, 1.1, 18, 0.55, 0.6, 1.5); key.position.set(1.5, 6, 6); key.target.position.set(0, 1, 0); S.add(key); S.add(key.target);
+    const moon = new THREE.DirectionalLight(0x8fa6d6, 0.55); moon.position.set(-4, 9, 6); moon.castShadow = true; moon.shadow.mapSize.set(1024, 1024);
+    Object.assign(moon.shadow.camera, { left: -7, right: 7, top: 7, bottom: -3, near: 1, far: 30 }); S.add(moon);
+    const g = add(new THREE.PlaneGeometry(80, 80), lam(0x1b1a15), 0, 0, 0, -Math.PI / 2); g.castShadow = false;
+    L.red = new THREE.PointLight(0xff2020, 1.6, 14, 2); L.red.position.set(3.6, 3.2, -2.2); S.add(L.red);
+    add(bg(0.14, 3.4, 0.14), lam(0x2a2a2a), 3.6, 1.7, -2.4); L.redBulb = add(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3030 }), 3.6, 3.35, -2.2);
+    L.fire = new THREE.PointLight(0xff8a2a, 1.4, 9, 2); L.fire.position.set(-3.4, 1.3, -1.2); S.add(L.fire);
+    add(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 12), lam(0x4a2f22), -3.4, 0.45, -1.2);
+    L.flame = add(new THREE.ConeGeometry(0.22, 0.6, 8), new THREE.MeshBasicMaterial({ color: 0xffa040 }), -3.4, 1.15, -1.2);
+    for (const [x, z, h] of [[-6.5, -6, 4], [6.8, -7.5, 4.6], [-9, -12, 5], [10, -13, 5.2], [0.5, -16, 5]]) {        // dead trees
+      add(new THREE.CylinderGeometry(0.12, 0.22, h, 6), lam(0x2a221b), x, h / 2, z);
+      for (let k = 0; k < 3; k++) add(bg(0.08, 1.4, 0.08), lam(0x2a221b), x + (k - 1) * 0.3, h * (0.55 + k * 0.12), z, 0, k * 2, (k - 1) * 0.9);
+    }
+    for (let i = 0; i < 9; i++) add(bg(0.12, 1.1 + (i % 3) * 0.2, 0.1), lam(0x3a3026), -7 + i * 1.75, 0.5, -4.6, 0, 0, (i % 2 ? 0.15 : -0.1));   // broken fence
+    add(bg(14, 0.1, 0.08), lam(0x3a3026), 0, 0.85, -4.62, 0, 0, 0.03);
+    add(bg(1.6, 0.18, 0.25), lam(0x5a4632), -1.9, 0.09, 1.2, 0, 0.4); add(bg(1.4, 0.18, 0.25), lam(0x5a4632), 2.2, 0.09, 1.4, 0, -0.6);       // planks on the ground
+    L.zombies = [];
+    for (let i = 0; i < 6; i++) {                             // shapes moving in the fog
+      const zg = new THREE.Group(), rig = botRig(zg, { body: lam(ZCLOTH[i % ZCLOTH.length]), head: lam(ZSKIN[i % ZSKIN.length]) }, true);
+      zg.position.set(-8 + i * 3.2, 0, -9 - (i % 3) * 2.5); zg.rotation.order = 'YXZ'; S.add(zg);
+      zg.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      L.zombies.push({ g: zg, rig, x0: zg.position.x, ph: i * 1.7, sp: 0.25 + (i % 3) * 0.08 });
+    }
+  } else {
+    S.background = new THREE.Color(0x9cc6e8); S.fog = new THREE.Fog(0xb9d3e8, 18, 60);
+    S.add(new THREE.HemisphereLight(0xdfeeff, 0x6b5a40, 0.75));
+    const sun = new THREE.DirectionalLight(0xfff0d6, 1.0); sun.position.set(-5, 10, 7); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+    Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -3, near: 1, far: 30 }); S.add(sun);
+    const g = add(new THREE.PlaneGeometry(90, 90), lam(0xb7a07a), 0, 0, 0, -Math.PI / 2); g.castShadow = false;
+    for (let i = 0; i < 16; i++) for (let r = 0; r < 2; r++) add(bg(0.75, 0.32, 0.45), lam(r ? 0x9c8a62 : 0x8f7d57), -6 + i * 0.78 + (r ? 0.39 : 0), 0.16 + r * 0.3, -3.6, 0, 0, 0);   // sandbag wall
+    for (const [x, z, s] of [[-4.6, -1.8, 1.0], [-3.7, -2.2, 0.8], [4.4, -1.6, 1.0], [5.2, -2.6, 1.2]]) add(bg(s, s, s), lam(0x6b5a3a), x, s / 2, z, 0, x);   // crates
+    add(bg(3.4, 1.1, 1.8), lam(0x5b6346), 0.5, 0.95, -7.5); add(bg(1.6, 0.8, 1.7), lam(0x4b5236), -0.9, 1.85, -7.5); add(bg(0.05, 0.5, 1.5), lam(0x9cc6e8), -1.72, 1.9, -7.5);    // a jeep
+    for (const [x, z] of [[-0.8, -6.6], [-0.8, -8.4], [1.8, -6.6], [1.8, -8.4]]) add(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), lam(0x1a1a1a), x, 0.42, z, Math.PI / 2);
+    add(new THREE.PlaneGeometry(9, 4), new THREE.MeshLambertMaterial({ color: 0x55613f, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }), 7.5, 3.1, -6, -1.2, -0.5);     // camo net
+    L.flags = [];
+    for (const [x, c] of [[-6.2, 0x2f6fd6], [6.2, 0xd63030]]) {
+      add(new THREE.CylinderGeometry(0.05, 0.05, 5, 8), lam(0xcfcfcf), x, 2.5, -4.4);
+      const f = add(new THREE.PlaneGeometry(1.6, 1.0, 8, 1), new THREE.MeshLambertMaterial({ color: c, side: THREE.DoubleSide }), x + 0.8 * Math.sign(-x), 4.4, -4.4); f.castShadow = false;
+      L.flags.push(f);
+    }
+  }
+  LBY.lights[sec] = L;
+  return LBY.scenes[sec] = S;
+}
+// ---- who stands on the stage ----
+function lbyMembers() {
+  const me = { key: 'me', name: netMyName(), look: LBY.look, lead: false };
+  const on = $('netTgl').checked && LB.mem && LB.mem.length > 1;
+  if (!on) return [me];
+  const out = LB.mem.map((m, i) => ({ key: m.me ? 'me' : 'p' + m.peer, name: m.me ? netMyName() : cleanName(m.L.n), look: m.me ? LBY.look : (LOOKS.some(l => l.id === m.L.lk) ? m.L.lk : 'desert'), lead: i === 0 }));
+  out.sort((a, b) => (b.key === 'me') - (a.key === 'me'));
+  return out.slice(0, LBY_SLOTS.length);
+}
+function lbySync() {
+  const S = LBY.sc, M = lbyMembers(), keep = new Set();
+  M.forEach((m, i) => {
+    keep.add(m.key);
+    let c = LBY.chars.get(m.key);
+    if (c && c.look !== m.look) { S.remove(c.g); c.tag && S.remove(c.tag); c.crown && S.remove(c.crown); LBY.chars.delete(m.key); c = null; m.spin = true; }
+    if (!c) {
+      c = lbyChar(m.look); c.born = 0; c.spin = m.spin ? 0 : -1; c.seed = Math.random() * 6; c.fid = 3 + Math.random() * 4; c.fk = 0; c.ft = 0;
+      S.add(c.g); LBY.chars.set(m.key, c);
+    }
+    const [x, z] = LBY_SLOTS[i]; c.x = x; c.z = z;
+    const col = m.key === 'me' ? '#fde68a' : '#e5e7eb';
+    if (c.name !== m.name || c.col !== col) { if (c.tag) S.remove(c.tag); c.tag = tagSprite(m.name, col, 1.05); S.add(c.tag); c.name = m.name; c.col = col; }
+    if (m.lead && !c.crown) { c.crown = new THREE.Sprite(new THREE.SpriteMaterial({ map: crownTex, transparent: true, depthWrite: false })); c.crown.scale.set(0.6, 0.6, 1); S.add(c.crown); }
+    if (!m.lead && c.crown) { S.remove(c.crown); c.crown = null; }
+  });
+  for (const [k, c] of LBY.chars) if (!keep.has(k)) { S.remove(c.g); c.tag && S.remove(c.tag); c.crown && S.remove(c.crown); LBY.chars.delete(k); }
+}
+const crownTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.font = '96px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('👑', 64, 70); return new THREE.CanvasTexture(c); })();
+function lbyOn(on) {
+  if (on === LBY.on) return;
+  LBY.on = on; document.body.classList.toggle('lby', on);
+  if (!on) { for (const [, c] of LBY.chars) { LBY.sc && LBY.sc.remove(c.g); } LBY.chars.clear(); LBY.sec = ''; }
+}
+function lbyTick(dt) {
+  const want = !running && !LD.on && E.startScr.style.display !== 'none';
+  lbyOn(want); if (!want) return;
+  const tab = document.querySelector('.mTab.sel'), sec = tab && tab.dataset.sec === 'm' ? 'm' : 'z';
+  if (sec !== LBY.sec) {
+    if (LBY.sc) for (const [, c] of LBY.chars) { LBY.sc.remove(c.g); c.tag && LBY.sc.remove(c.tag); c.crown && LBY.sc.remove(c.crown); }
+    LBY.chars.clear(); LBY.sec = sec; LBY.sc = lbyScene(sec); LBY.t = 0;
+  }
+  LBY.t += dt;
+  LBY.syncT = (LBY.syncT || 0) - dt; if (LBY.syncT <= 0) { LBY.syncT = 0.4; lbySync(); }
+  const t = LBY.t, Lt = LBY.lights[sec];
+  for (const [, c] of LBY.chars) {
+    c.born = Math.min(1, c.born + dt * 1.6);
+    const e = 1 - Math.pow(1 - c.born, 3);
+    c.g.position.set(c.x, sec === 'z' ? -1.9 * (1 - e) : 2.5 * (1 - e) * (1 - e), c.z);
+    let ry = Math.atan2(-c.x * 0.35, 6) ;
+    if (c.spin >= 0) { c.spin += dt; ry += Math.PI * 2 * Math.min(1, c.spin / 0.8); if (c.spin > 0.8) c.spin = -1; }
+    c.g.rotation.y = ry;
+    animOp(c.pb, 0, dt);
+    const s = t + c.seed;
+    c.op.up.rotation.x += Math.sin(s * 1.6) * 0.025;                                 // breathing
+    c.op.head.rotation.y = Math.sin(s * 0.45) * 0.35 + (c.x ? -Math.sign(c.x) * 0.12 : 0);
+    // a small move now and then: look at the gun, or roll the shoulders
+    c.fid -= dt;
+    if (c.fid <= 0 && !c.ft) { c.ft = 1.4; c.fk = Math.random() < 0.5 ? 1 : 2; c.fid = 4 + Math.random() * 5; }
+    if (c.ft > 0) {
+      c.ft = Math.max(0, c.ft - dt); const k = Math.sin(Math.PI * (1 - c.ft / 1.4));
+      if (c.fk === 1) { c.op.up.rotation.y = 0.5 * k; c.op.head.rotation.x = 0.35 * k; c.op.head.rotation.y = 0.4 * k; }
+      else { c.op.up.rotation.z = 0.12 * Math.sin(k * 6); }
+    } else { c.op.up.rotation.y = 0; c.op.up.rotation.z = 0; }
+    const P = c.g.position;
+    if (c.tag) c.tag.position.set(P.x, P.y + 2.2, P.z);
+    if (c.crown) { c.crown.position.set(P.x, P.y + 2.62 + Math.sin(t * 2.4) * 0.05, P.z); c.crown.material.rotation = Math.sin(t * 1.3) * 0.15; }
+  }
+  if (sec === 'z' && Lt) {
+    Lt.red.intensity = Math.sin(t * 3.2) > 0.2 ? 1.8 : 0.15; Lt.redBulb.visible = Lt.red.intensity > 1;
+    Lt.fire.intensity = 1.2 + Math.random() * 0.5; Lt.flame.scale.set(1 + Math.random() * 0.15, 0.9 + Math.random() * 0.3, 1);
+    for (const z of Lt.zombies) {
+      const ph = t * z.sp + z.ph;
+      z.g.position.x = z.x0 + Math.sin(ph) * 2.2; z.g.rotation.y = Math.cos(ph) > 0 ? Math.PI / 2 : -Math.PI / 2;
+      z.g.rotation.z = Math.sin(t * 3 + z.ph) * 0.12;
+      if (z.rig.armL) { z.rig.armL.rotation.x = -1.35 + Math.sin(t * 2 + z.ph) * 0.15; z.rig.armR.rotation.x = -1.25 + Math.cos(t * 2 + z.ph) * 0.15; }
+      if (z.rig.legL) { z.rig.legL.rotation.x = Math.sin(t * 4 + z.ph) * 0.4; z.rig.legR.rotation.x = -Math.sin(t * 4 + z.ph) * 0.4; }
+    }
+  } else if (Lt && Lt.flags) Lt.flags.forEach((f, i) => { f.rotation.y = Math.sin(t * 2.2 + i) * 0.25; });
+  // the camera drifts slowly, and the stage sits clear of the menu
+  const a = 0.08 + Math.sin(t * 0.09) * 0.2, R = LBY.R || 6.9, C = LBY.cam, W = innerWidth, Hh = innerHeight;
+  C.position.set(Math.sin(a) * R, 1.75 + Math.sin(t * 0.13) * 0.08, Math.cos(a) * R); C.lookAt(0, 1.05, 0);
+  if (W !== LBY.vw || Hh !== LBY.vh) {
+    LBY.vw = W; LBY.vh = Hh; C.aspect = W / Hh;
+    const side = W >= 760 && W > Hh, panel = Math.min(470, W * (Hh <= 520 ? 0.54 : 0.5));
+    C.fov = Hh > W ? 50 : 40; LBY.R = Hh > W ? Math.max(6.9, 2.4 / (Math.tan(C.fov * Math.PI / 360) * (W / Hh))) : 6.9;
+    if (side) C.setViewOffset(W, Hh, panel / 2, 0, W, Hh);                         // the menu takes the right; the people stand on the left
+    else if (Hh > W) C.setViewOffset(W, Hh, 0, Hh * 0.17, W, Hh);   // portrait: people up top, menu below
+    else C.clearViewOffset();
+    C.updateProjectionMatrix();
+  }
+}
+function lbyLook(d) {
+  const i = LOOKS.findIndex(l => l.id === LBY.look);
+  LBY.look = LOOKS[(i + d + LOOKS.length) % LOOKS.length].id;
+  try { localStorage.setItem('fps-look', LBY.look); } catch (e) {}
+  $('lookName').textContent = lookOf(LBY.look).name; LBY.syncT = 0; LB.t = 0;
+  tone(520, 0.06, 'triangle', 0.05, 120);
+}
+
 // ---------- Main menu: the camera drifts through the real map while you choose ----------
 let menuCam = false;
 const camSpot = { x: 0, y: 2, z: 9, tx: 0, ty: 1.2, tz: 0 };
@@ -9825,6 +10038,7 @@ function pickMenuCam() {
   }
 }
 function previewMap(id) {
+  if (LBY.on) return;                               // the lobby is on stage: the map gets built when you start
   const m = isTdmMap(id) ? 'tdm' : 'waves';
   if (currentMap !== id || builtMode !== m) {
     clearActors();
@@ -10038,6 +10252,7 @@ function beginPlay(fromLobby) {
   initAudio();
   if ($('netTgl').checked && LB.isLead && !fromLobby) { LB.go++; LB.t = 0; }     // tell the lobby to come along
   E.startScr.style.display = 'none'; E.endScr.style.display = 'none';
+  lbyOn(false);
   if (window.__fastStart) { resetGame(); lockMouse(); updateLockHint(); return; }
   try { if (!isCoarse && !locked()) { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
   running = false; clearActors();
@@ -10138,6 +10353,9 @@ $('pQuit').addEventListener('click', () => quitPress($('pQuit')));
 $('dQuit').addEventListener('click', () => quitPress($('dQuit')));
 $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLockHint(); });
 $('gsmBtn').addEventListener('click', () => gsmOpen());
+$('lookName').textContent = lookOf(LBY.look).name;
+$('lookPrev').addEventListener('click', () => lbyLook(-1));
+$('lookNext').addEventListener('click', () => lbyLook(1));
 $('gsmClose').addEventListener('click', () => gsmClose());
 document.querySelectorAll('.gsmTab').forEach(b => b.addEventListener('click', () => { GSM.tab = b.dataset.t; gsmTabs(); gsmList(); gsmStats(); gsmModel(); }));
 $('gsmCan').addEventListener('pointerdown', e => { GSM.drag = { x: e.clientX, ry: GSM.ry }; try { e.target.setPointerCapture(e.pointerId); } catch (er) {} });
@@ -10220,15 +10438,15 @@ function loop(now) {
     if (loopErrors++ < 5) console.error('frame error:', err);
   }
   if (LD.on) { try { loadTick(rdt); } catch (e) { LD.on = false; $('loadScr').style.display = 'none'; resetGame(); } }
-  else if (menuCam && !running) updateMenuCam();
+  else if (menuCam && !running && !LBY.on) updateMenuCam();
   try { lbTick(rdt); } catch (e) { if (loopErrors++ < 5) console.error('lobby error:', e); }
-  try { padTick(rdt); gsmTick(rdt); if (running) { tkTick(rdt); boltTick(rdt); attHud(); } } catch (e) { if (loopErrors++ < 5) console.error('weapons error:', e); }
+  try { padTick(rdt); gsmTick(rdt); lbyTick(rdt); if (running) { tkTick(rdt); boltTick(rdt); attHud(); } } catch (e) { if (loopErrors++ < 5) console.error('weapons error:', e); }
   if (base.on) baseCull();
   try { netTick(dt); } catch (e) {}
   try { coTick(dt); } catch (e) { if (loopErrors++ < 5) console.error('co-op error:', e); }
   updateLit();
   skyGroup.position.copy(camera.position);
-  renderer.render(scene, camera);
+  if (LBY.on && LBY.sc) renderer.render(LBY.sc, LBY.cam); else renderer.render(scene, camera);
   if (running) adaptResolution(rawDt);
 }
 requestAnimationFrame(loop);
