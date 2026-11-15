@@ -356,6 +356,30 @@
     .actions { flex-direction:row; } .actions .ghost { width:auto; white-space:nowrap; }
   }
   @media (prefers-reduced-motion: reduce) { button.big, .mapBtn { transition:none; } }
+  /* lobby */
+  #lobby { margin-top:10px; background:rgba(12,18,32,.78); border:1px solid rgba(96,165,250,.35); border-radius:12px; padding:10px 12px; }
+  #lbHead { font-weight:800; font-size:15px; color:#bfdbfe; margin-bottom:6px; }
+  .lbRow { display:flex; justify-content:space-between; gap:10px; padding:6px 2px; border-bottom:1px solid rgba(141,151,170,.18); font-size:14px; }
+  .lbRow:last-child { border-bottom:0; }
+  .lbRow b { color:var(--bone); font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lbRow.me b { color:#fde68a; }
+  .lbRow span { color:var(--steel); font-size:13px; white-space:nowrap; }
+  #lbNote { font-size:12.5px; line-height:1.6; color:var(--steel); margin-top:6px; }
+  body.lbFollow #maps, body.lbFollow #modeTabs, body.lbFollow #gmRow, body.lbFollow #botRow { pointer-events:none; opacity:.5; }
+  button.big.wait { opacity:.55; filter:saturate(.4); }
+  /* loading screen */
+  #loadScr { position:fixed; inset:0; z-index:35; display:none; pointer-events:none; direction:rtl; font-family:var(--body); color:var(--bone); }
+  #loadScr .ldBar { position:absolute; left:0; right:0; height:9vh; background:#000; }
+  #loadScr .ldBar.t { top:0; } #loadScr .ldBar.b { bottom:0; }
+  #ldInfo { position:absolute; right:max(22px, env(safe-area-inset-right)); left:max(22px, env(safe-area-inset-left)); bottom:calc(9vh + 18px); text-shadow:0 2px 12px rgba(0,0,0,.9); }
+  #ldKind { font-size:14px; font-weight:800; letter-spacing:.5px; color:#fca5a5; }
+  #ldMap { margin:2px 0 4px; font-family:'Lalezar','Tajawal',sans-serif; font-weight:400; font-size:clamp(40px, 9vw, 76px); line-height:1; color:#f4efe6; text-shadow:0 4px 0 #000, 0 0 30px rgba(0,0,0,.8); }
+  #ldTip { margin:0 0 12px; font-size:15px; color:#d6d3cc; max-width:620px; line-height:1.6; }
+  #ldTrack { height:6px; max-width:460px; background:rgba(255,255,255,.16); border-radius:4px; overflow:hidden; }
+  #ldFill { display:block; height:100%; width:0; background:linear-gradient(90deg, #f59e0b, #ef4444); }
+  #ldPct { display:block; margin-top:6px; font-size:12px; color:var(--steel); font-variant-numeric:tabular-nums; }
+  #ldFade { position:absolute; inset:0; background:#000; opacity:1; }
+  @media (max-height: 520px) { #ldMap { font-size:clamp(34px, 8vw, 54px); } #ldTip { font-size:13px; margin-bottom:8px; } #loadScr .ldBar { height:6vh; } #ldInfo { bottom:calc(6vh + 10px); } }
 </style>
 </head>
 <body>
@@ -409,6 +433,9 @@
 <button id="pauseBtn" type="button" aria-label="قائمة">☰</button>
 <div id="fps"></div>
 
+<div id="loadScr" aria-live="polite"><div class="ldBar t"></div><div class="ldBar b"></div>
+  <div id="ldInfo"><div id="ldKind"></div><h2 id="ldMap"></h2><p id="ldTip"></p><div id="ldTrack"><i id="ldFill"></i></div><small id="ldPct"></small></div>
+  <div id="ldFade"></div></div>
 <div class="overlay" id="startScr">
   <div class="menu">
     <div class="brand">
@@ -445,6 +472,7 @@
       <div id="netModes"><button class="nMode sel" data-q="t" type="button">فرق</button><button class="nMode" data-q="f" type="button">الكل ضد الكل</button></div>
       <input id="netName" type="text" maxlength="12" placeholder="اسمك" autocomplete="off">
       <input id="netCode" type="text" maxlength="12" placeholder="رمز غرفة خاصة (اختياري)" autocomplete="off" inputmode="latin" dir="ltr">
+      <div id="lobby" hidden><div id="lbHead">👥 اللوبي</div><div id="lbList"></div><div id="lbNote"></div></div>
     </div>
     <label class="opt" id="grainOpt" for="grainTgl"><span>حبيبات الفيلم<small>تشويش خفيف على الشاشة مثل أفلام الرعب</small></span><input type="checkbox" id="grainTgl" checked><span class="sw"></span></label>
     <div class="actions">
@@ -487,7 +515,7 @@
       <div class="row"><span>حياتك</span><span><b>ضربتين</b> وتطيح. ابتعد عنهم كم ثانية وترجع صحتك. الشاشة تحمرّ لما تكون على ضربة</span></div>
       <div class="row"><span>الشبابيك</span><span>الزومبي يجون من برا السور، يفكّون ألواح الشبابيك ويدخلون. قف عند الشباك و<b>ثبّت الألواح</b>، وكل لوح <b>10</b> نقاط</span></div>
       <div class="row"><span>النقاط</span><span><b>10</b> لكل إصابة، <b>60</b> للقتلة، <b>100</b> للهيدشوت، <b>130</b> للسكين</span></div>
-      <div class="row"><span>الصندوق</span><span>بـ<b>500</b> يعطيك سلاح عشوائي. عمود النور الأزرق يدلّك عليه</span></div>
+      <div class="row"><span>الصندوق</span><span>بـ<b>500</b> يعطيك سلاح عشوائي. بعد كم سحبة يطلع الدبدوب ويتنقل لمكان ثاني، واللوحات اللي جنب أماكنه تولّع لمبة مكانه الحين</span></div>
       <div class="row"><span>المشروبات</span><span>قوة (تتحمل 4 ضربات)، تعبئة سريعة، إطلاق سريع، جري أسرع، شفاء سريع (500: لو طحت تقوم لحالك، 3 مرات بس)</span></div>
       <div class="row"><span>التطوير</span><span>البوابة البنفسجية تضاعف ضرر سلاحك ومخزنه</span></div>
       <div class="row"><span>أطوار الجماعي</span><span>السيطرة: امسك النقاط أ ب ج. تأكيد القتل: لمّ التاق الذهبي عشان تنحسب قتلتك، والأزرق عشان تحرمهم. سباق الأسلحة: كل قتلة بسلاح جديد. السيرش: المهاجم يزرع القنبلة بزر الاستخدام في أحد الموقعين (4 ثواني بدون حركة) والمدافع يفكّها (5 ثواني)، وما فيه رجعة لين الجولة الجاية.</span></div>
@@ -2562,7 +2590,7 @@ function buildBase() {
   }
   basePower(false, true);
 }
-const BASE_BOX = [[-22, 9.1, 1], [-15.6, -10.9, 2], [9, -10.9, 3], [-8.6, -26.4, 5]];
+const BASE_BOX = [[-22, 9.1, 1], [-15.6, -10.9, 2], [9, -10.9, 3], [-8.6, -26.4, 5], [13, -26.3, 4]];
 // ---- the wonder weapon: one blast clears whatever stands in front of you ----
 function thunderBlast(def) {
   const B = def.blast, cp = camera.position;
@@ -4679,6 +4707,7 @@ function tdmKill(b, byTeam, killerName, byPeer, kb) {
   rebuildTargets();
   if (mine) { tdm.myKills++; kills++; if (netOn) netKills++; ggKill(); }
   if (kb) GS.bk[kb.name] = (GS.bk[kb.name] || 0) + 1;
+  if (GS.id === 'gg' && ggCrowd() > 2) GS.bk[b.name] = 0;          // a bot that dies starts the ladder again too
   modeDeath({ x: b.group.position.x, z: b.group.position.z, at: b.at, name: b.name });
   if (!GS.snd) tdm.queue.push({ at: b.at, name: b.name, t: TDM_RESPAWN });
   const kn = killerName || (byTeam === 'blue' ? 'زميلك' : 'الأحمر');
@@ -4702,6 +4731,7 @@ function playerDiedTdm() {
   $('scope').style.display = 'none';
   player.alive = false; GS.act = null; GS.specT = 0;
   tdm.myDeaths++;
+  if (GS.id === 'gg' && GS.tier > 0 && ggCrowd() > 2) { GS.tier = 0; setTimeout(() => toast('💀 رجعت للمسدس'), 600); }
   tdm.respawn = TDM_RESPAWN;
   if (gsHost()) {
     modeDeath({ x: player.x, z: player.z, at: myAt(), name: netMyName() });
@@ -4711,6 +4741,7 @@ function playerDiedTdm() {
   if (netOn) netDied();
   checkTdmEnd();
 }
+function ggCrowd() { const w = botsWant(), h = GS.hum || { b: 1, r: 0 }; return (h.b || 0) + (h.r || 0) + w.b + w.r; }   // everyone in the match
 function ggGive(anim) {
   const w = mkWeapon(GG_LADDER[Math.min(GS.tier, GG_LADDER.length - 1)]); w.reserve = 999;
   player.weapons = [w]; player.cur = 0; player.reloading = 0;
@@ -5493,6 +5524,84 @@ let netMode = 't', netTeam = 'b', netCodeNow = '', netJoinId = 0, netBalT = 0, n
 const NET_LIMIT = { t: 30, f: 20 };
 const netPeers = new Map();
 const NET_MAT = { body: lam(0x16a34a), head: lam(0xf1c27d) };
+// ---- lobby: everyone with online on in the same room is in one lobby; whoever came in first is the leader ----
+const LD = { on: false, t: 0, dur: 5, shots: [], cut: [0, 1.9, 3.5], fromLobby: false };
+const LB = { j: performance.now(), go: 0, seen: new Map(), mem: [], isLead: true, lead: null, t: 0, code: null, sig: '', wasOn: false };
+function lbMine() { return { a: +((performance.now() - LB.j) / 1000).toFixed(1), n: netMyName(), s: { m: selectedMap, gm: gmId, b: botN }, go: LB.go, ig: running || LD.on ? 1 : 0 }; }
+function netPres(r, o) {
+  if (!r) return Promise.resolve();
+  o.lb = $('netTgl').checked ? lbMine() : null;
+  return r.presence(o);
+}
+function lbFollowing() { return $('netTgl').checked && !LB.isLead && !!LB.lead; }
+function lbTick(dt) {
+  LB.t -= dt; if (LB.t > 0) return; LB.t = 0.5;
+  if (!$('netTgl').checked) { if (LB.wasOn) { LB.wasOn = false; LB.isLead = true; LB.lead = null; LB.mem = []; lbUi(); } return; }
+  if (!LB.wasOn) { LB.wasOn = true; LB.j = performance.now(); LB.seen.clear(); }
+  if (!running && !LD.on) netPickRoom();
+  if (netCodeNow !== LB.code) { LB.code = netCodeNow; LB.j = performance.now(); LB.seen.clear(); }
+  if (!running) { try { netPres(netRoom, {}).catch(() => {}); } catch (e) {} }     // the match loops send it while playing
+  let peers = []; if (netRoom) { try { peers = netRoom.peers(); } catch (e) {} }
+  if (!netMe) for (const p of peers) if (p.sameTab) { netMe = p.peer; break; }
+  const mem = [{ peer: netMe || '~', me: true, L: lbMine() }];
+  for (const p of peers) {
+    if (p.sameTab || p.kind !== 'viewer') continue;
+    const L = p.presence && p.presence.lb;
+    if (!L || typeof L !== 'object' || typeof L.a !== 'number' || !isFinite(L.a)) continue;
+    mem.push({ peer: String(p.peer), me: false, L });
+  }
+  // the one who has been in the lobby longest leads (time in the lobby, not the clock: phones' clocks disagree)
+  mem.sort((a, b) => (Math.abs(a.L.a - b.L.a) > 1 ? b.L.a - a.L.a : 0) || (a.peer < b.peer ? -1 : a.peer > b.peer ? 1 : 0));
+  LB.mem = mem; LB.lead = mem[0]; LB.isLead = mem[0].me;
+  if (!LB.isLead) lbFollow(mem[0]);
+  lbUi();
+}
+function lbFollow(lead) {
+  const L = lead.L, s = L.s && typeof L.s === 'object' ? L.s : {};
+  const g = Math.floor(+L.go || 0);
+  if (!LB.seen.has(lead.peer)) { LB.seen.set(lead.peer, g); }
+  if (running || LD.on) { if (g > LB.seen.get(lead.peer)) LB.seen.set(lead.peer, g); return; }   // mid-match I stay where I am
+  if (typeof s.m === 'string' && MAPS[s.m] && s.m !== selectedMap) selectMap(s.m);
+  if (typeof s.gm === 'string' && GM[s.gm] && s.gm !== gmId) selectGm(s.gm);
+  const nb = Math.floor(+s.b);
+  if (nb >= 0 && nb <= 5 && nb !== botN) { botN = nb; $('botN').value = nb; $('botNV').textContent = nb; }
+  if (g > LB.seen.get(lead.peer)) {                       // the leader pressed start
+    LB.seen.set(lead.peer, g);
+    if (E.startScr.style.display !== 'none' || E.endScr.style.display !== 'none') beginPlay(true);
+  }
+}
+function lbUi() {
+  const on = $('netTgl').checked, F = lbFollowing(), lead = LB.lead, others = LB.mem.length - 1;
+  document.body.classList.toggle('lbFollow', F);
+  const sb = $('startBtn'), ab = $('againBtn');
+  let txt = 'ابدأ اللعب', wait = false, atxt = 'العب مرة ثانية';
+  if (on && F) { if (lead.L.ig) txt = 'انضم للعبة 🎮'; else { txt = 'ننتظر القائد…'; wait = true; } atxt = lead.L.ig ? 'انضم للعبة 🎮' : 'ننتظر القائد…'; }
+  else if (on && others > 0) { txt = 'ابدأ للكل 👑'; atxt = 'العب مرة ثانية للكل 👑'; }
+  if (sb.textContent !== txt) sb.textContent = txt;
+  if (ab.textContent !== atxt) ab.textContent = atxt;
+  sb.classList.toggle('wait', wait); ab.classList.toggle('wait', on && F && !lead.L.ig);
+  $('lobby').hidden = !on;
+  if (!on) return;
+  const nm = id => { const m = MAPS[id] && document.querySelector('.mapBtn[data-map="' + id + '"] .mName'); return m ? m.textContent : ''; };
+  const ls = lead && lead.L.s || {};
+  const sig = LB.mem.map(m => m.peer + (m.me ? '*' : '') + cleanName(m.L.n) + (m.L.ig ? 'g' : '')).join('|') + '#' + (lead && lead.peer) + nm(ls.m) + ls.gm + ls.b;
+  if (sig === LB.sig) return; LB.sig = sig;
+  const list = $('lbList'); list.textContent = '';
+  LB.mem.forEach((m, i) => {
+    const r = document.createElement('div'); r.className = 'lbRow' + (m.me ? ' me' : '');
+    const a = document.createElement('b'); a.textContent = (i === 0 ? '👑 ' : '') + (m.me ? netMyName() + ' (أنت)' : cleanName(m.L.n));
+    const t = document.createElement('span'); t.textContent = i === 0 ? 'القائد' + (m.L.ig ? ' · يلعب الحين' : '') : m.L.ig ? 'يلعب الحين' : 'جاهز';
+    r.appendChild(a); r.appendChild(t); list.appendChild(r);
+  });
+  const note = $('lbNote');
+  if (!others) note.textContent = 'ما فيه أحد معك في اللوبي. اللي يدخل بعدك يمشي على اختياراتك.';
+  else if (LB.isLead) note.textContent = 'أنت القائد: اختر الماب والطور والبوتات واضغط ابدأ، وكل اللي باللوبي يدخلون معك.';
+  else note.textContent = 'القائد يختار: ' + nm(ls.m) + (isTdmMap(ls.m) && GM[ls.gm] ? ' · ' + GM[ls.gm].name + ' · بوتات ' + ls.b : '') + '. تقدر تغيّر سلاحك بس.';
+}
+function startPress() {
+  if (lbFollowing() && !LB.lead.L.ig) { toast('القائد هو اللي يبدأ اللعبة 👑'); tone(150, 0.08, 'square', 0.05); return; }
+  beginPlay(false);
+}
 function netInfo(txt) { const el = $('netInfo'); if (el) el.textContent = txt; }
 function netCount() {
   const r = netRoom || netLobby; if (!r) return;
@@ -5523,7 +5632,7 @@ function netPickRoom() {
   netCodeNow = code; netMe = null;
   if (old && old !== netLobby) { try { old.leave().catch(() => {}); } catch (e) {} }
   if (!code) { netRoom = netLobby; if (netRoom.connect) netRoom.connect(); return; }
-  try { netLobby.presence({ g: null }).catch(() => {}); } catch (e) {}     // don't leave a frozen copy of me in the open room
+  try { netPres(netLobby, { g: null }).catch(() => {}); } catch (e) {}     // don't leave a frozen copy of me in the open room
   if (netLobby.disconnect) netLobby.disconnect();                          // direct mode: leave the open room while I am in a private one
   netRoom = null;                                      // nothing is sent until the room answers
   try {
@@ -5574,7 +5683,7 @@ function netTick(dt) {
   const board = $('netBoard');
   if (!live) {
     if (netPeers.size) for (const id of [...netPeers.keys()]) netDrop(id);
-    if (netSeen !== -1) { netSeen = -1; if (netRoom) { try { netRoom.presence({ g: null }).catch(() => {}); } catch (e) {} } $('netHud').textContent = ''; board.style.display = 'none'; }
+    if (netSeen !== -1) { netSeen = -1; if (netRoom) { try { netPres(netRoom, { g: null }).catch(() => {}); } catch (e) {} } $('netHud').textContent = ''; board.style.display = 'none'; }
     return;
   }
   for (const [id, o] of netPeers) if (enemies.indexOf(o) < 0) { scene.remove(o.group); netPeers.delete(id); }   // a reset swept the actors away
@@ -5583,7 +5692,7 @@ function netTick(dt) {
   if (netT <= 0) {                                   // ~15 a second, absolute state
     netT = 0.066;
     try {
-      netRoom.presence({ g: { m: currentMap, q: netMode, t: netTeam, x: +player.x.toFixed(2), z: +player.z.toFixed(2), y: +player.y.toFixed(2), w: +player.yaw.toFixed(2), p: +player.pitch.toFixed(2),
+      netPres(netRoom, { g: { m: currentMap, q: netMode, t: netTeam, x: +player.x.toFixed(2), z: +player.z.toFixed(2), y: +player.y.toFixed(2), w: +player.yaw.toFixed(2), p: +player.pitch.toFixed(2),
         a: player.alive ? 1 : 0, c: stance === 'stand' ? 0 : 1, s: netShots, n: netMyName(), h: netHits, d: netDeath, k: netKills, dd: tdm.myDeaths, gr: netNades, l: Math.round(player.hp), wp: cw().id, cl: myClass, r: player.reloading > 0 ? 1 : 0, ...gsOut() } }).catch(() => {});
     } catch (e) {}
   }
@@ -6255,7 +6364,7 @@ function coStart() {
 function coStop() {
   for (const o of coPeers.values()) scene.remove(o.group);
   coPeers.clear(); co.live = false; co.role = ''; reviving = null;
-  if (netRoom) { try { netRoom.presence({ g: null }).catch(() => {}); } catch (e) {} }
+  if (netRoom) { try { netPres(netRoom, { g: null }).catch(() => {}); } catch (e) {} }
   $('netHud').textContent = '';
   if (running && mode !== 'tdm' && !zDeath) {                  // the room went away mid-game: carry on alone
     if (co.out) { co.out = false; zDie(); } else if (down && down.wait) zDie();
@@ -6305,7 +6414,7 @@ function coEncode() {
     z.push(e);
   }
   let bs = ''; for (const B of barriers) bs += B.boards;
-  return { w: wave, nw: +Math.max(0, nextWaveIn).toFixed(1), q: zQueue, z, b: bs, bx: box && isFinite(box.x) ? [box.x, box.z] : 0, at: co.at, ov: co.over ? 1 : 0 };
+  return { w: wave, nw: +Math.max(0, nextWaveIn).toFixed(1), q: zQueue, z, b: bs, bx: box && isFinite(box.x) ? [box.x, box.z, box.uses, box.lim || 6] : 0, at: co.at, ov: co.over ? 1 : 0 };
 }
 function coApply(hs, hostId) {                                 // draw the host's world
   if (!hs || typeof hs !== 'object' || !Array.isArray(hs.z)) return;
@@ -6350,7 +6459,15 @@ function coApply(hs, hostId) {                                 // draw the host'
     if (!(n >= 0) || B.boards === n || co.barHold[i] > now) continue;
     if (n < B.boards && !first && B.boards - n <= 2) { while (B.boards > n) tearBoard(B); } else setBoards(B, n);
   }
-  if (Array.isArray(hs.bx) && box && box.state === 'idle' && isFinite(hs.bx[0]) && isFinite(hs.bx[1]) && (box.x !== hs.bx[0] || box.z !== hs.bx[1])) boxMoveTo(hs.bx[0], hs.bx[1]);
+  if (Array.isArray(hs.bx) && box && isFinite(hs.bx[0]) && isFinite(hs.bx[1])) {
+    if ((box.state === 'idle' || box.state === 'moving') && (box.x !== hs.bx[0] || box.z !== hs.bx[1])) {
+      const was = box.state === 'moving';
+      boxMoveTo(clamp(hs.bx[0], -ARENA, ARENA), clamp(hs.bx[1], -ARENA, ARENA));
+      if (was) { box.state = 'idle'; box.group.visible = true; boxSignsDraw(); if (!first) toast('📦 الصندوق ظهر بمكان ثاني، شوف اللوحات'); }
+    }
+    if (isFinite(hs.bx[2])) box.hu = clamp(Math.floor(hs.bx[2]), 0, 99);
+    if (isFinite(hs.bx[3])) box.lim = clamp(Math.floor(hs.bx[3]), 2, 20);
+  }
   if (Array.isArray(hs.at)) {
     const init = co.seenAt < 0; let last = init ? 0 : co.seenAt;
     for (const a of hs.at) {
@@ -6400,6 +6517,11 @@ function coReadEv(peer, g, o) {
     if (first) continue;
     if (e[1] === 'p' && POWERS.includes(e[2])) applyPower(e[2]);
     else if (e[1] === 'v' && e[2] === netMe && down && down.wait) getUp(o.name);
+    else if (e[1] === 'bp' && co.role === 'host' && box) box.uses++;
+    else if (e[1] === 'bt' && co.role === 'host' && box && box.state !== 'moving') {   // a mate got the teddy: the box flies off for everyone
+      box.state = 'moving'; box.t = 0; box.fl.visible = false; box.group.visible = false; removeBoxCollider(); boxSignsDraw();
+      toast('🧸 ' + (o && o.name ? o.name : 'زميلك') + ' طلع له الدبدوب، الصندوق بيتنقل');
+    }
     else if (e[1] === 'r' && co.role === 'host') { const B = barriers[e[2]]; if (B && B.boards < BOARDS) setBoards(B, B.boards + 1); }
   }
   co.seenEv.set(peer, last);
@@ -6475,7 +6597,7 @@ function coTick(dt) {
                 zh: co.hits, ev: co.ev, lu: l ? [+l.x.toFixed(1), +l.z.toFixed(1)] : 0, bl: down && down.wait ? Math.ceil(CO_BLEED - down.t) : 0 };
     if (co.role === 'host') { g.ho = 1; g.hs = coEncode(); }
     if (base.on) g.bs = baseState();
-    try { netRoom.presence({ g }).catch(() => {}); } catch (e) {}
+    try { netPres(netRoom, { g }).catch(() => {}); } catch (e) {}
   }
   const here = new Set();
   let hostP = '', hostG = null;
@@ -6603,7 +6725,89 @@ function boxMoveTo(x, z) {
   box.group.position.set(x, 0, z);
   box.aabb = { minX: x - 0.85, maxX: x + 0.85, minZ: z - 0.6, maxZ: z + 0.6, top: 0.98 };
   obstacles.push(box.aabb);
-  box.uses = 0;
+  box.uses = 0; box.hu = 0;
+  boxSignsDraw();
+}
+const boxLim = () => 3 + Math.floor(Math.random() * 6);          // the teddy comes on one of pulls 3..8 at each spot
+// every place the box can be on this map: [x, z, zone]
+function boxSpotList() {
+  const fixed = MAPS[currentMap] && MAPS[currentMap].boxSpots;
+  if (fixed) return fixed.map(q => [q[0], q[1], q[2] || 0]);
+  return (BOX_SPOTS[currentMap] || []).filter(([x, z]) => spotFree(x, z, 1.5)).map(q => [q[0], q[1], 0]);
+}
+// ---- the locator boards: a little map of the level on a post next to each spot; the lamp where the box is now is lit ----
+const SIGN_W = 1.1, SIGN_H = 0.95;
+const signPoleMat = new THREE.MeshLambertMaterial({ color: 0x23272e });
+const signBackMat = new THREE.MeshLambertMaterial({ color: 0x14171c });
+function boxSignsBuild() {
+  box.signs = [];
+  if (mode === 'tdm') return;
+  const S = box.spots, pole = new THREE.CylinderGeometry(0.045, 0.06, 1.42, 6), board = new THREE.BoxGeometry(SIGN_W + 0.08, SIGN_H + 0.08, 0.06), face = new THREE.PlaneGeometry(SIGN_W, SIGN_H);
+  const free = (x, z) => spotFree(x, z, 0.65) && !S.some(q => Math.abs(q[0] - x) < 1.55 && Math.abs(q[1] - z) < 1.3);
+  S.forEach((q, i) => {
+    const [bx, bz] = q;
+    let px = NaN, pz = NaN, nx = 0, nz = 1;
+    if (q[2]) {                                            // the compound: the box stands with a wall behind it (-z), so the board does too
+      for (const dx of [1.75, -1.75, 2.3, -2.3]) {
+        const ok = !obstacles.some(o => o !== box.aabb && bx + dx + 0.2 > o.minX && bx + dx - 0.2 < o.maxX && bz + 0.05 > o.minZ && bz - 0.35 < o.maxZ);
+        if (ok) { px = bx + dx; pz = bz - 0.15; break; }
+      }
+    } else {
+      const cd = Math.hypot(bx, bz) || 1;
+      for (let k = 0; k < 16 && isNaN(px); k++) {
+        const a = Math.atan2(-bz, -bx) + (k % 2 ? 1 : -1) * (0.9 + Math.floor(k / 2) * 0.35), r = 2.0 + (k > 9 ? 0.6 : 0);
+        const x = bx + Math.cos(a) * r, z = bz + Math.sin(a) * r;
+        if (Math.abs(x) < ARENA - 2 && Math.abs(z) < ARENA - 2 && free(x, z)) { px = x; pz = z; }
+      }
+      if (!isNaN(px)) { nx = -px / (Math.hypot(px, pz) || 1); nz = -pz / (Math.hypot(px, pz) || 1); if (!isFinite(nx)) { nx = 0; nz = 1; } void cd; }
+    }
+    if (isNaN(px)) return;
+    const g = new THREE.Group(), yaw = Math.atan2(nx, nz);
+    g.position.set(px, 0, pz); g.rotation.y = yaw;
+    const p = new THREE.Mesh(pole, signPoleMat); p.position.y = 0.71; g.add(p);
+    const b = new THREE.Mesh(board, signBackMat); b.position.set(0, 1.85, -0.04); g.add(b);
+    const c = document.createElement('canvas'); c.width = 256; c.height = 222;
+    const tex = new THREE.CanvasTexture(c);
+    const m = new THREE.Mesh(face, new THREE.MeshBasicMaterial({ map: tex, color: 0xd8dde6 }));
+    m.position.set(0, 1.85, 0.0); g.add(m);
+    track(g, true);
+    obstacles.push({ minX: px - 0.12, maxX: px + 0.12, minZ: pz - 0.12, maxZ: pz + 0.12, sign: 1 });
+    if (base.on && base.zobj) base.zobj[zoneAt(px, pz)].push({ o: g, x: px, z: pz, r: 0.8, m: 1 });
+    box.signs.push({ g, c, tex, x: px, z: pz, fx: -nx, fz: -nz });   // f: the way you face while reading it
+  });
+  boxSignsDraw();
+}
+function boxSignsDraw() {
+  if (!box || !box.signs || !box.signs.length) return;
+  const lit = box.group.visible && box.state !== 'moving' ? [box.x, box.z] : null, A = ARENA;
+  for (const sg of box.signs) {
+    const g = sg.c.getContext('2d'), W = sg.c.width, H = sg.c.height;
+    g.fillStyle = '#0a0d13'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#16324a'; g.fillRect(0, 0, W, 34);
+    g.fillStyle = '#7fe7ff'; g.font = '800 21px Tajawal, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('📦 صندوق الأسلحة', W / 2, 18);
+    const mx = 12, my = 42, mw = W - 24, mh = H - 54, k = Math.min(mw, mh) / (2 * A), ox = mx + mw / 2, oy = my + mh / 2;
+    const rx = -sg.fz, rz = sg.fx;                        // the reader's right hand
+    const P = (x, z) => [ox + (x * rx + z * rz) * k, oy - (x * sg.fx + z * sg.fz) * k];
+    g.strokeStyle = '#2a3446'; g.lineWidth = 2; g.strokeRect(ox - A * k, oy - A * k, 2 * A * k, 2 * A * k);
+    g.fillStyle = '#4a5a78';
+    for (const o of obstacles) {
+      if (o === box.aabb || o.sign || !isFinite(o.minX)) continue;
+      if (o.maxX - o.minX < 0.5 && o.maxZ - o.minZ < 0.5) continue;
+      const a = P(o.minX, o.minZ), b = P(o.maxX, o.maxZ);
+      g.fillRect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(2.2, Math.abs(b[0] - a[0])), Math.max(2.2, Math.abs(b[1] - a[1])));
+    }
+    for (const q of box.spots) {
+      const [u, v] = P(q[0], q[1]), on = lit && Math.abs(lit[0] - q[0]) < 0.01 && Math.abs(lit[1] - q[1]) < 0.01;
+      g.beginPath(); g.arc(u, v, on ? 9 : 7, 0, 6.2832);
+      if (on) { g.shadowColor = '#22d3ee'; g.shadowBlur = 16; g.fillStyle = '#9ff3ff'; g.fill(); g.shadowBlur = 0; g.lineWidth = 2.5; g.strokeStyle = '#ffffff'; g.stroke(); }
+      else { g.fillStyle = '#1b2230'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#55627a'; g.stroke(); }
+    }
+    const [hu, hv] = P(sg.x, sg.z);                        // you are here
+    g.fillStyle = '#ef4444'; g.beginPath(); g.moveTo(hu, hv - 7); g.lineTo(hu - 6, hv + 5); g.lineTo(hu + 6, hv + 5); g.closePath(); g.fill();
+    g.font = '700 13px Tajawal, system-ui, sans-serif'; g.fillStyle = '#fca5a5'; g.fillText('أنت', hu, hv + 15);
+    sg.tex.needsUpdate = true;
+  }
 }
 
 // ---------- Mystery box ----------
@@ -6684,23 +6888,27 @@ function removeBoxCollider() {
 }
 function placeBox() {
   removeBoxCollider();
-  const fixed = MAPS[currentMap] && MAPS[currentMap].boxSpots;      // the compound: set places, and only in zones that are open
-  const cands = fixed ? (isNaN(box.x) ? [fixed[0]] : fixed.filter(q => base.open[q[2]] && !(q[0] === box.x && q[1] === box.z))) : (BOX_SPOTS[currentMap] || []).filter(([x, z]) => spotFree(x, z, 1.5) && !(x === box.x && z === box.z));
+  const S = box.spots || [], first = isNaN(box.x);
+  let c = S.filter(q => !(q[0] === box.x && q[1] === box.z));      // anywhere but here, even behind doors nobody opened yet
+  if (first) {                                                      // never in the room you start in
+    const st = MAPS[currentMap].start || [0, 0];
+    const far = c.filter(q => q[2] ? q[2] !== zoneAt(st[0], st[1]) : Math.hypot(q[0] - st[0], q[1] - st[1]) > 12);
+    if (far.length) c = far;
+  }
   let x, z;
-  if (fixed && !cands.length) { x = isNaN(box.x) ? fixed[0][0] : box.x; z = isNaN(box.z) ? fixed[0][1] : box.z; }
-  else if (cands.length) [x, z] = cands[Math.floor(Math.random() * cands.length)];
+  if (c.length) [x, z] = c[Math.floor(Math.random() * c.length)];
+  else if (!first) { x = box.x; z = box.z; }
   else [x, z] = randomSpot();
-  box.x = x; box.z = z;
-  box.group.position.set(x, 0, z);
-  box.aabb = { minX: x - 0.85, maxX: x + 0.85, minZ: z - 0.6, maxZ: z + 0.6, top: 0.98 };
-  obstacles.push(box.aabb);
-  box.uses = 0;
+  boxMoveTo(x, z);
+  box.lim = boxLim();
 }
 function initBox() {
   if (!box) box = buildBoxObject();
   box.state = 'idle'; box.t = 0; box.roll = null; box.shown = null;
   box.fl.visible = false; box.group.visible = true; box.lidPivot.rotation.x = 0;
+  removeBoxCollider();
   box.x = NaN; box.z = NaN;
+  if (!box.signs || !box.signs.length || box.signs[0].g.parent !== scene || box.signsFor !== currentMap) { box.signsFor = currentMap; box.spots = boxSpotList(); boxSignsBuild(); }
   placeBox();
 }
 function nearBox() {
@@ -6816,8 +7024,9 @@ function useBox() {
   if (box.state === 'idle') {
     if (player.points < BOX_COST) { toast('ما عندك نقاط كافية 💰 ' + BOX_COST); tone(150, 0.08, 'square', 0.05); return; }
     player.points -= BOX_COST;
+    if (coClient()) { box.uses = Math.max(box.uses, box.hu || 0); coEvent('bp', 1); }   // the host counts every pull in the team
     box.state = 'rolling'; box.t = 0; box.rollTick = 0; box.uses++;
-    box.roll = (box.uses > 1 && Math.random() < 0.12) ? 'teddy' : pickBoxWeapon();   // 🧸 can't happen on the first use
+    box.roll = box.uses >= (box.lim || 6) ? 'teddy' : pickBoxWeapon();   // 🧸 on a random pull, never the first
     box.fl.visible = true;
     tone(300, 0.2, 'triangle', 0.07, 300); boxJingle();
   } else if (box.state === 'offer') {
@@ -6851,6 +7060,7 @@ function updateBox(dt) {
     if (box.t >= 3) {
       if (box.roll === 'teddy') {
         box.state = 'teddy'; box.t = 0; box.fl.visible = false;
+        if (coClient()) coEvent('bt', 1);
         player.points += BOX_COST;
         tone(200, 0.4, 'sawtooth', 0.07, -120);
       } else {
@@ -6862,9 +7072,9 @@ function updateBox(dt) {
   } else if (box.state === 'offer') {
     if (box.t >= 9) { box.state = 'idle'; box.fl.visible = false; toast('الصندوق أخذ السلاح 😈'); }
   } else if (box.state === 'teddy') {
-    if (box.t >= 2.2) { box.state = 'moving'; box.t = 0; box.group.visible = false; removeBoxCollider(); }
+    if (box.t >= 2.2) { box.state = 'moving'; box.t = 0; box.group.visible = false; removeBoxCollider(); boxSignsDraw(); }
   } else if (box.state === 'moving') {
-    if (box.t >= 1.5) { if (!coClient()) placeBox(); box.group.visible = true; box.state = 'idle'; toast('📦 الصندوق ظهر بمكان ثاني'); }
+    if (box.t >= (coClient() ? 8 : 1.5)) { if (!coClient()) placeBox(); else boxMoveTo(box.x, box.z); box.group.visible = true; box.state = 'idle'; boxSignsDraw(); toast('📦 الصندوق ظهر بمكان ثاني، شوف اللوحات'); }
   }
 }
 function updateBoxUI() {
@@ -7889,6 +8099,7 @@ function radarDot(x, z, color, r) {
   rctx.fill();
 }
 function drawRadar() {
+  if (mode !== 'tdm') return;
   const S = radar.width, c = S / 2;
   rctx.clearRect(0, 0, S, S);
   rctx.fillStyle = 'rgba(0,0,0,.5)';
@@ -8016,6 +8227,7 @@ function previewMap(id) {
 }
 function openMenu() {
   zClear();
+  if (LD.on) { LD.on = false; $('loadScr').style.display = 'none'; }
   E.endScr.style.display = 'none'; E.startScr.style.display = 'flex';
   setMenu(true); menuCam = true;
   $('hurt').style.opacity = 0;
@@ -8188,6 +8400,74 @@ buildMap(selectedMap);
 if (mode !== 'tdm') initBox();
 menuCam = true; pickMenuCam();
 
+// ---------- Loading: five seconds of the map before the match ----------
+const LD_TIPS = {
+  z: ['الصندوق يتنقل بعد كم سحبة. شوف اللوحات اللي جنب أماكنه، اللمبة المولعة هي مكانه الحين', 'ما فيه رادار في الزومبي. اسمع الأصوات وانتبه لظهرك',
+      'اشتر «شفاء سريع» بدري، لو طحت تقدر تقوم', 'رمّم الشبابيك تاخذ نقاط وتأخر الزومبي', 'الطلقة في الراس تعطيك نقاط أكثر'],
+  base: ['الكهرباء مقطوعة. لقها في غرفة المولدات عشان تشتغل المشروبات', 'فيه ثلاث راديوهات مخفية. لقها كلها وشوف وش يصير', 'الفخاخ تضرك مثل ما تضر الزومبي'],
+  m: ['خلك مع فريقك، اللي يمشي لحاله يموت أول', 'لا تقعد بمكان واحد بعد ما تقتل، الكل عرف مكانك', 'السطوح في السوق تعطيك نظرة على الميدان كله'],
+  gg: ['كل قتلة تعطيك السلاح اللي بعده، وإذا انقتلت ترجع للمسدس', 'آخر سلاح هو مدفع الرعد، قتلة فيه وتفوز'],
+  snd: ['ما فيه رجعة بعد الموت في نفس الجولة. العب على مهلك', 'المهاجم يزرع والمدافع يفك، والتفكيك ياخذ خمس ثواني'],
+  dom: ['الراية اللي في النص هي الأهم. خذها وامسكها', 'كل راية تمسكها تجيب نقطة كل ثانيتين'],
+  kc: ['القتلة ما تنحسب لين تلم التاق الذهبي', 'لمّ التاق الأزرق تبع زميلك عشان تحرمهم']
+};
+function ldShots() {
+  const A = ARENA, m = MAPS[currentMap];
+  const c1 = m.cam ? { ...m.cam } : { x: -A * 0.78, y: A * 0.32 + 3, z: A * 0.78, tx: 0, ty: 0.5, tz: 0 };
+  const c2 = { x: -(c1.x - c1.tx) + c1.tx, y: c1.y * 0.85, z: -(c1.z - c1.tz) + c1.tz, tx: c1.tx, ty: c1.ty, tz: c1.tz };
+  let c3;
+  if (mode !== 'tdm' && m.start) { const S = m.start; c3 = { x: S[0], y: 1.65, z: S[1], tx: S[0] - Math.sin(S[2]) * 8, ty: 1.4, tz: S[1] - Math.cos(S[2]) * 8 }; }
+  else if (mode !== 'tdm') { pickMenuCam(); c3 = { ...camSpot }; }
+  else {
+    const [x, z] = randomSpot(), far = Math.hypot(x, z) > 6;
+    c3 = { x, y: 1.65, z, tx: far ? 0 : -x * 3 - 6, ty: 1.3, tz: far ? 0 : -z * 3 - 6 };
+  }
+  return [c1, c2, c3];
+}
+function beginPlay(fromLobby) {
+  initAudio();
+  if ($('netTgl').checked && LB.isLead && !fromLobby) { LB.go++; LB.t = 0; }     // tell the lobby to come along
+  E.startScr.style.display = 'none'; E.endScr.style.display = 'none';
+  if (window.__fastStart) { resetGame(); lockMouse(); updateLockHint(); return; }
+  try { if (!isCoarse && !locked()) { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } } catch (e) {}
+  running = false; clearActors();
+  previewMap(selectedMap);
+  setMenu(true); menuCam = false;
+  LD.shots = ldShots(); LD.on = true; LD.t = 0; LD.fromLobby = fromLobby;
+  const tdmM = isTdmMap(selectedMap), G = tdmM && GM[gmId];
+  $('ldKind').textContent = tdmM ? '⚔️ لعب جماعي · ' + G.name + ($('netTgl').checked ? ' · أونلاين' : '') : '🧟 زومبي' + ($('netTgl').checked ? ' · أونلاين' : '');
+  const mb = document.querySelector('.mapBtn[data-map="' + selectedMap + '"] .mName');
+  $('ldMap').textContent = mb ? mb.textContent : '';
+  const pool = (tdmM ? (LD_TIPS[gmId] || []).concat(LD_TIPS.m) : (selectedMap === 'base' ? LD_TIPS.base.concat(LD_TIPS.z) : LD_TIPS.z));
+  $('ldTip').textContent = '💡 ' + pool[Math.floor(Math.random() * pool.length)];
+  $('ldFill').style.width = '0%'; $('ldPct').textContent = '';
+  $('loadScr').style.display = 'block'; $('ldFade').style.opacity = 1;
+  tone(55, 4.6, 'sine', 0.05, 25);
+}
+function loadTick(dt) {
+  LD.t += dt;
+  const t = LD.t, C = LD.cut, D = LD.dur;
+  let i = t >= C[2] ? 2 : t >= C[1] ? 1 : 0;
+  const t0 = C[i], t1 = i < 2 ? C[i + 1] : D, e = clamp((t - t0) / (t1 - t0), 0, 1), q = LD.shots[i];
+  const dx = q.tx - q.x, dz = q.tz - q.z, dl = Math.hypot(dx, dz) || 1, push = Math.min(dl * 0.14, 3.5) * e, side = (e - 0.5) * 1.6;
+  camera.position.set(q.x + dx / dl * push - dz / dl * side, q.y + (i < 2 ? 0.5 * e : 0.05 * Math.sin(e * 3)), q.z + dz / dl * push + dx / dl * side);
+  camera.lookAt(q.tx, q.ty, q.tz);
+  // black between shots, fading in from the first
+  let f = 0; const near = (a) => Math.abs(t - a);
+  if (t < 0.45) f = 1 - t / 0.45;
+  else for (const a of [C[1], C[2]]) if (near(a) < 0.18) f = Math.max(f, 1 - near(a) / 0.18);
+  if (t > D - 0.3) f = Math.max(f, (t - (D - 0.3)) / 0.3);
+  $('ldFade').style.opacity = clamp(f, 0, 1).toFixed(3);
+  const pct = clamp(t / D, 0, 1);
+  $('ldFill').style.width = (pct * 100).toFixed(1) + '%';
+  $('ldPct').textContent = pct < 1 ? 'جاري التحميل… ' + Math.floor(pct * 100) + '%' : 'جاهز';
+  if (t >= D) {
+    LD.on = false; $('loadScr').style.display = 'none';
+    resetGame(); lockMouse(); updateLockHint();
+  }
+}
+addEventListener('pointerdown', () => { try { initAudio(); } catch (e) {} }, { once: true, capture: true });   // so a lobby start later still has sound
+
 // ---------- Game flow ----------
 function resetGame() {
   mode = isTdmMap(selectedMap) ? 'tdm' : 'waves';
@@ -8214,6 +8494,7 @@ function resetGame() {
   sinceHit = 99; fireTokens = 0; for (const m of dmgMarks) m.el.remove(); dmgMarks.length = 0;
   $('aimBtn').classList.remove('on'); $('runBtn').classList.remove('on');
   const tdmOn = mode === 'tdm';
+  $('radar').style.display = tdmOn ? '' : 'none';
   $('hpRow').style.display = tdmOn ? '' : 'none';      // zombies: no health number, the screen turns red instead
   $('hpbar').style.display = tdmOn ? '' : 'none';
   $('hurt').style.opacity = 0; $('roundBig').style.opacity = 0;
@@ -8239,8 +8520,8 @@ function resetGame() {
   if (base.on) toast('🔦 الكهرباء مقطوعة. افتح الأبواب ودوّر على غرفة المولدات');
 }
 
-$('startBtn').addEventListener('click', () => { initAudio(); E.startScr.style.display = 'none'; resetGame(); lockMouse(); updateLockHint(); });
-$('againBtn').addEventListener('click', () => { initAudio(); resetGame(); lockMouse(); updateLockHint(); });
+$('startBtn').addEventListener('click', () => startPress());
+$('againBtn').addEventListener('click', () => startPress());
 $('mapBtn2').addEventListener('click', () => openMenu());
 $('pQuit').addEventListener('click', () => quitPress($('pQuit')));
 $('dQuit').addEventListener('click', () => quitPress($('dQuit')));
@@ -8312,7 +8593,9 @@ function loop(now) {
   } catch (err) {
     if (loopErrors++ < 5) console.error('frame error:', err);
   }
-  if (menuCam && !running) updateMenuCam();
+  if (LD.on) { try { loadTick(rdt); } catch (e) { LD.on = false; $('loadScr').style.display = 'none'; resetGame(); } }
+  else if (menuCam && !running) updateMenuCam();
+  try { lbTick(rdt); } catch (e) { if (loopErrors++ < 5) console.error('lobby error:', e); }
   if (base.on) baseCull();
   try { netTick(dt); } catch (e) {}
   try { coTick(dt); } catch (e) { if (loopErrors++ < 5) console.error('co-op error:', e); }
