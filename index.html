@@ -455,6 +455,7 @@
   /* controller */
   #padCur { position:fixed; width:22px; height:22px; margin:-11px 0 0 -11px; border:2px solid #fde68a; border-radius:50%; display:none; z-index:45; pointer-events:none; box-shadow:0 0 8px #f59e0b; }
   .padFocus { outline:3px solid #f59e0b !important; outline-offset:2px; }
+  .onlyPad { display:none; } body.pad .onlyPad { display:block; } body.pad .noPad { display:none !important; }
   /* credit */
   .credit { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--steel); letter-spacing:.3px; }
   .credit i { display:block; height:1px; width:22px; background:linear-gradient(90deg, transparent, rgba(245,158,11,.75)); }
@@ -517,7 +518,7 @@
     <div id="dTop"><span id="dLbl">قتلك</span><b id="dName"></b></div>
     <div id="dChips"></div>
     <div id="dBar"><div id="dFill"></div><span id="dSec"></span></div>
-    <div id="dClsLbl">الكلاس الجاي <span class="onlyKeys">— اضغط الرقم</span></div>
+    <div id="dClsLbl">التشكيلة الجاية <span class="onlyKeys">— اضغط الرقم</span></div>
     <div id="dCls"></div>
     <div id="dBoard"></div>
     <div id="dFoot"><span class="onlyKeys">Esc — خروج للقائمة</span><button class="quitBtn onlyTouch" id="dQuit" type="button">خروج للقائمة</button></div>
@@ -553,7 +554,7 @@
 <div id="kcBox"><div class="kcTop"><b>📹 لقطة القتل</b><span>قتلك <em id="kcName"></em> <i id="kcW"></i></span></div><div class="kcSkip"><span class="onlyKeys">أي زر للتخطي</span><span class="onlyTouch">اضغط للتخطي</span></div></div>
 <div id="kfBox"><div class="kfBar t"></div><div class="kfBar b"></div><b id="kfTxt"></b></div>
 <div id="flash"></div>
-<div id="lockHint"><div class="onlyKeys">🖱️ اضغط على الشاشة عشان ترجع تلعب</div><div class="row"><button id="resumeBtn" class="onlyTouch" type="button">كمّل اللعب</button><button class="setBtn" id="pSet" type="button">⚙️ الإعدادات</button><button class="quitBtn" id="pQuit" type="button">خروج للقائمة</button></div></div>
+<div id="lockHint"><div class="onlyKeys noPad">🖱️ اضغط على الشاشة عشان ترجع تلعب</div><div class="onlyPad">🎮 اضغط Options عشان ترجع تلعب</div><div class="row"><button id="resumeBtn" class="onlyTouch" type="button">كمّل اللعب</button><button class="setBtn" id="pSet" type="button">⚙️ الإعدادات</button><button class="quitBtn" id="pQuit" type="button">خروج للقائمة</button></div></div>
 <button id="pauseBtn" type="button" aria-label="قائمة">☰</button>
 <div id="fps"></div>
 
@@ -577,11 +578,11 @@
     <div class="secLbl">اختر الخريطة</div>
     <div id="maps">
       <button class="mapBtn sel" data-map="arena" data-sec="z" type="button"><span class="mName">الساحة</span><small>ليل مفتوح بين السواتر والحاويات</small></button>
-      <button class="mapBtn" data-map="town" data-sec="z" type="button"><span class="mName">الحي النووي</span><small>بيتين وشارع وباص، وقتال قريب</small></button>
+      <button class="mapBtn" data-map="town" data-sec="z" type="button"><span class="mName">الحي القديم</span><small>بيتين بدور واحد وشارع وباص، وقتال قريب</small></button>
       <button class="mapBtn" data-map="base" data-sec="z" type="button"><span class="mName">المجمّع</span><span class="mKind n">جديد</span><small>قاعدة عسكرية ومختبر سري: أبواب بالنقاط، كهرباء، فخاخ، ناقل وسر مدفون</small></button>
-      <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind t">6 ضد 6</span><small>فريقك ضد فريقهم في الشارع، وأول 75 قتلة تفوز</small></button>
+      <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind n">جديد</span><small>بيتين بدورين ودرج وحوش خلفي، وشارع بينهم فيه باص</small></button>
       <button class="mapBtn" data-map="souq" data-sec="m" type="button"><span class="mName">السوق</span><span class="mKind n">جديد</span><small>ميدان ونافورة وحارات دكاكين، وسطحين تطلع لهم بالدرج</small></button>
-      <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><span class="mKind t">6 ضد 6</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
+      <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
     </div>
     <p id="best"></p>
     <div id="gmWrap" hidden>
@@ -623,7 +624,7 @@
       <button class="tab sel" data-pane="pCtl" type="button">التحكم</button>
       <button class="tab" data-pane="pZom" type="button">الزومبي</button>
       <button class="tab" data-pane="pGear" type="button">العتاد والحركة</button>
-      <button class="tab" data-pane="pTdm" type="button">6 ضد 6</button>
+      <button class="tab" data-pane="pTdm" type="button">الجماعي</button>
     </div>
     <div class="pane sel" id="pCtl">
       <div class="row onlyTouch"><span>النظر</span><span>اسحب بإصبعك على يمين الشاشة</span></div>
@@ -635,7 +636,9 @@
       <div class="row onlyKeys"><span><kbd data-act="jump"></kbd> <kbd data-act="crouch"></kbd></span><span>القفز، والنزول</span></div>
       <div class="row onlyKeys"><span><kbd data-act="reload"></kbd> <kbd data-act="swap"></kbd> <kbd data-act="use"></kbd></span><span>تعبئة، تبديل السلاح، واستخدام الصندوق والمكائن</span></div>
       <div class="row onlyKeys"><span><kbd data-act="knife"></kbd> <kbd data-act="nade"></kbd> <kbd data-act="decoy"></kbd></span><span>سكين، قنبلة، طُعم</span></div>
+      <div class="row onlyKeys"><span><kbd data-act="ks"></kbd> <kbd data-act="score"></kbd></span><span>سلسلة القتل، وجدول النتائج (في الجماعي)</span></div>
       <div class="row onlyKeys"><span><kbd data-act="mute"></kbd> <kbd data-act="fps"></kbd></span><span>كتم الصوت، وعدّاد الإطارات</span></div>
+      <div class="row"><span>يد التحكم 🎮</span><span>R2 نار، L2 تصويب، X/A قفز، O/B نزول، □/X تعبئة واستخدام، △/Y تبديل، R1 قنبلة، L1 طُعم، R3 سكين، L3 ركض، ↑ السلسلة، Options إيقاف</span></div>
       <div class="row"><span>⚙️</span><span>الحساسية وتغيير الأزرار من <b>الإعدادات</b> في القائمة الرئيسية</span></div>
     </div>
     <div class="pane" id="pZom">
@@ -645,30 +648,28 @@
       <div class="row"><span>الصندوق</span><span>بـ<b>500</b> يعطيك سلاح عشوائي. بعد كم سحبة يطلع الدبدوب ويتنقل لمكان ثاني، واللوحات اللي جنب أماكنه تولّع لمبة مكانه الحين</span></div>
       <div class="row"><span>المشروبات</span><span>قوة (تتحمل 4 ضربات)، تعبئة سريعة، إطلاق سريع، جري أسرع، شفاء سريع (500: لو طحت تقوم لحالك، 3 مرات بس)</span></div>
       <div class="row"><span>التطوير</span><span>البوابة البنفسجية تضاعف ضرر سلاحك ومخزنه</span></div>
-      <div class="row"><span>أطوار الجماعي</span><span>السيطرة: امسك النقاط أ ب ج. تأكيد القتل: لمّ التاق الذهبي عشان تنحسب قتلتك، والأزرق عشان تحرمهم. سباق الأسلحة: كل قتلة بسلاح جديد. السيرش: المهاجم يزرع القنبلة بزر الاستخدام في أحد الموقعين (4 ثواني بدون حركة) والمدافع يفكّها (5 ثواني)، وما فيه رجعة لين الجولة الجاية.</span></div>
       <div class="row"><span>المجمّع</span><span>تبدأ في غرفة الحراسة. الأبواب تنفتح بالنقاط (750 إلى 1250)، والزومبي يجون من شبابيك المناطق المفتوحة بس. شغّل الكهرباء من غرفة المولدات عشان تشتغل المشروبات والفخاخ (1000) والناقل. وفيه سر: ثلاث راديوات قديمة…</span></div>
       <div class="row"><span>القوى</span><span>الزومبي يطيّحون أحياناً: ذخيرة كاملة، قتل فوري، نقاط مضاعفة، قنبلة تمسحهم، ونجّار يسكّر كل الشبابيك</span></div>
       <div class="row"><span>الزعيم</span><span>يجيك كل <b>5</b> جولات</span></div>
     </div>
     <div class="pane" id="pGear">
       <div class="row"><span>السكين</span><span>ضربة قريبة تقتل بضربة في الجولات الأولى</span></div>
-      <div class="row"><span>القنابل</span><span>تبدأ بثنتين وترجع لك <b>ثنتين كل جولة</b>. ابتعد عنها</span></div>
-      <div class="row"><span>الطُعم</span><span>راديو يسحب الزومبي له <b>7 ثواني</b> ثم ينفجر. يجيك واحد كل 3 جولات</span></div>
+      <div class="row"><span>القنابل</span><span>تبدأ بثنتين. في الزومبي ترجع لك <b>ثنتين كل جولة</b>، وفي الجماعي كل ما ترجع للّعب. ابتعد عنها</span></div>
+      <div class="row"><span>الطُعم</span><span>في الزومبي بس: راديو يسحب الزومبي له <b>7 ثواني</b> ثم ينفجر. يجيك واحد كل 3 جولات</span></div>
       <div class="row"><span>التزحلق</span><span>اضغط نزول وأنت تركض. يصعب عليهم يمسكونك</span></div>
       <div class="row"><span>قفزة الهروب</span><span>اركض، اقفز، ثم اضغط نزول في الهوا</span></div>
       <div class="row"><span>التسلّق</span><span>اقفز قدام ساتر وتطلع عليه، والحواجز الرفيعة تنط من فوقها</span></div>
       <div class="row"><span>النَفَس</span><span>الركض يخلص نَفَسك، والشريط الأصفر يوريك الباقي</span></div>
     </div>
     <div class="pane" id="pTdm">
-      <div class="row"><span>الفريقين</span><span>أنت وخمسة بالأزرق ضد ستة بالأحمر على خريطة الحي</span></div>
-      <div class="row"><span>الفوز</span><span>أول فريق يوصل <b>75</b> قتلة، أو الأعلى بعد <b>10</b> دقايق</span></div>
-      <div class="row"><span>السلاح</span><span>تختار سلاحك قبل المباراة وترجع فيه كل ما تموت</span></div>
-      <div class="row"><span>الرجوع</span><span>ترجع للّعب بعد <b>5</b> ثواني من موتك</span></div>
+      <div class="row"><span>الفرق</span><span>فريقك بالأزرق ضد فريقهم بالأحمر. تختار عدد البوتات من صفر لخمسة لكل فريق، وأونلاين يدخل أصحابك مكانهم</span></div>
+      <div class="row"><span>الأطوار</span><span>قتال فرق: أول فريق يوصل حد القتلات. السيطرة: امسك النقاط أ ب ج. الملك: منطقة تتنقل كل دقيقة. تأكيد القتل: لمّ التاق الذهبي عشان تنحسب قتلتك، والأزرق عشان تحرمهم. السيرش: المهاجم يزرع بزر الاستخدام (4 ثواني) والمدافع يفك (5 ثواني)، وما فيه رجعة لين الجولة الجاية. سباق الأسلحة: كل قتلة بسلاح جديد، وإذا انقتلت ترجع للمسدس. الكل ضد الكل: كل واحد لحاله</span></div>
+      <div class="row"><span>الوقت</span><span>كل مباراة <b>10</b> دقايق، والأعلى يفوز لو ما أحد وصل الهدف</span></div>
+      <div class="row"><span>الرجوع</span><span>ترجع للّعب بعد <b>5</b> ثواني. لو شفت لقطة القتل ترجع بعدها بثانيتين عشان تختار تشكيلتك</span></div>
       <div class="row"><span>بدون</span><span>ما فيه نقاط ولا صندوق ولا مشروبات، مهارة بس</span></div>
       <div class="row"><span>التشكيلة</span><span>من <b>🛠️ عدّل التشكيلة</b>: سلاح أساسي وثانوي وقنبلة أو سكاكين رمي، ومنظار ومقبض وليزر. تقدر تسمّي كل تشكيلة</span></div>
-      <div class="row"><span>يد التحكم 🎮</span><span>R2 نار، L2 تصويب، X/A قفز، O/B نزول، □/X تعبئة واستخدام، △/Y تبديل، R1 قنبلة، R3 سكين، L3 ركض، ↑ السلسلة</span></div>
       <div class="row"><span>الملك 👑</span><span>منطقة وحدة تتنقل كل دقيقة. فريقك لحاله فيها ياخذ نقطة كل ثانية، وأول فريق يوصل 250 يفوز</span></div>
-      <div class="row"><span>السلسلات</span><span>قتلات ورا بعض بدون ما تموت: <b>3</b> طيارة كاشفة، <b>5</b> صواريخ تختار مكانها، <b>10</b> مروحية. تشغلها بـ <b>Z</b> أو زرها</span></div>
+      <div class="row"><span>السلسلات</span><span>قتلات ورا بعض بدون ما تموت: <b>3</b> طيارة كاشفة، <b>5</b> صواريخ تختار مكانها، <b>10</b> مروحية. تشغلها بـ <b>Z</b> أو زرها. ما فيه سلسلات في سباق الأسلحة</span></div>
       <div class="row"><span>الرادار</span><span>يبين فريقك دايم. العدو يطلع لثانيتين إذا طلّق، وكلهم يطلعون مع الطيارة الكاشفة</span></div>
       <div class="row"><span>الفينش</span><span>تعال من ورا العدو واضغط السكين: ترفسه ويطيح على ركبه وتخلّص عليه. أنت مكشوف خلال اللقطة</span></div>
       <div class="row"><span>لقطة القتل</span><span>بعد موتك تشوف آخر ثواني من عيون اللي قتلك. اضغط عشان تتخطاها</span></div>
@@ -1644,7 +1645,7 @@ const OG = (() => {
   };
 })();
 const OM = {};
-const om = (c, shin) => OM[c + '|' + shin] || (OM[c + '|' + shin] = shin ? new THREE.MeshPhongMaterial({ color: c, shininess: shin, flatShading: true }) : new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
+const om = (c, shin) => OM[c + '|' + shin] || (OM[c + '|' + shin] = shin ? new THREE.MeshPhongMaterial({ color: c, shininess: shin, flatShading: true }) : new THREE.MeshLambertMaterial({ color: c }));
 const TEAM_KIT = {
   blue: { cloth: 0x41526b, cloth2: 0x313f54, gear: 0x1d232d, accent: 0x2f9bff },
   red:  { cloth: 0x8c7a58, cloth2: 0x6f6046, gear: 0x3b3428, accent: 0xff3b30 },
@@ -2905,7 +2906,6 @@ const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x:
                    [-11.6, -12.2], [11.6, -12.2], [-6.4, -12.3], [6.4, -12.3], [-12.4, -7.2], [12.4, -7]] } };
 MAPS.souq = { build: buildSouq, tdm: true, cam: { x: -17, y: 10, z: 22, tx: 0, ty: 1, tz: 0 }, spawns: SOUQ_SPAWNS, sideBias: 14,
               flags: [[-6, 9.6], [0, 0], [6, -9.6]], sites: [[-16, -8], [16.5, -8.6]] };
-MAPS.tdm.flags = [[0, 9.8], [0.5, 2.2], [0, -9.8]]; MAPS.tdm.sites = [[-14.5, -13], [14.5, -13]];
 MAPS.port.flags = [[-1.2, 9.6], [0, 0], [1.2, -9.6]]; MAPS.port.sites = [[-11.4, -5.6], [11.3, -6.6]];
 
 // ================= The test town for team games: two houses with two floors, stairs, a garage, a balcony and back yards =================
@@ -2970,11 +2970,10 @@ function nukeHouse(s, col) {
   boxMM(garage ? 7.0 : -7.7, garage ? 7.75 : -6.6, Math.min(s * 15.3, s * 16.1), Math.max(s * 15.3, s * 16.1), 0, 1.8, 0xb9b4aa);   // fridge
   // ---- the floor between, with the stairwell cut out, and a rail round the hole ----
   const hole = [Math.min(sx0, sx1), Math.max(sx0, sx1) + 0.0, szA, szB];
-  for (const r of rectMinus([-W - 0.13, W + 0.13, za - 0.13, zbb + 0.13], hole)) ob(r[0], r[1], r[2], r[3], H, F, 0x8a7a66);
+  for (const r of rectMinus([-W - 0.13, W + 0.13, za - 0.13, zbb + 0.13], hole)) ob(r[0], r[1], r[2], r[3], H, F, 0x8f6c4a);   // the floor upstairs (no sheet over the stairwell)
   const railZ = s < 0 ? szB : szA, exitX = sx1 - s * 0.9;                                                // gap at the top of the stairs
   ob(Math.min(exitX, sx0), Math.max(exitX, sx0), railZ - 0.05, railZ + 0.05, F, F + 1.0, 0x6b4a33);
   ob(sx0 - 0.05, sx0 + 0.05, szA, szB, F, F + 1.0, 0x6b4a33);
-  decor(0, F + 0.02, (zf + zb) / 2, 16, 0.03, 9, 0x8f6c4a);
   // ---- upstairs ----
   nWall('x', zf, -W, W, F, R, col, [nWin(-6.2, -4.4, F), nWin(-0.9, 0.9, F), nWin(4.4, 6.2, F)]);
   nWall('x', zb, -W, W, F, R, col, garage ? [nWin(3.6, 5.6, F)] : [nDoor(-4.6, -3.0, F), nWin(3.6, 5.6, F)]);
@@ -2993,7 +2992,7 @@ function nukeHouse(s, col) {
   // ---- balcony over the back yard (green house) ----
   if (!garage) {
     const z0 = 19.13, z1 = 21.6;
-    ob(-5.2, -2.4, z0, z1, H, F, 0x8a7a66); decor(-3.8, F + 0.02, (z0 + z1) / 2, 2.8, 0.03, z1 - z0, 0x8f6c4a);
+    ob(-5.2, -2.4, z0, z1, H, F, 0x8f6c4a);
     ob(-5.25, -2.35, z1 - 0.06, z1 + 0.06, F, F + 1.0, 0xe5e7eb);
     for (const x of [-5.2, -2.4]) ob(x - 0.06, x + 0.06, z0, z1, F, F + 1.0, 0xe5e7eb);
     for (const x of [-5.1, -2.5]) boxMM(x - 0.1, x + 0.1, z1 - 0.2, z1, 0, H, 0xd6d0c4);          // posts
@@ -3011,6 +3010,7 @@ function nukeHouse(s, col) {
   boxMM(-0.4, 0.4, s * 21.2 - 0.4, s * 21.2 + 0.4, 0, 1.0, 0x2a2a2a);                                      // barbecue
 }
 function buildNuke() {
+  const m0 = mapObjects.length;
   ARENA = 30; radarRange = 24;
   setSky(0xe0c498);
   makeGround(0x86a85a);
@@ -3035,7 +3035,38 @@ function buildNuke() {
    [-24, -22, 1.6, 1.4, 3], [24, 22, 1.6, 1.4, 3], [-24, 22, 1.6, 1.4, 3], [24, -22, 1.6, 1.4, 3]].forEach(([x, z, w, h, d]) => addBox(x, z, w, h, d, 0x8a6d3b));
   [[-3, -8.4], [3, -8.4], [-14, -8], [14, -8], [-3, 8.4], [3, 8.4], [-14, 8], [14, 8], [-16, -25], [16, 25]].forEach(([x, z]) => mannequin(x, z));
   [[-20, 9], [20, -9]].forEach(([x, z]) => fireBarrel(x, z));
+  nukeMerge(mapObjects.slice(m0));
   navUpRebuild();
+}
+// hundreds of wall pieces cost hundreds of draws: bake the plain ones into one mesh per material.
+// The pieces stay (hidden) so bullets and sight lines still hit them.
+function nukeMerge(list) {
+  const groups = new Map();
+  for (const m of list) {
+    if (!m.isMesh || m.isInstancedMesh || !m.visible || !m.geometry || !m.material || Array.isArray(m.material) || (m.material.transparent && m.material !== glassMat) || m.children.length) continue;
+    const g = m.geometry; if (!g.index || !g.attributes.position || !g.attributes.normal || !g.attributes.uv) continue;
+    if (m.rotation.x || m.rotation.y || m.rotation.z || m.scale.x !== 1 || m.scale.y !== 1 || m.scale.z !== 1) continue;
+    let L = groups.get(m.material); if (!L) { L = []; groups.set(m.material, L); } L.push(m);
+  }
+  for (const [mat, L] of groups) {
+    if (L.length < 2) continue;
+    let nv = 0, ni = 0; for (const m of L) { nv += m.geometry.attributes.position.count; ni += m.geometry.index.count; }
+    const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), uv = new Float32Array(nv * 2), idx = new Uint32Array(ni);
+    let v = 0, i = 0;
+    for (const m of L) {
+      const g = m.geometry, P = g.attributes.position.array, N = g.attributes.normal.array, U = g.attributes.uv.array, I = g.index.array, c = g.attributes.position.count, o = m.position;
+      for (let k = 0; k < c; k++) { pos[(v + k) * 3] = P[k * 3] + o.x; pos[(v + k) * 3 + 1] = P[k * 3 + 1] + o.y; pos[(v + k) * 3 + 2] = P[k * 3 + 2] + o.z; }
+      nor.set(N.subarray(0, c * 3), v * 3); uv.set(U.subarray(0, c * 2), v * 2);
+      for (let k = 0; k < I.length; k++) idx[i + k] = I[k] + v;
+      v += c; i += I.length;
+      m.visible = false; m.castShadow = false;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeBoundingSphere(); geo.computeBoundingBox();
+    const mm = new THREE.Mesh(geo, mat); mm.castShadow = true; mm.receiveShadow = true; mm.userData.merged = 1;
+    scene.add(mapObjects.push(mm) && mm);
+  }
 }
 // ---- getting about upstairs: a second walking grid for the upper floors, joined to the ground by the stairs ----
 const NAV2 = { n: 0, blocked: null, dist: null, q: null, sig: '' };
@@ -5257,7 +5288,6 @@ function feedAdd(killer, victim, team) {
   if (tdm.feed.length > 5) tdm.feed.pop();
   hc.feed = null;                                      // force the HUD to redraw it
 }
-function classDef() { return CLASSES.find(c => c.id === myClass) || CLASSES[0]; }
 function respawnPlayer() {
   const [x, z] = teamSpawn('blue');
   Object.assign(player, { x, z, y: 0, vy: 0, grounded: true, hp: 100, alive: true,
@@ -5610,6 +5640,7 @@ function playerDiedTdm() {
   player.alive = false; GS.act = null; GS.specT = 0;
   tdm.myDeaths++;
   ksDied(); kcamArm(lh);
+  { const gg = GS.id === 'gg'; $('dCls').style.display = gg ? 'none' : ''; $('dClsLbl').style.display = gg ? 'none' : ''; }
   if (GS.id === 'gg' && GS.tier > 0 && ggCrowd() > 2) { GS.tier = 0; setTimeout(() => toast('💀 رجعت للمسدس'), 600); }
   tdm.respawn = TDM_RESPAWN;
   if (gsHost()) {
@@ -5624,6 +5655,7 @@ function ggCrowd() { const w = botsWant(), h = GS.hum || { b: 1, r: 0 }; return 
 function ggGive(anim) {
   const w = mkWeapon(GG_LADDER[Math.min(GS.tier, GG_LADDER.length - 1)]); w.reserve = 999;
   player.weapons = [w]; player.cur = 0; player.reloading = 0;
+  player.nades = 0; player.tk = 0; player.lethal = 'frag';
   applyGunModel(w.def);
   if (anim) { swapT = 1; swapDone = false; SFX.swap(); }
 }
@@ -6786,7 +6818,7 @@ function netTick(dt) {
   }
   if (netSeen !== netPeers.size) { netSeen = netPeers.size; $('netHud').textContent = '🌐 لاعبين معك: ' + netSeen + (netCodeNow ? ' · غرفة ' + netCodeNow : ''); }
   // the table shows while you wait to respawn, or while Tab is held
-  const show = player.alive && held('score');          // while you wait to respawn the table sits on the death card instead
+  const show = player.alive && held('score') && mode !== 'tdm';   // team games draw their own table (bots too)
   if (show) { netBoardT -= dt; if (netBoardT <= 0 || board.style.display !== 'block') { netBoardT = 0.5; netBoardFill(board); } }
   board.style.display = show ? 'block' : 'none';
 }
@@ -9197,7 +9229,7 @@ function ksReset() {
 }
 // a kill of mine (or the credit for one arriving). Kills made by a streak don't feed the next streak.
 function ksKilled(byStreak) {
-  if (byStreak) return;
+  if (byStreak || GS.id === 'gg') return;                 // gun game: no streaks, like the real thing
   KS.n++; KS.best = Math.max(KS.best, KS.n);
   for (const id of KS_ORDER) {
     if (KS.n === KS_DEF[id].n && !KS.got[id]) {
@@ -9312,6 +9344,7 @@ function ksHeliPose(h, seed, life, dt) {
 }
 function ksHeliTick(dt) {
   if (KS.heliT <= 0) { if (KS.heli) { scene.remove(KS.heli.g); KS.heli = null; } return; }
+  if (GS.snd && GS.snd.ph !== 'live') { if (KS.heli) { scene.remove(KS.heli.g); KS.heli = null; } KS.heliT = 0; return; }
   KS.heliT -= dt;
   if (!KS.heli) KS.heli = ksHeliModel();
   ksHeliPose(KS.heli, KS.heliSeed, Math.max(0, KS.heliT), dt);
@@ -9407,8 +9440,20 @@ function ksScan(dt) {
   for (const [id, R] of KS.remote) if (!here.has(id)) { if (R.heli) scene.remove(R.heli.g); KS.remote.delete(id); }
 }
 // ---- every frame of a team match ----
+function ksRoundReset() {
+  KS.uavT = 0; KS.heliT = 0; if (KS.heli) { scene.remove(KS.heli.g); KS.heli = null; }
+  for (const f of KS.fall) if (f.m) scene.remove(f.m); KS.fall.length = 0; ksMapClose(true);
+}
+function ksBoardTick(dt) {                              // Tab: the live table, bots and people
+  const show = running && player.alive && held('score') && mode === 'tdm', B = $('netBoard');
+  if (show) { KS.boardT = (KS.boardT || 0) - dt; if (KS.boardT <= 0 || !KS.boardOn) { KS.boardT = 0.5; B.textContent = ''; B.appendChild(ksEndBoard(true)); } B.style.display = 'block'; }
+  else if (KS.boardOn) B.style.display = 'none';
+  KS.boardOn = show;
+}
 function ksFrame(dt) {
   if (mode !== 'tdm') return;
+  if (GS.snd && KS.rnd !== GS.snd.round) { KS.rnd = GS.snd.round; ksRoundReset(); }
+  ksBoardTick(dt);
   if (KS.uavT > 0) KS.uavT -= dt;
   ksScan(dt);
   ksRadarMark();
@@ -9426,6 +9471,8 @@ function ksFrame(dt) {
   ksHud();
 }
 function ksHud() {
+  const gg = GS.id === 'gg';
+  if (KS.ggHid !== gg) { KS.ggHid = gg; $('ksHud').style.visibility = gg ? 'hidden' : ''; }
   const sig = KS.n + '|' + KS.have.join(',') + '|' + Math.ceil(Math.max(0, KS.uavT)) + '|' + Math.ceil(Math.max(0, KS.heliT)) + '|' + (KS.enemyUav > 0 ? 1 : 0);
   if (sig === KS.hudSig) return; KS.hudSig = sig;
   const box = $('ksHud'); box.textContent = '';
@@ -9485,6 +9532,7 @@ function kcamStart() {
   if (P.obj.group) P.obj.group.visible = false;
   document.body.classList.add('kcOn'); $('kcBox').style.display = 'flex'; $('kcName').textContent = P.name; $('kcW').textContent = P.w ? '🔫 ' + P.w : '';
   E.respawn.style.opacity = 0;
+  if (death && tdm.respawn < 5.7) tdm.respawn = 5.7;          // 3.7s of film, then 2s to choose a loadout
   return true;
 }
 const _kcA = [], _kcB = [], _kcPrev = [];
@@ -9521,6 +9569,7 @@ function kcamStop() {
   if (KC.obj && KC.obj.group && !KC.obj.dead) KC.obj.group.visible = true;
   KC.obj = null; _kcPrev.length = 0;
   document.body.classList.remove('kcOn'); $('kcBox').style.display = 'none'; E.respawn.style.opacity = '';
+  if (death && !player.alive && running && mode === 'tdm') tdm.respawn = Math.min(tdm.respawn, 2.2);
 }
 addEventListener('pointerdown', e => { if (KC.on && e.target && !e.target.closest('#respawn')) { e.preventDefault(); e.stopPropagation(); mouseFire = false; kcamStop(); } }, true);
 addEventListener('keydown', e => { if (KC.on && e.code !== 'Escape') { kcamStop(); } }, true);
@@ -9565,7 +9614,7 @@ function kfBotTry(dt) {
   for (const b of enemies) {
     if (b.dead || b.net || b.mir || b.fin || ksAlly(b) || b.tgt !== 'player') continue;
     const P = b.group.position, dx = P.x - player.x, dz = P.z - player.z, d = Math.hypot(dx, dz);
-    if (d > 1.6 || (dx * fx + dz * fz) / d > -0.45 || Math.random() > 0.3) continue;
+    if (d > 1.6 || Math.abs(P.y - player.y) > 0.5 || (dx * fx + dz * fz) / d > -0.45 || Math.random() > 0.3) continue;
     kfBegin({ role: 'vic', bot: b, aTeam: isFFA() ? 'ffa' : 'red', aCls: b.cls, aSeed: b.seed, vx: player.x, vz: player.z, ry: player.yaw + Math.PI, killer: b.name });
     KF.botT = 12; return;
   }
@@ -9599,12 +9648,14 @@ function kfBegin(o) {
   // where everyone stands: the attacker a step behind the victim, both facing the same way
   const sx = Math.sin(o.ry), sz = Math.cos(o.ry);
   KF.vx = o.vx; KF.vz = o.vz; KF.ax = o.vx - sx * 0.95; KF.az = o.vz - sz * 0.95;
-  collide(KF.ax, KF.az, 0.3, 0); KF.ax = _cx; KF.az = _cz;
-  KF.V.g.position.set(KF.vx, 0, KF.vz); KF.V.g.rotation.y = o.ry;
-  KF.A.g.position.set(KF.ax, 0, KF.az); KF.A.g.rotation.y = Math.atan2(KF.vx - KF.ax, KF.vz - KF.az);
+  collide(KF.ax, KF.az, 0.3, o.role === 'vic' ? player.y : (o.bot && o.bot.group ? o.bot.group.position.y : player.y)); KF.ax = _cx; KF.az = _cz;
+  KF.y = o.role === 'vic' ? player.y : (o.bot && o.bot.group ? o.bot.group.position.y : player.y);
+  KF.V.g.position.set(KF.vx, KF.y, KF.vz); KF.V.g.rotation.y = o.ry;
+  KF.A.g.position.set(KF.ax, KF.y, KF.az); KF.A.g.rotation.y = Math.atan2(KF.vx - KF.ax, KF.vz - KF.az);
   // a side for the camera that is not inside a wall
   const px = Math.cos(o.ry), pz = -Math.sin(o.ry), cx = (KF.vx + KF.ax) / 2, cz = (KF.vz + KF.az) / 2;
-  KF.side = spotFree(cx + px * 2.6, cz + pz * 2.6, 0.3) ? 1 : spotFree(cx - px * 2.6, cz - pz * 2.6, 0.3) ? -1 : 0;
+  const camOk = (x, z) => { collide(x, z, 0.3, KF.y || 0); return Math.hypot(_cx - x, _cz - z) < 0.01 && Math.abs(x) < ARENA - 1 && Math.abs(z) < ARENA - 1; };
+  KF.side = camOk(cx + px * 2.6, cz + pz * 2.6) ? 1 : camOk(cx - px * 2.6, cz - pz * 2.6) ? -1 : 0;
   KF.cx = cx; KF.cz = cz; KF.px = px; KF.pz = pz;
   mouseFire = fireHeld = false; aimHeld = false;
   if (player.reloading > 0) player.reloading = 0;
@@ -9658,9 +9709,9 @@ function kfTick(dt) {
   const sw = 0.3 + 0.45 * clamp(t / 3, 0, 1);
   if (KF.side) {
     const s = KF.side, R = 2.75, fx = Math.sin(o.ry), fz = Math.cos(o.ry);
-    camera.position.set(KF.cx + (KF.px * s * Math.cos(sw) + fx * Math.sin(sw)) * R, 1.5, KF.cz + (KF.pz * s * Math.cos(sw) + fz * Math.sin(sw)) * R);
-  } else camera.position.set(KF.cx + KF.px * 1.2, 3.6, KF.cz + KF.pz * 1.2);
-  camera.lookAt(KF.cx, 1.0 - 0.25 * kn, KF.cz);
+    camera.position.set(KF.cx + (KF.px * s * Math.cos(sw) + fx * Math.sin(sw)) * R, KF.y + 1.5, KF.cz + (KF.pz * s * Math.cos(sw) + fz * Math.sin(sw)) * R);
+  } else camera.position.set(KF.cx + KF.px * 1.2, KF.y + 3.0, KF.cz + KF.pz * 1.2);
+  camera.lookAt(KF.cx, KF.y + 1.0 - 0.25 * kn, KF.cz);
   if (Math.abs(camera.fov - 60) > 0.05) { camera.fov = 60; camera.updateProjectionMatrix(); }
   gun.visible = false;
   if (t >= 3.0) kfStop(true);
@@ -9723,7 +9774,7 @@ function sbUpdate() {
 }
 
 // ================= End of match: the board =================
-function ksEndBoard() {
+function ksEndBoard(live) {
   const ffa = isFFA(), me = myAt(), rows = [];
   rows.push({ n: netOn ? netMyName() : 'أنت', k: tdm.myKills, d: tdm.myDeaths, s: KS.best, t: me, me: true });
   const names = new Set(Object.keys(GS.bk || {}).concat(Object.keys(KS.botAt)));
@@ -9737,7 +9788,7 @@ function ksEndBoard() {
   card.innerHTML = '<span>🏅 أفضل لاعب</span><b></b><small></small>';
   card.querySelector('b').textContent = mvp.n + (mvp.me && mvp.n !== 'أنت' ? ' (أنت)' : '');
   card.querySelector('small').textContent = mvp.k + ' قتلة · ' + mvp.d + ' موتة · أطول سلسلة ' + mvp.s + (ls.s > 0 && ls !== mvp ? '   |   🔥 أطول سلسلة: ' + ls.n + ' ' + ls.s : '');
-  box.appendChild(card);
+  if (!live) box.appendChild(card);
   const tbl = document.createElement('div'); tbl.className = 'eb';
   const add = (cls, c) => { const r = document.createElement('div'); r.className = 'ebR ' + cls; for (const x of c) { const s = document.createElement('span'); s.textContent = x; r.appendChild(s); } tbl.appendChild(r); };
   add('h', ['اللاعب', 'قتل', 'موت', 'سلسلة']);
@@ -9844,7 +9895,7 @@ function keyAssign(code) {
   const { act, slot } = keyCap;
   if (code === 'Escape') { keyCapEnd(); return; }
   if (code === 'Backspace' || code === 'Delete') { bind[act][slot] = ''; }
-  else if (/^Digit[1-5]$/.test(code)) { toast('الأرقام 1 إلى 5 محجوزة لاختيار الكلاس'); return; }
+  else if (/^Digit[1-5]$/.test(code)) { toast('الأرقام 1 إلى 5 محجوزة لاختيار التشكيلة'); return; }
   else if (!okCode(code)) { toast('هذا الزر ما ينفع، جرّب غيره'); return; }
   else {
     for (const a of ACTIONS) for (let i = 0; i < 2; i++) if (bind[a.id][i] === code && !(a.id === act && i === slot)) {
@@ -9893,7 +9944,7 @@ const SET_TABS = [
       pane.appendChild(row);
     }
     const note = document.createElement('div'); note.className = 'sNote onlyKeys';
-    note.textContent = 'اضغط على الخانة ثم الزر الجديد (كيبورد أو ماوس). Backspace يفضّي الخانة، و Esc يلغي. عجلة الماوس تبدّل السلاح دائمًا، والأرقام 1 إلى 5 لاختيار الكلاس.';
+    note.textContent = 'اضغط على الخانة ثم الزر الجديد (كيبورد أو ماوس). Backspace يفضّي الخانة، و Esc يلغي. عجلة الماوس تبدّل السلاح دائمًا، والأرقام 1 إلى 5 لاختيار التشكيلة.';
     pane.appendChild(note);
     const rs = document.createElement('button'); rs.type = 'button'; rs.id = 'setReset'; rs.textContent = 'رجّع الافتراضي';
     rs.addEventListener('click', () => {
