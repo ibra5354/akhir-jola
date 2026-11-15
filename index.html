@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>آخر جولة</title>
+<meta name="author" content="إبراهيم العزي">
+<!-- آخر جولة — تطوير إبراهيم العزي. جميع الحقوق محفوظة -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -416,6 +418,14 @@
   .ebR span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ebR.h { color:var(--steel); font-size:12px; font-weight:800; } .ebR.b { border-right:3px solid #3b82f6; } .ebR.r { border-right:3px solid #ef4444; } .ebR.f { border-right:3px solid #f59e0b; }
   .ebR.me { background:rgba(253,230,138,.12); color:#fde68a; font-weight:800; }
+  /* credit */
+  .credit { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:var(--steel); letter-spacing:.3px; }
+  .credit i { display:block; height:1px; width:22px; background:linear-gradient(90deg, transparent, rgba(245,158,11,.75)); }
+  .credit i:last-child { background:linear-gradient(90deg, rgba(245,158,11,.75), transparent); }
+  .credit b { font-weight:800; color:#f2d49b; font-size:14.5px; }
+  #ldCredit { position:absolute; bottom:calc(9vh - 26px); left:max(18px, env(safe-area-inset-left)); font-size:12px; color:rgba(230,226,218,.7); z-index:1; direction:rtl; }
+  #ldCredit b { color:#f2d49b; font-weight:800; }
+  @media (max-height: 520px) { #ldCredit { bottom:calc(6vh - 22px); } }
   /* lobby */
   #lobby { margin-top:10px; background:rgba(12,18,32,.78); border:1px solid rgba(96,165,250,.35); border-radius:12px; padding:10px 12px; }
   #lbHead { font-weight:800; font-size:15px; color:#bfdbfe; margin-bottom:6px; }
@@ -504,6 +514,7 @@
 
 <div id="loadScr" aria-live="polite"><div class="ldBar t"></div><div class="ldBar b"></div>
   <div id="ldInfo"><div id="ldKind"></div><h2 id="ldMap"></h2><p id="ldTip"></p><div id="ldTrack"><i id="ldFill"></i></div><small id="ldPct"></small></div>
+  <div id="ldCredit">آخر جولة · تطوير <b>إبراهيم العزي</b></div>
   <div id="ldFade"></div></div>
 <div class="overlay" id="startScr">
   <div class="menu">
@@ -511,6 +522,7 @@
       <svg class="tally" viewBox="0 0 112 78" aria-hidden="true"><path d="M20 8 L17 70"/><path d="M42 6 L45 72"/><path d="M66 9 L63 70"/><path d="M88 7 L91 71"/><path d="M4 56 L108 18"/></svg>
       <h1 class="logo">آخر <span>جولة</span></h1>
       <p class="tagline" id="tagline">كم جولة تصمد قبل ما يوصلونك؟</p>
+      <div class="credit"><i></i><span>تطوير</span><b>إبراهيم العزي</b><i></i></div>
     </div>
     <div class="spacer"></div>
     <div id="modeTabs" role="tablist">
