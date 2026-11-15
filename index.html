@@ -152,10 +152,30 @@
   .mapBtn small { color:#aaa; font-size:.75rem; }
   .mapBtn.sel { border-color:#f59e0b; }
   #right { right:14px; text-align:right; }
-  #tdmBar { right:12px; text-align:center; min-width:150px; }
-  #tdmScore { font-size:20px; font-weight:800; letter-spacing:1px; direction:ltr; }
-  #tdmTime { font-size:15px; color:#ddd; }
-  #tdmObj { font-size:13px; color:#fde68a; font-weight:800; margin-top:1px; white-space:nowrap; }
+  #tdmBar { left:50%; right:auto; transform:translateX(-50%); top:8px; width:min(520px, calc(100vw - 300px)); min-width:0; padding:6px 10px 5px; text-align:center; line-height:1.2;
+            background:linear-gradient(180deg, rgba(8,12,20,.85), rgba(8,12,20,.62)); border:1px solid rgba(255,255,255,.12); box-shadow:0 6px 18px rgba(0,0,0,.35); }
+  .sbRow { display:flex; align-items:center; gap:8px; direction:rtl; }
+  .sbSide { flex:1; display:flex; align-items:center; gap:7px; min-width:0; }
+  .sbSide > i { font-style:normal; font-size:20px; width:34px; height:34px; display:grid; place-items:center; border-radius:9px; flex:none; transition:box-shadow .3s; }
+  .sbSide.a > i { background:linear-gradient(160deg,#1d4ed8,#0b2a6b); box-shadow:0 0 0 2px #60a5fa inset; }
+  .sbSide.b > i { background:linear-gradient(160deg,#b91c1c,#4c0a0a); box-shadow:0 0 0 2px #f87171 inset; }
+  #tdmBar[data-lead="1"] .sbSide.a > i { box-shadow:0 0 0 2px #93c5fd inset, 0 0 14px #3b82f6; }
+  #tdmBar[data-lead="-1"] .sbSide.b > i { box-shadow:0 0 0 2px #fca5a5 inset, 0 0 14px #ef4444; }
+  .sbC { flex:1; min-width:0; }
+  .sbT { display:flex; justify-content:space-between; align-items:baseline; gap:6px; font-weight:800; font-size:12px; color:#cbd5e1; white-space:nowrap; }
+  .sbT span { overflow:hidden; text-overflow:ellipsis; }
+  .sbT b { font-family:'Lalezar','Tajawal',sans-serif; font-weight:400; font-size:24px; line-height:1; }
+  .sbSide.a .sbT b { color:#bfdbfe; } .sbSide.b .sbT b { color:#fecaca; }
+  .sbSide.b .sbT { flex-direction:row-reverse; }
+  .sbTr { height:6px; background:rgba(255,255,255,.13); border-radius:4px; overflow:hidden; margin-top:3px; }
+  .sbTr i { display:block; height:100%; transform:scaleX(0); transition:transform .35s; }
+  .sbSide.a .sbTr i { background:linear-gradient(270deg,#93c5fd,#2563eb); transform-origin:right; }
+  .sbSide.b .sbTr i { background:linear-gradient(90deg,#fca5a5,#dc2626); transform-origin:left; }
+  .sbMid { flex:none; min-width:54px; }
+  #tdmTime { font-size:17px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; }
+  #sbGoal { display:block; font-size:10.5px; color:#94a3b8; white-space:nowrap; }
+  #tdmScore { display:none; }
+  #tdmObj { font-size:12.5px; color:#fde68a; font-weight:800; margin-top:3px; white-space:nowrap; }
   #gmRow { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 8px; }
   .gmBtn { flex:1 1 30%; border:1px solid rgba(141,151,170,.22); border-radius:10px; padding:8px 6px; background:rgba(20,28,46,.72); color:var(--steel); font:inherit; font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap; }
   .gmBtn.sel { background:#b91c1c; border-color:#ef4444; color:#fff; }
@@ -206,16 +226,17 @@
   #clsWrap { display:none; flex-direction:column; align-items:center; gap:8px; }
   /* narrow phones: the score bar must not run under the radar */
   @media (max-width: 560px) {
-    #tdmBar { min-width:0; padding:5px 9px; }
-    #tdmScore { font-size:15px; letter-spacing:0; }
-    #tdmTime { font-size:12px; }
-    #feed { top:90px; font-size:11px; }
+    #tdmBar { top:116px; width:calc(100vw - 24px); padding:5px 8px 4px; }
+    .sbSide > i { width:28px; height:28px; font-size:16px; } .sbT b { font-size:20px; }
+    #tdmTime { font-size:14px; }
+    #feed { top:214px; font-size:11px; }
+
     #feed div { padding:1px 6px; margin-bottom:2px; }
     #respawn { font-size:21px; padding:13px 20px; }
     #respawn small { font-size:14px; }
     .clsBtn { min-width:104px; font-size:13px; padding:8px 10px; }
   }
-  #radar { position:absolute; top:12px; left:50%; transform:translateX(-50%); width:96px; height:96px; }
+  #radar { position:absolute; top:12px; right:12px; width:96px; height:96px; }
   #cross { position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border:2px solid #fff; border-radius:50%; box-sizing:border-box; transition:border-color .1s, transform .1s; }
   .dmgMark { position:absolute; left:50%; top:50%; width:220px; height:220px; pointer-events:none; }
   .dmgMark::before { content:''; position:absolute; left:50%; top:0; width:60px; height:16px; margin-left:-30px;
@@ -275,6 +296,7 @@
   .nbRow + .nbRow { margin-top:3px; }
   .nbRow span:nth-child(n+2) { text-align:center; font-variant-numeric:tabular-nums; }
   #endBoard { width:min(92vw,360px); margin:10px auto 0; text-align:start; font-size:14px; }
+  #netName, #netCode { min-width:0; width:100%; box-sizing:border-box; }
   #netName, #netCode { background:rgba(20,28,46,.72); border:1px solid rgba(141,151,170,.22); border-radius:10px; padding:10px 14px; font:inherit; font-size:15px; font-weight:700; color:var(--bone); text-align:start; }
   #netName::placeholder { color:var(--steel); font-weight:500; }
   .secLbl { font-size:12px; font-weight:800; letter-spacing:.14em; color:var(--steel); }
@@ -356,6 +378,44 @@
     .actions { flex-direction:row; } .actions .ghost { width:auto; white-space:nowrap; }
   }
   @media (prefers-reduced-motion: reduce) { button.big, .mapBtn { transition:none; } }
+  /* killstreaks, kill cam, finisher */
+  #ksHud { position:absolute; left:50%; top:80px; transform:translateX(-50%); display:flex; gap:6px; pointer-events:none; }
+  @media (max-width: 560px) { #ksHud { top:184px; } }
+  .ksI { display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.5); border-radius:9px; padding:3px 9px 3px 6px; font-size:12px; font-weight:800; color:#94a3b8; direction:rtl; opacity:.8; }
+  .ksI i { font-style:normal; font-size:17px; filter:grayscale(1); }
+  .ksI.rdy { color:#fde68a; opacity:1; box-shadow:0 0 0 2px #f59e0b inset; animation:ksPulse .7s ease-in-out infinite alternate; }
+  .ksI.rdy i, .ksI.live i { filter:none; } .ksI.live { color:#86efac; opacity:1; } .ksI.used { opacity:.35; }
+  @keyframes ksPulse { to { background:rgba(245,158,11,.35); } }
+  .ksWarn { color:#fecaca; font-size:12px; font-weight:800; background:rgba(127,29,29,.7); border-radius:8px; padding:3px 8px; }
+  #ksBtn { bottom:222px; right:200px; font-size:26px; background:rgba(245,158,11,.55); box-shadow:0 0 0 3px #fbbf24; }
+  @media (orientation: portrait) { #ksBtn { bottom:400px; right:30px; } }
+  #ksMap { position:fixed; inset:0; z-index:30; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); direction:rtl; }
+  .ksmIn { background:rgba(8,12,20,.94); border:1px solid rgba(251,191,36,.5); border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .ksmHead { display:flex; justify-content:space-between; align-items:center; width:100%; gap:12px; color:#fde68a; font-size:16px; }
+  .ksmHead button { background:transparent; border:1px solid rgba(248,113,113,.6); color:#fecaca; border-radius:9px; font:inherit; font-size:14px; font-weight:700; padding:5px 12px; cursor:pointer; }
+  #ksCan { width:min(80vmin, 520px); height:min(80vmin, 520px); max-height:calc(100vh - 90px); max-width:calc(100vh - 90px); border-radius:8px; cursor:crosshair; touch-action:none; }
+  .ksmIn small { color:#94a3b8; font-size:12px; }
+  #kcBox { position:fixed; inset:0; z-index:7; display:none; flex-direction:column; justify-content:space-between; align-items:center; pointer-events:none; direction:rtl; padding:18px 0 calc(10vh); }
+  .kcTop { display:flex; flex-direction:column; align-items:center; gap:2px; background:rgba(0,0,0,.6); border:1px solid rgba(239,68,68,.6); border-radius:12px; padding:7px 18px; text-shadow:0 1px 4px #000; }
+  .kcTop b { color:#fca5a5; font-size:18px; letter-spacing:.5px; } .kcTop span { color:#e5e7eb; font-size:15px; } .kcTop em { font-style:normal; font-weight:800; color:#fff; } .kcTop i { font-style:normal; color:#cbd5e1; font-size:13px; }
+  .kcSkip { background:rgba(0,0,0,.5); color:#e5e7eb; border-radius:10px; padding:5px 14px; font-size:14px; }
+  #kcBox::after { content:''; position:fixed; inset:0; box-shadow:inset 0 0 120px rgba(150,0,0,.35); pointer-events:none; }
+  #kfBox { position:fixed; inset:0; z-index:7; display:none; align-items:flex-end; justify-content:center; pointer-events:none; }
+  .kfBar { position:absolute; left:0; right:0; height:10vh; background:#000; } .kfBar.t { top:0; } .kfBar.b { bottom:0; }
+  #kfTxt { position:relative; margin-bottom:calc(10vh + 14px); color:#fff; font-size:20px; font-weight:800; text-shadow:0 2px 8px #000; }
+  body.kcOn #hud { visibility:hidden; }
+  body.kf #hud, body.kf .mb, body.kf #stick, body.kf #fire, body.kf #reloadBtn, body.kf #swapBtn, body.kf #useBtn, body.kf #pauseBtn { visibility:hidden; }
+  #finHint { position:absolute; left:50%; top:calc(50% + 28px); transform:translateX(-50%); background:rgba(127,29,29,.75); color:#fff; font-weight:800; font-size:15px; padding:5px 14px; border-radius:10px; white-space:nowrap; }
+  #knifeBtn.fin { background:rgba(220,38,38,.75); box-shadow:0 0 0 3px #fca5a5; animation:ksPulse .5s infinite alternate; }
+  #endBoard2 { grid-column:1 / -1; display:flex; flex-direction:column; gap:8px; }
+  .mvp { display:flex; flex-direction:column; align-items:flex-start; background:linear-gradient(135deg, rgba(245,158,11,.25), rgba(20,28,46,.85)); border:1px solid rgba(251,191,36,.5); border-radius:12px; padding:10px 14px; }
+  .mvp span { font-size:13px; color:#fde68a; font-weight:800; } .mvp b { font-family:var(--display); font-weight:400; font-size:30px; line-height:1.1; color:#fff; } .mvp small { font-size:12.5px; color:#cbd5e1; }
+  .eb { display:flex; flex-direction:column; background:rgba(10,14,24,.75); border:1px solid rgba(141,151,170,.22); border-radius:10px; overflow:hidden; max-height:34vh; overflow-y:auto; }
+  .ebR { display:grid; grid-template-columns:1fr 46px 46px 54px; gap:6px; padding:6px 12px; font-size:14px; border-bottom:1px solid rgba(141,151,170,.12); }
+  .ebR span:not(:first-child) { text-align:center; font-variant-numeric:tabular-nums; }
+  .ebR span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ebR.h { color:var(--steel); font-size:12px; font-weight:800; } .ebR.b { border-right:3px solid #3b82f6; } .ebR.r { border-right:3px solid #ef4444; } .ebR.f { border-right:3px solid #f59e0b; }
+  .ebR.me { background:rgba(253,230,138,.12); color:#fde68a; font-weight:800; }
   /* lobby */
   #lobby { margin-top:10px; background:rgba(12,18,32,.78); border:1px solid rgba(96,165,250,.35); border-radius:12px; padding:10px 12px; }
   #lbHead { font-weight:800; font-size:15px; color:#bfdbfe; margin-bottom:6px; }
@@ -398,7 +458,13 @@
   </div>
   <canvas id="radar" width="192" height="192"></canvas>
   <div class="bar" id="right"><div id="tally"></div><b id="wave">0</b><div id="ptsRow"><b id="pts">300</b><small>نقطة</small></div><div id="subRow">القتلى <b id="kills">0</b> · الأعداء <b id="alive">0</b></div></div>
-  <div class="bar" id="tdmBar" style="display:none"><div id="tdmScore"></div><div id="tdmTime">10:00</div><div id="tdmObj"></div></div>
+  <div class="bar" id="tdmBar" style="display:none"><div id="tdmScore" hidden></div>
+    <div class="sbRow"><div class="sbSide a"><i id="sbIA">🦅</i><div class="sbC"><div class="sbT"><span id="sbNA">الصقور</span><b id="sbA">0</b></div><div class="sbTr"><i id="sbFA"></i></div></div></div>
+    <div class="sbMid"><div id="tdmTime">10:00</div><small id="sbGoal"></small></div>
+    <div class="sbSide b"><div class="sbC"><div class="sbT"><span id="sbNB">الذئاب</span><b id="sbB">0</b></div><div class="sbTr"><i id="sbFB"></i></div></div><i id="sbIB">🐺</i></div></div>
+    <div id="tdmObj"></div></div>
+  <div id="ksHud"></div>
+  <div id="finHint" style="display:none"><span class="onlyKeys">💀 فينش — اضغط V</span><span class="onlyTouch">💀 فينش — اضغط 🔪</span></div>
   <div id="feed"></div>
   <div id="respawn">
     <div id="dTop"><span id="dLbl">قتلك</span><b id="dName"></b></div>
@@ -428,6 +494,9 @@
   <div id="hpbar"><div id="hp"></div></div>
 </div>
 <div id="scope"></div>
+<div id="ksMap"><div class="ksmIn"><div class="ksmHead"><b>🚀 اختر مكان الضربة</b><button id="ksMapX" type="button">إلغاء</button></div><canvas id="ksCan" width="520" height="520"></canvas><small>الأزرق فريقك، والأحمر أعداء انكشفوا</small></div></div>
+<div id="kcBox"><div class="kcTop"><b>📹 لقطة القتل</b><span>قتلك <em id="kcName"></em> <i id="kcW"></i></span></div><div class="kcSkip"><span class="onlyKeys">أي زر للتخطي</span><span class="onlyTouch">اضغط للتخطي</span></div></div>
+<div id="kfBox"><div class="kfBar t"></div><div class="kfBar b"></div><b id="kfTxt"></b></div>
 <div id="flash"></div>
 <div id="lockHint"><div class="onlyKeys">🖱️ اضغط على الشاشة عشان ترجع تلعب</div><div class="row"><button id="resumeBtn" class="onlyTouch" type="button">كمّل اللعب</button><button class="setBtn" id="pSet" type="button">⚙️ الإعدادات</button><button class="quitBtn" id="pQuit" type="button">خروج للقائمة</button></div></div>
 <button id="pauseBtn" type="button" aria-label="قائمة">☰</button>
@@ -538,6 +607,10 @@
       <div class="row"><span>السلاح</span><span>تختار سلاحك قبل المباراة وترجع فيه كل ما تموت</span></div>
       <div class="row"><span>الرجوع</span><span>ترجع للّعب بعد <b>5</b> ثواني من موتك</span></div>
       <div class="row"><span>بدون</span><span>ما فيه نقاط ولا صندوق ولا مشروبات، مهارة بس</span></div>
+      <div class="row"><span>السلسلات</span><span>قتلات ورا بعض بدون ما تموت: <b>3</b> طيارة كاشفة، <b>5</b> صواريخ تختار مكانها، <b>10</b> مروحية. تشغلها بـ <b>Z</b> أو زرها</span></div>
+      <div class="row"><span>الرادار</span><span>يبين فريقك دايم. العدو يطلع لثانيتين إذا طلّق، وكلهم يطلعون مع الطيارة الكاشفة</span></div>
+      <div class="row"><span>الفينش</span><span>تعال من ورا العدو واضغط السكين: ترفسه ويطيح على ركبه وتخلّص عليه. أنت مكشوف خلال اللقطة</span></div>
+      <div class="row"><span>لقطة القتل</span><span>بعد موتك تشوف آخر ثواني من عيون اللي قتلك. اضغط عشان تتخطاها</span></div>
     </div>
   </div>
 </div>
@@ -566,6 +639,7 @@
 <button id="runBtn" class="mb" type="button">ركض</button>
 <button id="crouchBtn" class="mb" type="button">نزول</button>
 <button id="knifeBtn" class="mb" type="button">🔪</button>
+<button id="ksBtn" class="mb" type="button" style="display:none" aria-label="سلسلة القتل">📡</button>
 <button id="nadeBtn" class="mb" type="button">💣</button>
 <button id="decoyBtn" class="mb" type="button">📻</button>
 
@@ -3917,6 +3991,7 @@ const ACTIONS = [
   { id: 'knife',  name: 'سكين',             def: ['KeyV'],   down: () => knife() },
   { id: 'nade',   name: 'قنبلة',            def: ['KeyG'],   down: () => throwGear('nade') },
   { id: 'decoy',  name: 'طُعم',             def: ['KeyX'],   down: () => throwGear('decoy') },
+  { id: 'ks',     name: 'سلسلة القتل',      def: ['KeyZ'],   down: () => ksUse() },
   { id: 'score',  name: 'لوحة النتائج',     def: ['Tab'] },
   { id: 'fps',    name: 'عدّاد الإطارات',   def: ['KeyF'],   down: () => { showFps = !showFps; $('fps').style.display = showFps ? 'block' : 'none'; } },
   { id: 'mute',   name: 'كتم الصوت',        def: ['KeyM'],   down: () => { muted = !muted; } }
@@ -4398,6 +4473,7 @@ function respawnPlayer() {
   aimHeld = aimToggle = sprintToggle = false; aimT = 0;
   E.respawn.style.display = 'none';
   for (const m of dmgMarks) m.el.remove(); dmgMarks.length = 0;
+  kcamStop();
   lastHit = null; death = null; netKiller = null; hc.scoped = undefined; gun.visible = true; GS.spec = null; if (GS.specOn) { GS.specOn = false; E.respawn.style.opacity = ''; }
 }
 // ---------- Death: the view drops, turns to whoever got you, and a card says who, with what, and how much they had left ----------
@@ -4420,6 +4496,8 @@ function deathCard() {
 function deathCam(dt) {
   const d = death; if (!d) return;
   d.t += dt;
+  if (KC.on) { kcamTick(dt); if (KC.on) return; }
+  else if (KC.pend && d.t > 1.1 && mode === 'tdm') { if (kcamStart()) { kcamTick(dt); return; } }
   if (mode === 'tdm' && GS.snd && d.t > 2.4 && sndSpectate(dt)) { if (!GS.specOn) { GS.specOn = true; E.respawn.style.opacity = 0; } return; }
   if (GS.specOn) { GS.specOn = false; E.respawn.style.opacity = ''; }
   const u = Math.min(1, d.t / (d.dur || 0.55)), e = u * u * (3 - 2 * u);
@@ -4577,8 +4655,6 @@ function gsHud() {
   let tm = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'), obj = '';
   const sc = id === 'gg' ? 'السلاح ' + Math.min(GS.tier + 1, L) + ' / ' + L : isFFA() ? 'قتلات ' + tdm.blue + ' · موتات ' + tdm.red : '🔵 ' + tdm.blue + ' — ' + tdm.red + ' 🔴';
   if (id === 'dom') obj = GS.flags.map((f, i) => FLAG_NAME[i] + (!f.own ? '⚪' : f.own === myAt() ? '🔵' : '🔴')).join('  ');
-  else if (id === 'kc' || id === 'tdm') obj = 'الهدف ' + GS.lim;
-  else if (id === 'ffa') obj = 'الهدف ' + GS.lim + ' قتلة';
   else if (id === 'gg') {
     let ln = GS.pb.p === meId() ? '' : GS.pb.n, lk = GS.pb.k;
     for (const n in GS.bk) if (Math.floor(GS.bk[n] / 2) > lk) { lk = Math.floor(GS.bk[n] / 2); ln = n; }
@@ -4705,8 +4781,9 @@ function tdmKill(b, byTeam, killerName, byPeer, kb) {
   dying.push({ group: b.group, t: 0.4, dur: 0.4 });
   enemies = enemies.filter(e => !e.dead);
   rebuildTargets();
-  if (mine) { tdm.myKills++; kills++; if (netOn) netKills++; ggKill(); }
-  if (kb) GS.bk[kb.name] = (GS.bk[kb.name] || 0) + 1;
+  if (mine) { tdm.myKills++; kills++; if (netOn) netKills++; ggKill(); ksKilled(KS.src === 2); }
+  if (kb) { GS.bk[kb.name] = (GS.bk[kb.name] || 0) + 1; ksBotKill(kb.name); }
+  ksBotDied(b.name);
   if (GS.id === 'gg' && ggCrowd() > 2) GS.bk[b.name] = 0;          // a bot that dies starts the ladder again too
   modeDeath({ x: b.group.position.x, z: b.group.position.z, at: b.at, name: b.name });
   if (!GS.snd) tdm.queue.push({ at: b.at, name: b.name, t: TDM_RESPAWN });
@@ -4716,7 +4793,8 @@ function tdmKill(b, byTeam, killerName, byPeer, kb) {
   tone(500, 0.1, 'square', mine ? 0.06 : 0.02, 300);
   checkTdmEnd();
 }
-function mirHit(b, d) {                         // I shot a bot that another device runs: tell it, and show the result now
+function mirHit(b, d) {
+  if (KS.src === 2) KS.pend.set(b.name, performance.now());                         // I shot a bot that another device runs: tell it, and show the result now
   GS.pend.set(b.id, (GS.pend.get(b.id) || 0) + d); netT = Math.min(netT, 0.02);
   b.hp -= d; b.hitT = 0.08;
   if (b.hp > 0) return;
@@ -4731,11 +4809,12 @@ function playerDiedTdm() {
   $('scope').style.display = 'none';
   player.alive = false; GS.act = null; GS.specT = 0;
   tdm.myDeaths++;
+  ksDied(); kcamArm(lh);
   if (GS.id === 'gg' && GS.tier > 0 && ggCrowd() > 2) { GS.tier = 0; setTimeout(() => toast('💀 رجعت للمسدس'), 600); }
   tdm.respawn = TDM_RESPAWN;
   if (gsHost()) {
     modeDeath({ x: player.x, z: player.z, at: myAt(), name: netMyName() });
-    if (lh.obj && !lh.obj.net && !lh.self && lh.obj.name) GS.bk[lh.obj.name] = (GS.bk[lh.obj.name] || 0) + 1;
+    if (lh.obj && !lh.obj.net && !lh.self && lh.obj.name) { GS.bk[lh.obj.name] = (GS.bk[lh.obj.name] || 0) + 1; ksBotKill(lh.obj.name); }
   }
   feedAdd(lh.self ? 'قنبلتك' : lh.name || (netKiller ? netKiller.name : netOn ? 'لاعب' : 'الأحمر'), 'أنت', 'red');
   if (netOn) netDied();
@@ -4943,7 +5022,7 @@ function modeEvent(e, local) {
   const k = e[1], me = myAt();
   if (k === 'k') {
     if (local) return;
-    if (e[5] && e[5] === netMe) { netKills++; tdm.myKills++; kills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', e[3], 'blue'); tone(500, 0.1, 'square', 0.06, 300); ggKill(); }
+    if (e[5] && e[5] === netMe) { netKills++; tdm.myKills++; kills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', e[3], 'blue'); tone(500, 0.1, 'square', 0.06, 300); ggKill(); ksKilled(KS.pend.has(e[3])); }
     else feedAdd(e[2], e[3], isFFA() ? 'red' : locTeam(e[4]));
   } else if (k === 'f') {
     const mine = e[3] === me;
@@ -4993,7 +5072,8 @@ function endTdm() {
   if (win && !netOn && !ffa) { bests.tdm++; try { localStorage.setItem('fps-best-tdm', String(bests.tdm)); } catch (e) {} }
   E.endTitle.textContent = ffa ? (win ? 'فزت 🏆' : GS.winN ? 'الفايز: ' + GS.winN : 'انتهت المباراة') : draw ? 'تعادل' : win ? 'فزتوا' : 'خسرتوا';
   E.endTxt.innerHTML = statTiles(ffa ? [[tdm.myKills, 'قتلاتك'], [tdm.myDeaths, 'موتاتك']] : [[tdm.blue, 'فريقك'], [tdm.red, 'فريقهم'], [tdm.myKills, 'قتلاتك'], [tdm.myDeaths, 'موتاتك']]);
-  if (netOn && netRows.length) { const eb = document.createElement('div'); eb.id = 'endBoard'; netBoardFill(eb); E.endTxt.appendChild(eb); }
+  E.endTxt.appendChild(ksEndBoard());
+  kcamStop(); kfStop(false); ksMapClose(true);
   E.endScr.style.display = 'flex'; setMenu(true);
   E.respawn.style.display = 'none';
   if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
@@ -5010,7 +5090,7 @@ function tdmFindTarget(b) {
   const g = b.group.position, ffa = isFFA();
   if ((ffa || b.team === 'red') && player.alive) { bd = Math.hypot(player.x - g.x, player.z - g.z); best = 'player'; }
   for (const o of enemies) {
-    if (o === b || o.dead || (!ffa && o.team === b.team)) continue;
+    if (o === b || o.dead || o.fin || (!ffa && o.team === b.team)) continue;
     const d = Math.hypot(o.group.position.x - g.x, o.group.position.z - g.z);
     if (d < bd) { bd = d; best = o; }
   }
@@ -5058,7 +5138,7 @@ function updateTdmBots(dt) {
   const cells = NAV.n * NAV.n, host = gsHost(), frozen = !!GS.snd && GS.snd.ph !== 'live', k = Math.min(1, dt * 12), now = performance.now();
   tdmTokens = Math.min(3, tdmTokens + 3 * dt);         // caps how fast the player can be shot at
   for (const b of enemies) {
-    if (b.dead || b.net) continue;
+    if (b.dead || b.net || b.fin) continue;
     const g = b.group;
     if (b.mir || !host) {                              // run by another device: glide to where it last put this one
       if (b.tx !== undefined) {
@@ -5198,7 +5278,7 @@ function gsEncode() {
     if (o.net || o.dead) continue;
     const P = o.group.position;
     b.push([o.id, o.at === 'b' ? 0 : 1, Math.round(P.x * 10), Math.round(P.z * 10), Math.round(Math.atan2(Math.sin(o.group.rotation.y), Math.cos(o.group.rotation.y)) * 10),
-            Math.max(1, Math.ceil(o.hp)), o.act ? 1 : 0, o.shots & 255, Math.max(0, BOT_CLS.indexOf(o.cls)), o.seed, Math.max(0, BOT_NAMES.indexOf(o.name)), GS.bk[o.name] || 0]);
+            Math.max(1, Math.ceil(o.hp)), o.act ? 1 : 0, o.shots & 255, Math.max(0, BOT_CLS.indexOf(o.cls)), o.seed, Math.max(0, BOT_NAMES.indexOf(o.name)), GS.bk[o.name] || 0, (GS.bd || {})[o.name] || 0, (GS.bbest || {})[o.name] || 0]);
   }
   const h = { n: GS.n, lim: GS.lim, s: [GS.sc.b, GS.sc.r], t: Math.ceil(tdm.t), b, ev: GS.ev, at: GS.at };
   if (GS.id === 'dom') h.f = GS.flags.map(f => [f.own === 'b' ? 1 : f.own === 'r' ? 2 : 0, Math.round(f.p * 100)]);
@@ -5324,6 +5404,7 @@ function gsApply(hs, hostId) {                  // draw the host's match
       if (near < 34) tone(160, 0.08, 'square', 0.035 * Math.max(0.12, 1 - near / 34), -60);
     }
     GS.bk[o.name] = clamp(Math.floor(e[11]), 0, 999);
+    if (e.length > 13) { GS.bd = GS.bd || {}; GS.bbest = GS.bbest || {}; GS.bd[o.name] = clamp(Math.floor(+e[12] || 0), 0, 999); GS.bbest[o.name] = clamp(Math.floor(+e[13] || 0), 0, 999); }
   }
   for (const [id, o] of have) if (!seen.has(id) && !o.dead) {
     o.dead = true; changed = true;
@@ -5360,7 +5441,10 @@ function gsApply(hs, hostId) {                  // draw the host's match
   }
   if (Array.isArray(hs.ov) && !tdm.over) { GS.over = true; GS.win = hs.ov[0] === 'b' || hs.ov[0] === 'r' || hs.ov[0] === 'x' ? hs.ov[0] : ''; GS.winP = typeof hs.ov[1] === 'string' ? hs.ov[1] : ''; GS.winN = cleanName(hs.ov[2]); endTdm(); }
 }
+function ksBotKill(n) { GS.bcur = GS.bcur || {}; GS.bbest = GS.bbest || {}; GS.bcur[n] = (GS.bcur[n] || 0) + 1; GS.bbest[n] = Math.max(GS.bbest[n] || 0, GS.bcur[n]); }
+function ksBotDied(n) { GS.bd = GS.bd || {}; GS.bcur = GS.bcur || {}; GS.bd[n] = (GS.bd[n] || 0) + 1; GS.bcur[n] = 0; }
 function startTdm() {
+  ksReset();
   tdm.blue = 0; tdm.red = 0; tdm.t = TDM_TIME; tdm.over = false; tdm.respawn = 0;
   tdm.feed.length = 0; tdm.queue.length = 0; tdm.myKills = 0; tdm.myDeaths = 0;
   hc.feed = null;
@@ -5655,12 +5739,12 @@ function netDrop(id) {
 }
 function netHit(o, dmg, nade) {                        // I hit a real player: tell them
   o.hitT = 0.08;
-  netHits.push([++netHitSeq, o.peer, nade ? Math.max(1, dmg) : Math.max(1, Math.round(dmg * 1.5)), nade ? 1 : 0]);
+  netHits.push([++netHitSeq, o.peer, nade ? Math.max(1, dmg) : Math.max(1, Math.round(dmg * 1.5)), KS.src || (nade ? 1 : 0)]);
   if (netHits.length > 10) netHits.shift();
   netT = 0;
 }
 function netDied() {                                   // I am the authority on my own death
-  netDeath = [++netDeathSeq, netKiller ? netKiller.peer : ''];
+  netDeath = [++netDeathSeq, netKiller ? netKiller.peer : '', lastHit && lastHit.kind === 'ks' ? 1 : 0];
   netT = 0;
 }
 function netReset() {
@@ -5693,7 +5777,7 @@ function netTick(dt) {
     netT = 0.066;
     try {
       netPres(netRoom, { g: { m: currentMap, q: netMode, t: netTeam, x: +player.x.toFixed(2), z: +player.z.toFixed(2), y: +player.y.toFixed(2), w: +player.yaw.toFixed(2), p: +player.pitch.toFixed(2),
-        a: player.alive ? 1 : 0, c: stance === 'stand' ? 0 : 1, s: netShots, n: netMyName(), h: netHits, d: netDeath, k: netKills, dd: tdm.myDeaths, gr: netNades, l: Math.round(player.hp), wp: cw().id, cl: myClass, r: player.reloading > 0 ? 1 : 0, ...gsOut() } }).catch(() => {});
+        a: player.alive ? 1 : 0, c: stance === 'stand' ? 0 : 1, ...ksOut(), s: netShots, n: netMyName(), h: netHits, d: netDeath, k: netKills, dd: tdm.myDeaths, gr: netNades, l: Math.round(player.hp), wp: cw().id, cl: myClass, r: player.reloading > 0 ? 1 : 0, ...gsOut() } }).catch(() => {});
     } catch (e) {}
   }
   let peers = [];
@@ -5722,7 +5806,8 @@ function netTick(dt) {
         last = h[0];
         if (first || ally || h[1] !== netMe || !player.alive) continue;
         netKiller = { peer: p.peer, name };
-        lastHit = { name, obj: netPeers.get(p.peer), peer: p.peer, kind: h[3] ? 'nade' : 'gun', w: typeof g.wp === 'string' && Object.prototype.hasOwnProperty.call(WEAPONS, g.wp) ? WEAPONS[g.wp].name : '' };
+        lastHit = { name, obj: netPeers.get(p.peer), peer: p.peer, kind: h[3] === 2 ? 'ks' : h[3] === 3 ? 'fin' : h[3] ? 'nade' : 'gun', w: typeof g.wp === 'string' && Object.prototype.hasOwnProperty.call(WEAPONS, g.wp) ? WEAPONS[g.wp].name : '' };
+        if (h[3] === 2) lastHit.w = 'سلسلة قتل 🚀'; else if (h[3] === 3) lastHit.w = 'فينش 💀';
         damagePlayer(clamp(+h[2] || 0, 0, 200)); hitFrom(gx, gz);
       }
       netSeenHit.set(p.peer, last);
@@ -5733,7 +5818,7 @@ function netTick(dt) {
       if (seen !== undefined && g.d[0] > seen) {
         fxDeath(gx, gz);
         gsRemoteDeath(g, gt, name, gx, gz);
-        if (g.d[1] === netMe) { netKills++; tdm.myKills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', name, 'blue'); ggKill(); }
+        if (g.d[1] === netMe) { netKills++; tdm.myKills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', name, 'blue'); ggKill(); ksKilled(!!g.d[2]); }
         else feedAdd(gsKillerName(g.d[1], peers), name, ally ? 'red' : 'blue');
       }
       netSeenDeath.set(p.peer, g.d[0]);
@@ -7214,7 +7299,8 @@ function explode(x, y, z, R, dmg, r, g, b, fxOnly) {
   if (dp < R * 0.55 && player.alive) { if (mode === 'tdm') { lastHit = { self: true, kind: 'nade' }; netKiller = null; } else lastHit = null; damagePlayer(mode === 'tdm' ? 45 : 30); }
 }
 function knife() {
-  if (!running || !player.alive || down || knifeT > 0 || throwT > 0) return;
+  if (!running || !player.alive || down || knifeT > 0 || throwT > 0 || KF.on) return;
+  if (mode === 'tdm' && kfTry()) return;
   knifeT = 0.34; knifeHit = false;
   click(0, 900, 0.14, 0.16, 0.7);            // the blade through the air
 }
@@ -7427,6 +7513,7 @@ function addBlood(x, z) {
 resetBlood();
 
 function tryFire() {
+  if (KF.on || KS.mapOn) return;
   if (!running || !player.alive || player.reloading > 0 || swapT > 0.2 || knifeT > 0 || throwT > 0.15 || mantle || repairing || reviving) return;
   if (mode === 'tdm' && (GS.act || (GS.snd && GS.snd.ph !== 'live'))) return;
   const w = cw(), def = w.def;
@@ -8115,6 +8202,7 @@ function drawRadar() {
     if (st.type === 'power' && !base.power) radarDot(st.fx, st.fz, '#fbbf24', 9);
   }
   for (const b of enemies) {
+    if (b.fin || (mode === 'tdm' && !ksAlly(b) && !ksSeen(b))) continue;
     const col = mode === 'tdm' ? (b.team === 'blue' ? '#60a5fa' : '#ff4d4d') : b.type === 'boss' ? '#b91c1c' : '#ff4d4d';
     radarDot(b.group.position.x, b.group.position.z, col, b.type === 'boss' ? 12 : 7);
   }
@@ -8191,12 +8279,580 @@ function selectClass(id) {
 selectClass(myClass);
 document.querySelectorAll('.mapBtn').forEach(b => b.addEventListener('click', () => selectMap(b.dataset.map)));
 document.querySelectorAll('.mTab').forEach(t => t.addEventListener('click', () => { if (!t.classList.contains('sel')) selectMap(lastMap[t.dataset.sec]); }));
+
+// ================= Killstreaks, kill cam, finishers, score banner and the end-of-match board =================
+const KS_DEF = {
+  uav:  { n: 3,  icon: '📡', name: 'طيارة كاشفة' },
+  mis:  { n: 5,  icon: '🚀', name: 'ضربة صواريخ' },
+  heli: { n: 10, icon: '🚁', name: 'مروحية هجومية' }
+};
+const KS_ORDER = ['uav', 'mis', 'heli'];
+const KS = { n: 0, best: 0, got: {}, have: [], uavT: 0, teamUav: 0, enemyUav: 0, heliT: 0, heliSeed: 0, heli: null, heliFire: 0, mis: [], misSeq: 0, fall: [], src: 0,
+             pend: new Map(), remote: new Map(), seenMis: new Map(), seenKf: new Map(), kfEv: null, kfSeq: 0, uavObj: null, mapOn: false, scanT: 0, botAt: {}, rows: new Map(), hudSig: '' };
+function ksReset() {
+  KS.n = 0; KS.best = 0; KS.got = {}; KS.have = []; KS.uavT = 0; KS.teamUav = 0; KS.enemyUav = 0; KS.heliT = 0; KS.mis = []; KS.fall.length = 0; KS.src = 0;
+  KS.pend.clear(); KS.seenMis.clear(); KS.seenKf.clear(); KS.kfEv = null; KS.botAt = {}; KS.rows.clear(); KS.hudSig = '';
+  for (const r of KS.remote.values()) if (r.heli) scene.remove(r.heli.g);
+  KS.remote.clear();
+  if (KS.heli) { scene.remove(KS.heli.g); KS.heli = null; }
+  if (KS.uavObj) KS.uavObj.visible = false;
+  ksMapClose(true);
+  GS.bd = {}; GS.bcur = {}; GS.bbest = {};
+  kcamStop(); kfStop(true);
+}
+// a kill of mine (or the credit for one arriving). Kills made by a streak don't feed the next streak.
+function ksKilled(byStreak) {
+  if (byStreak) return;
+  KS.n++; KS.best = Math.max(KS.best, KS.n);
+  for (const id of KS_ORDER) {
+    if (KS.n === KS_DEF[id].n && !KS.got[id]) {
+      KS.got[id] = 1; KS.have.push(id);
+      toast(KS_DEF[id].icon + ' ' + KS_DEF[id].name + ' جاهزة! ' + (isCoarse ? 'اضغط زرها' : 'اضغط Z'));
+      [72, 76, 79].forEach((m, i) => bell(m, i * 0.09, 0.07, 1.2));
+    }
+  }
+}
+function ksDied() { KS.n = 0; KS.got = {}; }
+// ---- using a streak ----
+function ksUse() {
+  if (mode !== 'tdm' || !running || !player.alive || KF.on || tdm.over) return;
+  if (KS.mapOn) { ksMapClose(); return; }
+  const id = KS.have[KS.have.length - 1];
+  if (!id) { toast('ما عندك سلسلة جاهزة. ' + KS_DEF.uav.n + ' قتلات ورا بعض بدون ما تموت'); return; }
+  if (id === 'mis') { ksMapOpen(); return; }
+  KS.have.pop();
+  if (id === 'uav') { KS.uavT = 30; toast('📡 الطيارة الكاشفة فوقكم، الأعداء على الرادار'); feedAdd('أنت', 'شغّلت طيارة كاشفة', 'blue'); tone(880, 0.25, 'sine', 0.06, 300); }
+  else if (id === 'heli') { KS.heliT = 40; KS.heliSeed = Math.random() * 6.28; KS.heliFire = 1.5; toast('🚁 المروحية جاية!'); feedAdd('أنت', 'طلبت مروحية هجومية', 'blue'); }
+  netT = 0;
+}
+// ---- the missile strike: pick a spot on the map ----
+function ksMapOpen() {
+  KS.mapOn = true; $('ksMap').style.display = 'flex';
+  if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
+  mouseFire = fireHeld = false;
+  ksMapDraw();
+}
+function ksMapClose(silent) {
+  KS.mapOn = false; const el = $('ksMap'); if (el) el.style.display = 'none';
+  if (!silent && running && !isCoarse) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+}
+function ksMapXY() { const c = $('ksCan'), S = Math.min(c.width, c.height), k = (S - 20) / (2 * ARENA); return { c, k, ox: c.width / 2, oy: c.height / 2 }; }
+function ksMapDraw() {
+  const { c, k, ox, oy } = ksMapXY(), g = c.getContext('2d');
+  g.fillStyle = '#0b1220'; g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = '#1f3a5a'; g.lineWidth = 1;
+  for (let v = -ARENA; v <= ARENA; v += 4) { g.beginPath(); g.moveTo(ox + v * k, oy - ARENA * k); g.lineTo(ox + v * k, oy + ARENA * k); g.moveTo(ox - ARENA * k, oy + v * k); g.lineTo(ox + ARENA * k, oy + v * k); g.stroke(); }
+  g.fillStyle = '#3d4f6e';
+  for (const o of obstacles) { if (!isFinite(o.minX) || (o.maxX - o.minX < 0.4 && o.maxZ - o.minZ < 0.4)) continue; g.fillRect(ox + o.minX * k, oy + o.minZ * k, Math.max(2, (o.maxX - o.minX) * k), Math.max(2, (o.maxZ - o.minZ) * k)); }
+  const dot = (x, z, col, r) => { g.fillStyle = col; g.beginPath(); g.arc(ox + x * k, oy + z * k, r, 0, 6.2832); g.fill(); };
+  for (const b of enemies) { if (b.dead) continue; const P = b.group.position; if (ksAlly(b)) dot(P.x, P.z, '#60a5fa', 5); else if (ksSeen(b)) dot(P.x, P.z, '#ff4d4d', 6); }
+  g.save(); g.translate(ox + player.x * k, oy + player.z * k); g.rotate(-player.yaw); g.fillStyle = '#fff';
+  g.beginPath(); g.moveTo(0, -9); g.lineTo(-6, 6); g.lineTo(6, 6); g.closePath(); g.fill(); g.restore();
+}
+function ksMapPick(e) {
+  if (!KS.mapOn) return;
+  const { c, k, ox, oy } = ksMapXY(), r = c.getBoundingClientRect();
+  const px = (e.clientX - r.left) * c.width / r.width, py = (e.clientY - r.top) * c.height / r.height;
+  const x = (px - ox) / k, z = (py - oy) / k;
+  if (Math.abs(x) > ARENA || Math.abs(z) > ARENA) return;
+  e.preventDefault(); e.stopPropagation();
+  const i = KS.have.lastIndexOf('mis'); if (i < 0) { ksMapClose(); return; }
+  KS.have.splice(i, 1);
+  ksMapClose();
+  KS.misSeq++; KS.mis.push([KS.misSeq, +x.toFixed(1), +z.toFixed(1)]); if (KS.mis.length > 3) KS.mis.shift();
+  ksStrike(x, z, true);
+  toast('🚀 الصواريخ في الطريق!'); feedAdd('أنت', 'طلبت ضربة صواريخ', 'blue'); netT = 0;
+}
+// three missiles land around the spot; the owner's copy does the damage, everyone else's is only the show
+function ksStrike(x, z, mine) {
+  for (let i = 0; i < 3; i++) {
+    const a = Math.random() * 6.28, r = i ? 2 + Math.random() * 2.5 : 0;
+    KS.fall.push({ x: clamp(x + Math.cos(a) * r, -ARENA + 1, ARENA - 1), z: clamp(z + Math.sin(a) * r, -ARENA + 1, ARENA - 1), t: -0.9 - i * 0.45, mine, m: null });
+  }
+  whoosh(0, 1.6, 0.18, 300, 2400, true);
+}
+const ksMisGeo = new THREE.CylinderGeometry(0.12, 0.2, 2.2, 6), ksMisMat = new THREE.MeshBasicMaterial({ color: 0xffd8a8 });
+function ksFallTick(dt) {
+  for (let i = KS.fall.length - 1; i >= 0; i--) {
+    const f = KS.fall[i]; f.t += dt;
+    if (f.t < -0.6) continue;
+    if (!f.m) { f.m = new THREE.Mesh(ksMisGeo, ksMisMat); scene.add(f.m); }
+    const u = clamp((f.t + 0.6) / 0.6, 0, 1), y = 60 * (1 - u);
+    f.m.position.set(f.x + (1 - u) * 6, y + 1, f.z + (1 - u) * 3); f.m.rotation.set(0.1, 0, 0.1);
+    emit(f.m.position.x, f.m.position.y + 1.2, f.m.position.z, 0, 0, 0, 0.5, 0.5, 1.5, 0.9, 0.9, 0.9, 0.3, 0, -0.2, 1);
+    if (u >= 1) {
+      scene.remove(f.m); KS.fall.splice(i, 1);
+      if (f.mine) { KS.src = 2; try { explode(f.x, 0.3, f.z, 6.5, 260, 1, 0.55, 0.2); } finally { KS.src = 0; } }
+      else explode(f.x, 0.3, f.z, 6.5, 0, 1, 0.55, 0.2, true);
+      shakeT = Math.max(shakeT, 0.35 * Math.max(0, 1 - Math.hypot(f.x - player.x, f.z - player.z) / 30));
+    }
+  }
+}
+// ---- the helicopter ----
+function ksHeliModel() {
+  const g = new THREE.Group(), body = om(0x3a4231), dark = om(0x1b1e1a), glass = om(0x6fb7d6, 60);
+  oP(g, new THREE.BoxGeometry(1.5, 1.3, 3.4), body, 0, 0, 0);
+  oP(g, new THREE.BoxGeometry(1.3, 0.8, 1.0), glass, 0, 0.1, 1.9);
+  oP(g, new THREE.BoxGeometry(0.35, 0.35, 3.4), body, 0, 0.25, -3.2);
+  oP(g, new THREE.BoxGeometry(0.1, 1.0, 0.6), body, 0, 0.7, -4.8);
+  oP(g, new THREE.BoxGeometry(1.8, 0.12, 0.5), dark, 0, -0.1, 0.4);
+  for (const s of [-1, 1]) { oP(g, new THREE.BoxGeometry(0.08, 0.08, 3), dark, s * 0.8, -1.05, 0.2); oP(g, new THREE.BoxGeometry(0.06, 0.4, 0.06), dark, s * 0.75, -0.85, 0.9); oP(g, new THREE.BoxGeometry(0.06, 0.4, 0.06), dark, s * 0.75, -0.85, -0.6); }
+  const rot = new THREE.Group(); rot.position.y = 0.95; g.add(rot);
+  oP(rot, new THREE.BoxGeometry(9, 0.05, 0.3), dark, 0, 0, 0); oP(rot, new THREE.BoxGeometry(0.3, 0.05, 9), dark, 0, 0, 0);
+  const tail = new THREE.Group(); tail.position.set(0.12, 0.8, -4.8); g.add(tail);
+  oP(tail, new THREE.BoxGeometry(0.04, 1.8, 0.18), dark, 0, 0, 0);
+  scene.add(g);
+  return { g, rot, tail };
+}
+function ksHeliPos(seed, life, out) {           // the same orbit on every device: from the seed and the time left
+  const A = ARENA * 0.55, a = seed + (40 - life) * 0.3;
+  out.set(Math.cos(a) * A, 15 + Math.sin(a * 2) * 1.2, Math.sin(a) * A);
+  return a;
+}
+const _kh = new THREE.Vector3(), _kt = new THREE.Vector3();
+function ksHeliPose(h, seed, life, dt) {
+  const a = ksHeliPos(seed, life, _kh);
+  h.g.position.copy(_kh); h.g.rotation.set(0, -a, 0.25);       // nose along the orbit, banked in
+  h.rot.rotation.y += dt * 24; h.tail.rotation.x += dt * 30;
+}
+function ksHeliTick(dt) {
+  if (KS.heliT <= 0) { if (KS.heli) { scene.remove(KS.heli.g); KS.heli = null; } return; }
+  KS.heliT -= dt;
+  if (!KS.heli) KS.heli = ksHeliModel();
+  ksHeliPose(KS.heli, KS.heliSeed, Math.max(0, KS.heliT), dt);
+  const P = KS.heli.g.position, near = Math.hypot(P.x - player.x, P.z - player.z);
+  if (Math.random() < dt * 6) tone(38 + Math.random() * 6, 0.12, 'sawtooth', 0.025 * Math.max(0.2, 1 - near / 50), 0);
+  KS.heliFire -= dt;
+  if (KS.heliFire > 0 || tdm.over) return;
+  KS.heliFire = 1.1;
+  let best = null, bd = 60;
+  for (const b of enemies) {
+    if (b.dead || b.fin || ksAlly(b)) continue;
+    const Q = b.group.position, d = Math.hypot(Q.x - P.x, Q.z - P.z);
+    if (d < bd && hasLOS(P.x, P.y - 1, P.z, Q.x, 1.2 + Q.y, Q.z)) { bd = d; best = b; }
+  }
+  if (!best) return;
+  const Q = best.group.position;
+  for (let i = 0; i < 3; i++) setTimeout(() => {
+    if (!KS.heli) return;
+    _kt.set(Q.x + jit(0.5), 1.1 + Q.y, Q.z + jit(0.5));
+    addTracer(KS.heli.g.position, _kt, 0xffc04d); fxImpact(_kt, _up, 'dirt');
+    shotNoise(0.05, 0.1, 1900);
+  }, i * 90);
+  KS.src = 2;
+  try { if (best.net) netHit(best, 34, true); else applyDamage(best, 34, false); } finally { KS.src = 0; }
+}
+// ---- the spy plane (seen by everyone, it is in the sky) ----
+function ksUavObj() {
+  if (KS.uavObj) return KS.uavObj;
+  const g = new THREE.Group(), m = om(0x9aa3ad);
+  oP(g, new THREE.BoxGeometry(0.5, 0.4, 3.2), m, 0, 0, 0); oP(g, new THREE.BoxGeometry(6, 0.08, 0.7), m, 0, 0.1, 0.2); oP(g, new THREE.BoxGeometry(1.8, 0.06, 0.4), m, 0, 0.1, -1.4);
+  scene.add(g); KS.uavObj = g; return g;
+}
+// ---- who I can see on the radar ----
+function ksAlly(b) { return !isFFA() && (b.net ? b.ally : b.team === 'blue'); }
+function ksSeen(b) { return KS.uavT > 0 || KS.teamUav > 0 || (b.redT || 0) > performance.now(); }
+function ksRadarMark() {                         // an enemy who fires shows up for two seconds
+  const now = performance.now();
+  for (const b of enemies) {
+    if (b.dead || ksAlly(b)) continue;
+    const s = b.net ? (netSeenShot.get(b.peer) || 0) : (b.shots || 0);
+    if (b._rs !== undefined && s !== b._rs) b.redT = now + 2000;
+    b._rs = s;
+  }
+}
+// ---- online: what I tell the room, what I read from it ----
+function ksOut() {
+  return { ku: KS.uavT > 0 ? Math.ceil(KS.uavT) : 0, km: KS.mis, kh: KS.heliT > 0 ? [Math.round(KS.heliT * 10), +KS.heliSeed.toFixed(2)] : 0, kf: KS.kfEv, kb: KS.best };
+}
+function ksScan(dt) {
+  KS.scanT -= dt; if (KS.scanT > 0) return; KS.scanT = 0.12;
+  KS.teamUav = 0; KS.enemyUav = 0;
+  if (!netOn || !netRoom) return;
+  let peers = []; try { peers = netRoom.peers(); } catch (e) {}
+  const here = new Set();
+  for (const p of peers) {
+    if (p.sameTab || p.kind !== 'viewer') continue;
+    const g = p.presence && p.presence.g;
+    if (!g || g.m !== currentMap || g.gm !== GS.id) continue;
+    here.add(p.peer);
+    const name = cleanName(g.n), ally = netMode === 't' && (g.t === 'r' ? 'r' : 'b') === netTeam;
+    let R = KS.remote.get(p.peer); if (!R) { R = { heli: null, uav: 0 }; KS.remote.set(p.peer, R); }
+    const ku = clamp(+g.ku || 0, 0, 40);
+    if (ku > 0) { if (ally) KS.teamUav = Math.max(KS.teamUav, ku); else KS.enemyUav = Math.max(KS.enemyUav, ku); }
+    if (ku > 0 && !R.uav) feedAdd(name, ally ? 'شغّل طيارة كاشفة 📡' : 'طيارة العدو فوقكم 📡', ally ? 'blue' : 'red');
+    R.uav = ku;
+    if (Array.isArray(g.km)) {                   // their missiles: the show here, the damage on their device
+      const first = !KS.seenMis.has(p.peer); let last = first ? 0 : KS.seenMis.get(p.peer);
+      for (const m of g.km) {
+        if (!Array.isArray(m) || typeof m[0] !== 'number' || m[0] <= last) continue;
+        last = m[0];
+        if (!first && isFinite(m[1]) && isFinite(m[2])) { ksStrike(clamp(m[1], -ARENA, ARENA), clamp(m[2], -ARENA, ARENA), false); feedAdd(name, 'طلب ضربة صواريخ 🚀', ally ? 'blue' : 'red'); }
+      }
+      KS.seenMis.set(p.peer, last);
+    }
+    if (Array.isArray(g.kh) && isFinite(g.kh[0]) && isFinite(g.kh[1]) && g.kh[0] > 0) {
+      if (!R.heli) { R.heli = ksHeliModel(); feedAdd(name, 'طلب مروحية 🚁', ally ? 'blue' : 'red'); }
+      R.hl = clamp(g.kh[0] / 10, 0, 40); R.hs = +g.kh[1];
+    } else if (R.heli) { scene.remove(R.heli.g); R.heli = null; }
+    if (KF.on && KF.o && KF.o.peer === p.peer && KF.o.remote && KF.t < 2 && !Array.isArray(g.kf)) kfStop(false);
+    if (Array.isArray(g.kf) && typeof g.kf[0] === 'number') {    // a finisher, maybe on me
+      const seen = KS.seenKf.get(p.peer);
+      if (seen !== undefined && g.kf[0] > seen && g.kf[1] === netMe && player.alive && !KF.on) kfVictimNet(p.peer, name, g);
+      KS.seenKf.set(p.peer, g.kf[0]);
+    } else if (!KS.seenKf.has(p.peer)) KS.seenKf.set(p.peer, 0);
+    KS.rows.set(p.peer, { n: name, k: clamp(Math.floor(+g.k || 0), 0, 999), d: clamp(Math.floor(+g.dd || 0), 0, 999), s: clamp(Math.floor(+g.kb || 0), 0, 999), t: g.t === 'r' ? 'r' : 'b' });
+  }
+  for (const [id, R] of KS.remote) if (!here.has(id)) { if (R.heli) scene.remove(R.heli.g); KS.remote.delete(id); }
+}
+// ---- every frame of a team match ----
+function ksFrame(dt) {
+  if (mode !== 'tdm') return;
+  if (KS.uavT > 0) KS.uavT -= dt;
+  ksScan(dt);
+  ksRadarMark();
+  ksFallTick(dt);
+  ksHeliTick(dt);
+  for (const R of KS.remote.values()) if (R.heli) { R.hl = Math.max(0, R.hl - dt); ksHeliPose(R.heli, R.hs, R.hl, dt); }
+  const uavOn = KS.uavT > 0 || KS.teamUav > 0 || KS.enemyUav > 0, U = ksUavObj();
+  U.visible = uavOn;
+  if (uavOn) { const a = performance.now() / 9000; U.position.set(Math.cos(a) * ARENA, 42, Math.sin(a) * ARENA); U.rotation.y = -a; }
+  const now = performance.now(); for (const [n, t] of KS.pend) if (now - t > 4000) KS.pend.delete(n);
+  for (const b of enemies) if (!b.net && b.name && !b.dead) KS.botAt[b.name] = b.at;
+  if (KS.mapOn) ksMapDraw();
+  kfCandidate(dt);
+  kfBotTry(dt);
+  ksHud();
+}
+function ksHud() {
+  const sig = KS.n + '|' + KS.have.join(',') + '|' + Math.ceil(Math.max(0, KS.uavT)) + '|' + Math.ceil(Math.max(0, KS.heliT)) + '|' + (KS.enemyUav > 0 ? 1 : 0);
+  if (sig === KS.hudSig) return; KS.hudSig = sig;
+  const box = $('ksHud'); box.textContent = '';
+  for (const id of KS_ORDER) {
+    const D = KS_DEF[id], el = document.createElement('div'), ready = KS.have.includes(id);
+    const live = (id === 'uav' && KS.uavT > 0) || (id === 'heli' && KS.heliT > 0);
+    el.className = 'ksI' + (ready ? ' rdy' : live ? ' live' : KS.got[id] ? ' used' : '');
+    const i = document.createElement('i'); i.textContent = D.icon; const b = document.createElement('b');
+    b.textContent = ready ? 'جاهز' : live ? Math.ceil(id === 'uav' ? KS.uavT : KS.heliT) + 'ث' : Math.min(KS.n, D.n) + '/' + D.n;
+    el.appendChild(i); el.appendChild(b); box.appendChild(el);
+  }
+  if (KS.enemyUav > 0) { const w = document.createElement('div'); w.className = 'ksWarn'; w.textContent = '⚠️ طيارة العدو'; box.appendChild(w); }
+  const last = KS.have[KS.have.length - 1], btn = $('ksBtn');
+  btn.style.display = last && isCoarse ? 'block' : 'none'; if (last) btn.textContent = KS_DEF[last].icon;
+}
+
+// ================= Kill cam: the last three seconds from the eyes of whoever got you =================
+const KC = { hist: new Map(), me: [], recT: 0, on: false, pend: null, t: 0, ghost: null, obj: null, lastShot: -1 };
+function kcamRecord(dt) {
+  if (mode !== 'tdm' || !running) return;
+  KC.recT -= dt; if (KC.recT > 0) return; KC.recT = 0.05;
+  const now = performance.now() / 1000;
+  if (player.alive) { KC.me.push([now, player.x, player.y, player.z, player.yaw, stance === 'stand' ? 0 : 1]); while (KC.me.length && now - KC.me[0][0] > 4.5) KC.me.shift(); }
+  for (const b of enemies) {
+    if (b.dead) continue;
+    let H = KC.hist.get(b); if (!H) { H = []; KC.hist.set(b, H); }
+    const P = b.group.position, s = b.net ? (netSeenShot.get(b.peer) || 0) : (b.shots || 0);
+    H.push([now, P.x, P.y, P.z, b.group.rotation.y, s, b.crouch ? 1 : 0]);
+    while (H.length && now - H[0][0] > 4.5) H.shift();
+  }
+  if (Math.random() < 0.02) for (const k of KC.hist.keys()) if (enemies.indexOf(k) < 0 && k !== KC.obj) KC.hist.delete(k);
+}
+function kcamAt(H, t, out) {                       // the recorded frame at time t, blended
+  let i = 0; while (i < H.length - 1 && H[i + 1][0] < t) i++;
+  const a = H[i], b = H[Math.min(i + 1, H.length - 1)], u = b[0] > a[0] ? clamp((t - a[0]) / (b[0] - a[0]), 0, 1) : 0;
+  for (let k = 1; k < 5; k++) out[k] = a[k] + (b[k] - a[k]) * u;
+  let da = b[4] - a[4]; da = Math.atan2(Math.sin(da), Math.cos(da)); out[4] = a[4] + da * u;
+  out[5] = a[5]; out[6] = a[6];
+  return out;
+}
+function kcamArm(lh) {                             // called when I die
+  KC.pend = null;
+  if (!lh || lh.self || !lh.obj || lh.kind === 'fin' || lh.kind === 'ks' || GS.snd) return;
+  const H = KC.hist.get(lh.obj); if (!H || H.length < 10 || KC.me.length < 10) return;
+  KC.pend = { obj: lh.obj, H: H.slice(), me: KC.me.slice(), tD: performance.now() / 1000, name: lh.name || 'لاعب', w: lh.w || '' };
+}
+function kcamGhost() {
+  if (KC.ghost) return KC.ghost;
+  const g = new THREE.Group(), r = opRig(g, isFFA() ? 'ffa' : 'blue', OP_CLS[myClass] || 'assault', 3);
+  scene.add(g); KC.ghost = { g, pb: { op: r.op, head: r.head, body: r.body, walkT: 0 } };
+  return KC.ghost;
+}
+function kcamStart() {
+  const P = KC.pend; KC.pend = null; if (!P) return false;
+  KC.on = true; KC.t = 0; KC.p = P; KC.obj = P.obj; KC.lastShot = -1;
+  const G = kcamGhost(); G.g.visible = true; G.pb.op.group.rotation.x = 0;
+  if (P.obj.group) P.obj.group.visible = false;
+  document.body.classList.add('kcOn'); $('kcBox').style.display = 'flex'; $('kcName').textContent = P.name; $('kcW').textContent = P.w ? '🔫 ' + P.w : '';
+  E.respawn.style.opacity = 0;
+  return true;
+}
+const _kcA = [], _kcB = [], _kcPrev = [];
+function kcamTick(dt) {
+  KC.t += dt;
+  const P = KC.p, t = P.tD - 3 + KC.t;
+  if (KC.t > 3.7 || !running) { kcamStop(); return; }
+  const k = kcamAt(P.H, Math.min(t, P.tD), _kcA), m = kcamAt(P.me, Math.min(t, P.tD), _kcB), G = kcamGhost();
+  // me, seen from them
+  G.g.position.set(m[1], m[2], m[3]); G.g.rotation.y = m[4] + Math.PI;
+  const sp = _kcPrev.length ? Math.hypot(m[1] - _kcPrev[1], m[3] - _kcPrev[3]) / Math.max(dt, 0.001) : 0;
+  _kcPrev[1] = m[1]; _kcPrev[3] = m[3];
+  G.pb.crouch = !!m[5]; G.pb.aimP = 0;
+  animOp(G.pb, Math.min(sp, 6), dt);
+  const fall = clamp((t - P.tD) / 0.45, 0, 1);
+  G.pb.op.group.rotation.x = -1.4 * fall * fall;
+  // their eyes, looking at me
+  const ey = k[2] + (k[6] ? 1.1 : 1.58);
+  camera.position.set(k[1], ey, k[3]);
+  camera.lookAt(m[1], m[2] + (m[5] ? 0.9 : 1.25) - fall * 0.8, m[3]);
+  if (Math.abs(camera.fov - 62) > 0.05) { camera.fov = 62; camera.updateProjectionMatrix(); }
+  // their shots, replayed
+  if (KC.lastShot >= 0 && k[5] !== KC.lastShot && t <= P.tD + 0.05) {
+    _kt.set(k[1], ey - 0.15, k[3]); _kh.set(m[1] + jit(0.2), m[2] + 1.1, m[3] + jit(0.2));
+    addTracer(_kt, _kh, 0xffb070); fxMuzzle(_kt, null, 1, 0.8, 0.45, false); shotNoise(0.05, 0.12, 2400);
+  }
+  KC.lastShot = k[5];
+  gun.visible = false;
+}
+function kcamStop() {
+  if (!KC.on) { KC.pend = null; return; }
+  KC.on = false; KC.p = null;
+  if (KC.ghost) KC.ghost.g.visible = false;
+  if (KC.obj && KC.obj.group && !KC.obj.dead) KC.obj.group.visible = true;
+  KC.obj = null; _kcPrev.length = 0;
+  document.body.classList.remove('kcOn'); $('kcBox').style.display = 'none'; E.respawn.style.opacity = '';
+}
+addEventListener('pointerdown', e => { if (KC.on && e.target && !e.target.closest('#respawn')) { e.preventDefault(); e.stopPropagation(); mouseFire = false; kcamStop(); } }, true);
+addEventListener('keydown', e => { if (KC.on && e.code !== 'Escape') { kcamStop(); } }, true);
+
+// ================= Finisher: come up behind someone and finish them, seen from outside =================
+const KF = { on: false, t: 0, cand: null, candT: 0, botT: 3, A: null, V: null, rest: [] };
+const kfPistolGeo = new THREE.BoxGeometry(0.045, 0.06, 0.22), kfGripGeo = new THREE.BoxGeometry(0.04, 0.12, 0.05);
+function kfRig(team, cls, seed) {
+  const g = new THREE.Group(), r = opRig(g, team, OP_CLS[cls] ? cls : 'assault', seed || 0);
+  r.op.group.matrixAutoUpdate = true;
+  const pistol = new THREE.Group(), pm = om(0x1a1b1e, 40);
+  oP(pistol, kfPistolGeo, pm, 0, 0, 0.05); oP(pistol, kfGripGeo, pm, 0, -0.07, -0.03, 0.25);
+  pistol.visible = false; r.op.up.add(pistol);
+  scene.add(g);
+  return { g, op: r.op, pistol, pb: { op: r.op, head: r.head, body: r.body, walkT: 0, aimP: 0 } };
+}
+function kfFree(r) { if (r && r.g) scene.remove(r.g); }
+// who I could finish right now: an enemy close by, facing away from me
+function kfCandidate(dt) {
+  KF.candT -= dt; if (KF.candT > 0) return; KF.candT = 0.1;
+  let c = null;
+  if (running && player.alive && !KF.on && player.grounded && !(GS.snd && GS.snd.ph !== 'live')) {
+    const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+    for (const b of enemies) {
+      if (b.dead || b.fin || ksAlly(b) || b.act) continue;
+      const P = b.group.position, dx = P.x - player.x, dz = P.z - player.z, d = Math.hypot(dx, dz);
+      if (d > 1.8 || d < 0.3 || Math.abs(P.y - player.y) > 0.5) continue;
+      if ((dx * fx + dz * fz) / d < 0.55) continue;                                  // I look at them
+      const ry = b.group.rotation.y, tx = Math.sin(ry), tz = Math.cos(ry);
+      if ((-dx * tx - dz * tz) / d > -0.3) continue;                                  // they don't look at me
+      c = b; break;
+    }
+  }
+  KF.cand = c;
+  const on = !!c; if (KF.hint !== on) { KF.hint = on; $('finHint').style.display = on ? '' : 'none'; $('knifeBtn').classList.toggle('fin', on); }
+}
+// a bot that sneaks up behind me can finish me too (only bots this device runs)
+function kfBotTry(dt) {
+  KF.botT -= dt; if (KF.botT > 0) return; KF.botT = 0.5;
+  if (!running || !player.alive || KF.on || !gsHost() || (GS.snd && GS.snd.ph !== 'live') || tdm.over) return;
+  const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+  for (const b of enemies) {
+    if (b.dead || b.net || b.mir || b.fin || ksAlly(b) || b.tgt !== 'player') continue;
+    const P = b.group.position, dx = P.x - player.x, dz = P.z - player.z, d = Math.hypot(dx, dz);
+    if (d > 1.6 || (dx * fx + dz * fz) / d > -0.45 || Math.random() > 0.3) continue;
+    kfBegin({ role: 'vic', bot: b, aTeam: isFFA() ? 'ffa' : 'red', aCls: b.cls, aSeed: b.seed, vx: player.x, vz: player.z, ry: player.yaw + Math.PI, killer: b.name });
+    KF.botT = 12; return;
+  }
+}
+// I press the knife with someone in front of me and facing away
+function kfTry() {
+  const b = KF.cand; if (!b || KF.on || !player.alive) return false;
+  const P = b.group.position, ry = b.group.rotation.y;
+  const o = { role: 'att', bot: b, vTeam: b.net ? (isFFA() ? 'ffa' : 'red') : (isFFA() ? 'ffa' : b.team), vCls: b.cls || 'assault', vSeed: b.seed || 0, vx: P.x, vz: P.z, ry, name: b.name };
+  if (b.net) { KS.kfSeq++; KS.kfEv = [KS.kfSeq, b.peer]; netT = 0; o.kind = 'net'; }
+  else if (b.mir) { o.kind = 'mir'; KS.src = 3; try { mirHit(b, 9999); } finally { KS.src = 0; } }
+  else { o.kind = 'bot'; b.fin = true; }
+  kfBegin(o);
+  return true;
+}
+// someone on another device is finishing me
+function kfVictimNet(peer, name, g) {
+  const o = netPeers.get(peer);
+  let seed = 0; for (let i = 0; i < peer.length; i++) seed = (seed * 31 + peer.charCodeAt(i)) % 9973;
+  kfBegin({ role: 'vic', peer, net: o, aTeam: netMode === 'f' ? 'ffa' : 'red', aCls: typeof g.cl === 'string' ? g.cl : 'assault', aSeed: seed, vx: player.x, vz: player.z, ry: player.yaw + Math.PI, killer: name, remote: true });
+}
+function kfBegin(o) {
+  KF.on = true; KF.t = 0; KF.o = o; KF.shot = false;
+  const myTeam = isFFA() ? 'ffa' : 'blue';
+  if (o.role === 'att') { KF.A = kfRig(myTeam, myClass, 3); KF.V = kfRig(o.vTeam, o.vCls, o.vSeed); }
+  else { KF.A = kfRig(o.aTeam, o.aCls, o.aSeed); KF.V = kfRig(myTeam, myClass, 3); }
+  const hide = o.role === 'att' ? o.bot : (o.bot || o.net);
+  if (hide && hide.group) hide.group.visible = false;
+  if (o.bot && o.role === 'vic') o.bot.fin = true;
+  KF.hide = hide;
+  // where everyone stands: the attacker a step behind the victim, both facing the same way
+  const sx = Math.sin(o.ry), sz = Math.cos(o.ry);
+  KF.vx = o.vx; KF.vz = o.vz; KF.ax = o.vx - sx * 0.95; KF.az = o.vz - sz * 0.95;
+  collide(KF.ax, KF.az, 0.3, 0); KF.ax = _cx; KF.az = _cz;
+  KF.V.g.position.set(KF.vx, 0, KF.vz); KF.V.g.rotation.y = o.ry;
+  KF.A.g.position.set(KF.ax, 0, KF.az); KF.A.g.rotation.y = Math.atan2(KF.vx - KF.ax, KF.vz - KF.az);
+  // a side for the camera that is not inside a wall
+  const px = Math.cos(o.ry), pz = -Math.sin(o.ry), cx = (KF.vx + KF.ax) / 2, cz = (KF.vz + KF.az) / 2;
+  KF.side = spotFree(cx + px * 2.6, cz + pz * 2.6, 0.3) ? 1 : spotFree(cx - px * 2.6, cz - pz * 2.6, 0.3) ? -1 : 0;
+  KF.cx = cx; KF.cz = cz; KF.px = px; KF.pz = pz;
+  mouseFire = fireHeld = false; aimHeld = false;
+  if (player.reloading > 0) player.reloading = 0;
+  document.body.classList.add('kf'); gun.visible = false;
+  $('kfBox').style.display = 'flex';
+  $('kfTxt').textContent = o.role === 'att' ? 'فينش على ' + (o.name || 'العدو') + ' 💀' : (o.killer || 'العدو') + ' يفنشك 💀';
+  whoosh(0, 0.5, 0.15, 900, 300, false);
+}
+const _kfV = new THREE.Vector3(), _kfW = new THREE.Vector3();
+function kfTick(dt) {
+  if (!KF.on) return;
+  KF.t += dt;
+  const t = KF.t, o = KF.o, A = KF.A, V = KF.V, ez = u => u * u * (3 - 2 * u), seg = (a, b) => ez(clamp((t - a) / (b - a), 0, 1));
+  // if the attacker is me and I die, or the person finishing me drops, it is off
+  if (o.role === 'att' && !player.alive) { kfStop(false); return; }
+  if (o.role === 'vic' && o.bot && (o.bot.dead || !running)) { kfStop(false); return; }
+  if (o.role === 'vic' && o.remote && t > 3.8) { kfStop(false); return; }
+  A.pb.aimP = 0; V.pb.aimP = 0;
+  animOp(A.pb, 0, dt); animOp(V.pb, 0, dt);
+  // the kick to the back of the knee
+  const kk = Math.sin(Math.PI * clamp((t - 0.3) / 0.45, 0, 1));
+  A.op.legR.hip.rotation.x = -1.2 * kk; A.op.legR.knee.rotation.x = 0.25 * kk; A.op.up.rotation.x -= 0.18 * kk;
+  if (t > 0.5 && !KF.kicked) { KF.kicked = true; lowHit(0, 0.6); click(0, 260, 0.25, 0.08, 1); }
+  // down on the knees, turning round, hands up
+  const kn = seg(0.5, 0.95), turn = seg(0.9, 1.5), fall = seg(2.02, 2.5);
+  V.op.legL.hip.rotation.x = -0.05 * kn + V.op.legL.hip.rotation.x * (1 - kn); V.op.legR.hip.rotation.x = -0.05 * kn + V.op.legR.hip.rotation.x * (1 - kn);
+  V.op.legL.knee.rotation.x = 1.55 * kn; V.op.legR.knee.rotation.x = 1.55 * kn;
+  V.op.group.position.y = -0.4 * kn;
+  V.g.rotation.y = o.ry + Math.PI * turn;
+  if (t > 0.7) V.op.gun.visible = false;
+  if (t > 1.1) {
+    const up = seg(1.1, 1.5);
+    armReach(V.op.armR, _kfV.set(0.22, 0.5 + 0.35 * up, 0.12), 1); armReach(V.op.armL, _kfV.set(-0.22, 0.5 + 0.35 * up, 0.12), -1);
+    V.op.head.rotation.x = -0.35 * up;
+  }
+  V.op.up.rotation.x = 0.12 * kn - 0.3 * fall;
+  V.op.group.rotation.x = -1.35 * fall; V.op.group.position.y = -0.4 * kn * (1 - fall) + 0.1 * fall; V.op.group.position.z = -0.4 * fall;
+  // the attacker draws a pistol and aims down at the head
+  if (t > 1.2) {
+    A.op.gun.visible = false; A.pistol.visible = true;
+    const dr = seg(1.2, 1.75), rc = t > 2.02 ? Math.max(0, 1 - (t - 2.02) / 0.25) : 0;
+    A.pistol.position.set(0.12 - 0.08 * dr, 0.15 + 0.3 * dr, 0.15 + 0.33 * dr);
+    A.pistol.rotation.set(0.42 * dr - 0.5 * rc, -0.05, 0);
+    _kfV.set(0, -0.07, -0.03).applyEuler(A.pistol.rotation).add(A.pistol.position);
+    armReach(A.op.armR, _kfV, 1);
+    if (dr > 0.6) armReach(A.op.armL, _kfW.copy(_kfV).add(_kfW.set(-0.04, -0.02, 0)), -1);
+    A.op.up.rotation.x = 0.18 * dr; A.op.head.rotation.x = 0.3 * dr;
+  }
+  if (t >= 2.02 && !KF.shot) { KF.shot = true; kfShot(); }
+  // camera from the side, drifting round
+  const sw = 0.3 + 0.45 * clamp(t / 3, 0, 1);
+  if (KF.side) {
+    const s = KF.side, R = 2.75, fx = Math.sin(o.ry), fz = Math.cos(o.ry);
+    camera.position.set(KF.cx + (KF.px * s * Math.cos(sw) + fx * Math.sin(sw)) * R, 1.5, KF.cz + (KF.pz * s * Math.cos(sw) + fz * Math.sin(sw)) * R);
+  } else camera.position.set(KF.cx + KF.px * 1.2, 3.6, KF.cz + KF.pz * 1.2);
+  camera.lookAt(KF.cx, 1.0 - 0.25 * kn, KF.cz);
+  if (Math.abs(camera.fov - 60) > 0.05) { camera.fov = 60; camera.updateProjectionMatrix(); }
+  gun.visible = false;
+  if (t >= 3.0) kfStop(true);
+}
+function kfShot() {
+  const o = KF.o, A = KF.A, V = KF.V;
+  A.pistol.getWorldPosition(_kh); V.op.head.getWorldPosition(_kt);
+  fxMuzzle(_kh, null, 1, 0.85, 0.5, false); addTracer(_kh, _kt, 0xffe08a);
+  fxImpact(_kt, _up, 'flesh'); fxImpact(_kt, _up, 'flesh'); addBlood(KF.vx, KF.vz);
+  gunSound('pistol', WEAPONS.pistol); shakeT = Math.max(shakeT, 0.15);
+  if (o.role === 'att') {
+    if (o.kind === 'bot' && !o.bot.dead) { o.bot.fin = false; tdmKill(o.bot, 'blue', 'أنت'); }
+    else if (o.kind === 'net' && !o.bot.dead) { KS.src = 3; try { netHit(o.bot, 200, true); } finally { KS.src = 0; } }
+    killMark(true);
+  } else if (player.alive) {
+    if (o.bot) { lastHit = { name: o.bot.name, obj: o.bot, kind: 'fin', w: 'فينش 💀' }; netKiller = { peer: 'B' + o.bot.id, name: o.bot.name }; o.bot.fin = false; }
+    else if (!o.remote) lastHit = { name: o.killer, kind: 'fin', w: 'فينش 💀' };
+    if (!o.remote) { player.shield = 0; damagePlayer(500); }
+  }
+}
+function kfStop(done) {
+  if (!KF.on) { kfFree(KF.A); kfFree(KF.V); KF.A = KF.V = null; return; }
+  KF.on = false; KF.kicked = false;
+  const o = KF.o;
+  if (o && o.bot) { o.bot.fin = false; }
+  if (KF.hide && KF.hide.group && !KF.hide.dead) KF.hide.group.visible = true;
+  KF.hide = null;
+  kfFree(KF.A); KF.A = null;
+  const V = KF.V; KF.V = null;
+  if (V) { if (done && KF.shot) setTimeout(() => kfFree(V), 1500); else kfFree(V); }
+  document.body.classList.remove('kf'); $('kfBox').style.display = 'none';
+  if (player.alive && running) { gun.visible = true; camera.fov = 75; camera.updateProjectionMatrix(); }
+  KS.kfEv = null;
+}
+
+// ================= The score banner =================
+const SB_NAME = { b: 'الصقور', r: 'الذئاب' }, SB_ICON = { b: '🦅', r: '🐺' };
+function sbUpdate() {
+  if (mode !== 'tdm') return;
+  const id = GS.id, ffa = isFFA(), me = myAt(), ot = otherAt(me), L = GG_LADDER.length;
+  let a, b, goal, na, nb, ia, ib;
+  if (id === 'gg') {
+    let ln = '', lk = -1; for (const n in GS.bk) if (Math.floor(GS.bk[n] / 2) > lk) { lk = Math.floor(GS.bk[n] / 2); ln = n; }
+    if (GS.pb.p !== meId() && GS.pb.k > lk) { lk = GS.pb.k; ln = GS.pb.n; }
+    a = Math.min(GS.tier, L); b = Math.max(0, Math.min(lk, L)); goal = L; na = 'أنت'; nb = ln || '—'; ia = '🔫'; ib = '👑';
+  } else if (ffa) {
+    let lk = 0, ln = ''; for (const n in GS.bk) if (GS.bk[n] > lk) { lk = GS.bk[n]; ln = n; }
+    if (GS.pb.p !== meId() && GS.pb.k > lk) { lk = GS.pb.k; ln = GS.pb.n; }
+    a = tdm.myKills; b = lk; goal = GS.lim; na = 'أنت'; nb = ln || 'المتصدر'; ia = '🎯'; ib = '👑';
+  } else {
+    const src = GS.snd ? GS.snd.w : GS.sc;
+    a = src[me] || 0; b = src[ot] || 0; goal = GS.lim; na = SB_NAME[me]; nb = SB_NAME[ot]; ia = SB_ICON[me]; ib = SB_ICON[ot];
+  }
+  const st = (k, v) => { if (KS['_' + k] !== v) { KS['_' + k] = v; $(k).textContent = v; } };
+  st('sbNA', na); st('sbNB', nb); st('sbIA', ia); st('sbIB', ib); st('sbA', String(a)); st('sbB', String(b)); st('sbGoal', goal ? 'الهدف ' + goal : '');
+  const fa = clamp(goal ? a / goal : 0, 0, 1), fb = clamp(goal ? b / goal : 0, 0, 1);
+  if (KS.sbA !== fa) { KS.sbA = fa; $('sbFA').style.transform = 'scaleX(' + fa.toFixed(3) + ')'; }
+  if (KS.sbB !== fb) { KS.sbB = fb; $('sbFB').style.transform = 'scaleX(' + fb.toFixed(3) + ')'; }
+  const lead = a > b ? 1 : a < b ? -1 : 0; if (KS.sbL !== lead) { KS.sbL = lead; $('tdmBar').dataset.lead = lead; }
+}
+
+// ================= End of match: the board =================
+function ksEndBoard() {
+  const ffa = isFFA(), me = myAt(), rows = [];
+  rows.push({ n: netOn ? netMyName() : 'أنت', k: tdm.myKills, d: tdm.myDeaths, s: KS.best, t: me, me: true });
+  const names = new Set(Object.keys(GS.bk || {}).concat(Object.keys(KS.botAt)));
+  for (const n of names) { const at = KS.botAt[n]; if (!at) continue; rows.push({ n: '🤖 ' + n, k: GS.bk[n] || 0, d: (GS.bd || {})[n] || 0, s: (GS.bbest || {})[n] || 0, t: at }); }
+  if (netOn) for (const r of KS.rows.values()) rows.push(Object.assign({}, r));
+  const score = r => r.k * 2 + r.s - r.d * 0.5;
+  let mvp = rows[0]; for (const r of rows) if (score(r) > score(mvp)) mvp = r;
+  let ls = rows[0]; for (const r of rows) if (r.s > ls.s) ls = r;
+  const box = document.createElement('div'); box.id = 'endBoard2';
+  const card = document.createElement('div'); card.className = 'mvp';
+  card.innerHTML = '<span>🏅 أفضل لاعب</span><b></b><small></small>';
+  card.querySelector('b').textContent = mvp.n + (mvp.me ? ' (أنت)' : '');
+  card.querySelector('small').textContent = mvp.k + ' قتلة · ' + mvp.d + ' موتة · أطول سلسلة ' + mvp.s + (ls.s > 0 && ls !== mvp ? '   |   🔥 أطول سلسلة: ' + ls.n + ' ' + ls.s : '');
+  box.appendChild(card);
+  const tbl = document.createElement('div'); tbl.className = 'eb';
+  const add = (cls, c) => { const r = document.createElement('div'); r.className = 'ebR ' + cls; for (const x of c) { const s = document.createElement('span'); s.textContent = x; r.appendChild(s); } tbl.appendChild(r); };
+  add('h', ['اللاعب', 'قتل', 'موت', 'سلسلة']);
+  const sorted = rows.slice().sort((x, y) => (ffa ? 0 : (x.t === y.t ? 0 : x.t === me ? -1 : 1)) || y.k - x.k || x.d - y.d);
+  for (const r of sorted) add((ffa ? 'f' : r.t === me ? 'b' : 'r') + (r.me ? ' me' : ''), [r.n, r.k, r.d, r.s || '—']);
+  box.appendChild(tbl);
+  return box;
+}
+
 // ---------- Main menu: the camera drifts through the real map while you choose ----------
 let menuCam = false;
 const camSpot = { x: 0, y: 2, z: 9, tx: 0, ty: 1.2, tz: 0 };
 function setMenu(on) { document.body.classList.toggle('inmenu', on); }
 function clearActors() {
   gsClear();
+  try { ksReset(); } catch (e) {}
   for (const b of enemies) scene.remove(b.group);
   for (const d of dying) scene.remove(d.group);
   for (const p of pickups) scene.remove(p.root);
@@ -8495,6 +9151,7 @@ function resetGame() {
   $('aimBtn').classList.remove('on'); $('runBtn').classList.remove('on');
   const tdmOn = mode === 'tdm';
   $('radar').style.display = tdmOn ? '' : 'none';
+  $('ksHud').style.display = tdmOn ? '' : 'none'; $('ksBtn').style.display = 'none';
   $('hpRow').style.display = tdmOn ? '' : 'none';      // zombies: no health number, the screen turns red instead
   $('hpbar').style.display = tdmOn ? '' : 'none';
   $('hurt').style.opacity = 0; $('roundBig').style.opacity = 0;
@@ -8526,6 +9183,10 @@ $('mapBtn2').addEventListener('click', () => openMenu());
 $('pQuit').addEventListener('click', () => quitPress($('pQuit')));
 $('dQuit').addEventListener('click', () => quitPress($('dQuit')));
 $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLockHint(); });
+$('ksBtn').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); ksUse(); });
+$('ksCan').addEventListener('pointerdown', e => ksMapPick(e));
+$('ksMapX').addEventListener('click', () => ksMapClose());
+addEventListener('keydown', e => { if (KS.mapOn && e.code === 'Escape') ksMapClose(true); });
 $('resumeBtn').addEventListener('click', () => { pauseOpen = false; updateLockHint(); });
 
 // ---------- Loop ----------
@@ -8561,13 +9222,14 @@ function loop(now) {
     if (zDeath && running) { zDeathTick(rdt); dt = rdt * zDeath.k; }
     if (safeT > 0) safeT -= dt;
     if (running) {
-      if (player.alive) {
+      if (player.alive && !KF.on) {
         updatePlayer(dt);
         if (mouseFire || fireHeld) tryFire();
         if (down) downTick(dt);
       }
       if (mode === 'tdm') {
         updateTdm(dt);
+        try { kcamRecord(dt); ksFrame(dt); sbUpdate(); } catch (e) { if (loopErrors++ < 5) console.error('streak error:', e); }
       } else {
         updateBots(dt);
         updateRegen(dt);
@@ -8582,7 +9244,8 @@ function loop(now) {
     }
     updateDying(dt);
     updateGunAndFx(dt);
-    if (running && !player.alive && death && (mode === 'tdm' || zDeath || co.out)) deathCam(rdt);
+    if (KF.on) kfTick(rdt);
+    else if (running && !player.alive && death && (mode === 'tdm' || zDeath || co.out)) deathCam(rdt);
     updateTracers(dt);
     updateFx(dt);
     updateGear(dt);
