@@ -6425,19 +6425,30 @@ $('botN').addEventListener('input', () => { botN = clamp(Math.floor(+$('botN').v
 // Same surface as Claude's room capability (peers(), onPeers(cb, onClose), presence(obj), join(name), leave()), so the
 // ghosts, combat and scoreboard code never knows the difference. One player per room name becomes the host (it owns the
 // broker id "akhirjola-<name>"); everyone else connects to the host, and the host relays presence between them.
-const P2P_PREFIX = 'akhirjola-', P2P_SILENT = 6500, P2P_BEAT = 1500;
+const P2P_PREFIX = 'akhirjola-', P2P_SILENT = 10000, P2P_BEAT = 1500, P2P_GHOST = 5000, P2P_LINK = 12000, P2P_SLOTS = 3;
 function makeP2PRoom(name) {
+  // Join = claim the room's host id and open a plain peer AT THE SAME TIME (one broker round trip, not two).
+  // A host that vanished without closing (phone locked, app in the background) keeps its id on the broker for up to a
+  // minute; such a ghost never answers our offer, so after a few seconds we stop waiting and use the room's next slot.
+  // A host on a spare slot keeps checking slot 0 and, once slot 0 answers (or is free), moves everyone back to it.
   const id = Math.random().toString(36).slice(2, 8), hostId = P2P_PREFIX + name;
-  const room = { status: 'idle', host: false, name };
+  const room = { status: 'idle', host: false, name, stage: '', slot: 0 };
   const listeners = [], closers = [], others = new Map(), conns = new Map();
-  let me = {}, seq = 0, peer = null, upstream = null, lastRx = 0, started = false, tries = 0, timer = 0, retryT = 0, gen = 0;
+  let me = {}, seq = 0, peer = null, cli = null, upstream = null, lastRx = 0, started = false, tries = 0, timer = 0, retryT = 0, gen = 0;
+  let probe = null, probeT = 0;
   const now = () => Date.now();
+  const sid = k => k ? hostId + '-s' + k : hostId;
   const emit = () => { for (const f of listeners.slice()) { try { f({}); } catch (e) {} } };
   const setStatus = s => { if (room.status !== s) { room.status = s; emit(); } };
+  const setStage = s => { if (room.stage !== s) { room.stage = s; emit(); } };
   const ok = c => c && c.open;
   const safeSend = (c, m) => { try { if (ok(c)) c.send(m); } catch (e) {} };
   const small = o => { try { return !!o && typeof o === 'object' && JSON.stringify(o).length < 4096; } catch (e) { return false; } };
-  const kill = () => { try { peer && peer.destroy(); } catch (e) {} peer = null; upstream = null; conns.clear(); };
+  const answered = c => { try { return !!(c && c.peerConnection && c.peerConnection.remoteDescription); } catch (e) { return false; } };
+  const kill = () => {
+    for (const p of [peer, cli]) { try { p && p.destroy(); } catch (e) {} }
+    peer = cli = null; upstream = null; probe = null; conns.clear(); room.host = false;
+  };
   function setOther(oid, s, p) {
     if (typeof oid !== 'string' || !oid || oid.length > 12 || oid === id || !small(p)) return;
     const o = others.get(oid);
@@ -6455,6 +6466,7 @@ function makeP2PRoom(name) {
     if (m.t === 'p') setOther(m.id, m.s, m.p);
     else if (m.t === 's' && Array.isArray(m.l)) for (const r of m.l.slice(0, 16)) { if (Array.isArray(r)) setOther(r[0], r[1], r[2]); }
     else if (m.t === 'b' && typeof m.id === 'string' && others.delete(m.id)) emit();
+    else if (m.t === 'mv') regroup(200 + Math.random() * 500);
   }
   function drop(c) {
     const st = conns.get(c); if (!st) return;
@@ -6474,65 +6486,104 @@ function makeP2PRoom(name) {
     });
     c.on('close', () => drop(c)); c.on('error', () => drop(c));
   }
-  function fail() { kill(); clearTimeout(retryT); others.clear(); setStatus('failed'); }
-  function retry() {                                 // the host vanished (or we never reached it): try to become the host ourselves
-    kill(); others.clear(); emit();
+  function fail() { kill(); gen++; clearTimeout(retryT); others.clear(); setStatus('failed'); }
+  function regroup(ms) {                             // start over from slot 0, everyone the same way
+    kill(); gen++; others.clear(); emit();
+    if (!started) return;
+    setStatus('connecting');
+    clearTimeout(retryT); retryT = setTimeout(() => join(0), ms);
+  }
+  function retry() {                                 // the broker or the network let us down: back off a little and start again
     if (!started) return;
     if (++tries > 7) { fail(); return; }
-    setStatus('connecting');
-    clearTimeout(retryT); retryT = setTimeout(becomeHost, 250 + Math.random() * 1000 + tries * 350);
+    regroup(250 + Math.random() * 700 + tries * 400);
   }
-  function becomeHost() {
+  function becomeHostOf(p, k) {
+    peer = p; room.host = true; room.slot = k; tries = 0;
+    if (cli) { try { cli.destroy(); } catch (e) {} cli = null; }
+    setStage(''); setStatus('host'); push();
+    probeT = now() + 3000;
+  }
+  function join(k) {
     if (!started) return;
-    const my = ++gen; kill();
-    let p, opened = false;
-    try { p = new window.Peer(hostId, window.__PEER_OPTS || {}); } catch (e) { fail(); return; }
-    peer = p;
-    p.on('open', () => { if (my !== gen) return; opened = true; tries = 0; room.host = true; setStatus('host'); push(); });
-    p.on('connection', c => { if (my === gen) accept(c); });
-    p.on('disconnected', () => { if (my === gen && opened) setTimeout(() => { try { if (my === gen && !p.destroyed) p.reconnect(); } catch (e) {} }, 1500); });
-    p.on('error', err => {
+    const my = ++gen; kill(); room.slot = k; setStage('broker');
+    const opts = window.__PEER_OPTS || {};
+    let h, c, hostOpen = false, taken = false, cliOpen = false, linking = false;
+    try { h = new window.Peer(sid(k), opts); c = new window.Peer(opts); } catch (e) { fail(); return; }
+    peer = h; cli = c;
+    const link = () => {
+      if (my !== gen || linking || !taken || !cliOpen) return;
+      linking = true; setStage('link');
+      const t0 = now(), d = c.connect(sid(k), { serialization: 'json' });
+      let linked = false;
+      const check = () => {
+        if (my !== gen || linked) return;
+        const waited = now() - t0;
+        if (!answered(d) && waited >= P2P_GHOST) {      // nobody answered: the id belongs to a ghost
+          try { d.close(); } catch (e) {}
+          if (k < P2P_SLOTS - 1) join(k + 1); else retry();
+        } else if (waited >= P2P_LINK) { try { d.close(); } catch (e) {} retry(); }
+        else setTimeout(check, 500);
+      };
+      setTimeout(check, 500);
+      d.on('open', () => { if (my !== gen) return; linked = true; tries = 0; upstream = d; lastRx = now(); setStage(''); setStatus('client'); push(); });
+      d.on('data', m => { if (my !== gen) return; lastRx = now(); apply(m); });
+      const lost = () => { if (my === gen && linked) regroup(150 + Math.random() * 600); };
+      d.on('close', lost); d.on('error', lost);
+    };
+    h.on('open', () => { if (my !== gen) return; hostOpen = true; becomeHostOf(h, k); });
+    h.on('connection', x => { if (my === gen && hostOpen) accept(x); });
+    h.on('disconnected', () => { if (my === gen && hostOpen) setTimeout(() => { try { if (my === gen && !h.destroyed) h.reconnect(); } catch (e) {} }, 1500); });
+    h.on('error', err => {
       if (my !== gen) return;
       const t = err && err.type;
-      if (t === 'unavailable-id') becomeClient();
-      else if (!opened) retry();
+      if (!hostOpen) {
+        if (t === 'unavailable-id') { taken = true; try { h.destroy(); } catch (e) {} if (peer === h) peer = null; link(); }
+        else retry();
+      } else if (t === 'peer-unavailable' && probe) {   // slot 0 is free again: take everyone there
+        probe = null; relay(null, { t: 'mv' }); setTimeout(() => { if (my === gen) regroup(0); }, 250);
+      }
+    });
+    c.on('open', () => { if (my !== gen) return; cliOpen = true; link(); });
+    c.on('error', err => {
+      if (my !== gen || hostOpen) return;
+      const t = err && err.type;
+      if (t === 'peer-unavailable') regroup(100 + Math.random() * 300);   // the host left between our two steps
+      else if (linking || taken) retry();
     });
   }
-  function becomeClient() {
-    if (!started) return;
-    const my = ++gen; kill(); room.host = false;
-    let p, linked = false;
-    try { p = new window.Peer(window.__PEER_OPTS || {}); } catch (e) { fail(); return; }
-    peer = p;
-    const lost = () => { if (my === gen) retry(); };
-    p.on('error', () => lost());
-    p.on('open', () => {
+  function probeLow() {                              // host on a spare slot: is slot 0 alive (or free) again?
+    if (!room.host || room.slot === 0 || probe || now() < probeT || !peer) return;
+    probeT = now() + 5000;
+    const my = gen, t0 = now();
+    let d; try { d = peer.connect(sid(0), { serialization: 'json' }); } catch (e) { return; }
+    probe = d;
+    d.on('open', () => {
       if (my !== gen) return;
-      const c = p.connect(hostId, { serialization: 'json' });
-      setTimeout(() => { if (my === gen && !linked) lost(); }, 9000);
-      c.on('open', () => { if (my !== gen) return; linked = true; tries = 0; upstream = c; lastRx = now(); setStatus('client'); push(); });
-      c.on('data', m => { lastRx = now(); apply(m); });
-      c.on('close', lost); c.on('error', lost);
+      try { d.close(); } catch (e) {}
+      probe = null; relay(null, { t: 'mv' }); setTimeout(() => { if (my === gen) regroup(0); }, 250);
     });
+    const giveUp = () => { if (my !== gen || probe !== d) return; if (now() - t0 >= P2P_GHOST && !answered(d)) { try { d.close(); } catch (e) {} probe = null; } else if (now() - t0 > P2P_LINK) { try { d.close(); } catch (e) {} probe = null; } else setTimeout(giveUp, 500); };
+    setTimeout(giveUp, 500);
   }
   function tick() {
     const t = now();
     if (room.status === 'host' || room.status === 'client') push();
-    if (room.status === 'client' && upstream && t - lastRx > P2P_SILENT) { try { upstream.close(); } catch (e) {} retry(); }
-    if (room.host) for (const [c, st] of conns) if (t - st.t > P2P_SILENT) drop(c);
+    if (room.status === 'client' && upstream && t - lastRx > P2P_SILENT) { try { upstream.close(); } catch (e) {} regroup(200); }
+    if (room.host) { for (const [c, st] of conns) if (t - st.t > P2P_SILENT) drop(c); probeLow(); }
     let ch = false; for (const [k, v] of others) if (t - v.t > P2P_SILENT) { others.delete(k); ch = true; }
     if (ch) emit();
   }
   room.connect = function () {
-    if (started) { if (room.status === 'failed') { tries = 0; started = true; setStatus('connecting'); becomeHost(); } return; }
+    if (started) { if (room.status === 'failed') { tries = 0; setStatus('connecting'); join(0); } return; }
     if (typeof window.Peer !== 'function') { setStatus('failed'); return; }
-    started = true; tries = 0; setStatus('connecting'); becomeHost();
+    started = true; tries = 0; setStatus('connecting'); join(0);
     clearInterval(timer); timer = setInterval(tick, P2P_BEAT);
   };
   room.disconnect = function () {
     started = false; gen++; clearInterval(timer); clearTimeout(retryT);
     for (const c of conns.keys()) { try { c.close(); } catch (e) {} }
-    kill(); others.clear(); room.host = false; setStatus('idle');
+    kill(); others.clear(); setStage(''); setStatus('idle');
   };
   room.leave = function () { room.disconnect(); listeners.length = 0; return Promise.resolve(); };
   room.join = function (n) { const r = makeP2PRoom(String(n).toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24) || 'x'); r.connect(); return Promise.resolve(r); };
@@ -6543,7 +6594,7 @@ function makeP2PRoom(name) {
     return out;
   };
   room.onPeers = function (cb, onClose) { listeners.push(cb); if (onClose) closers.push(onClose); return () => { const i = listeners.indexOf(cb); if (i >= 0) listeners.splice(i, 1); }; };
-  room.statusText = () => ({ idle: '', connecting: 'جاري الاتصال بالوسيط…', host: 'متصل (أنت المضيف)', client: 'متصل', failed: 'ما قدرت أتصل بالوسيط. تأكد من الإنترنت وشغّل الأونلاين من جديد' })[room.status] || '';
+  room.statusText = () => ({ idle: '', connecting: room.stage === 'link' ? 'لقينا الغرفة، نربطك مع اللي فيها…' : 'جاري الاتصال بالوسيط…', host: 'متصل (أنت المضيف)', client: 'متصل', failed: 'ما قدرت أتصل بالوسيط. تأكد من الإنترنت وشغّل الأونلاين من جديد' })[room.status] || '';
   return room;
 }
 let netOn = false, netRoom = null, netLobby = null, netT = 0, netSeen = 0;
@@ -6651,10 +6702,12 @@ function netInit() {
   } catch (e) { direct(); }
 }
 // a private room is just a shared word: whoever types the same code lands in the same match
-function netPickRoom() {
+let netCodeT = 0;
+function netPickRoom(now) {
   if (!netLobby) return;
   const code = ($('netCode').value || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   if (code === netCodeNow) return;
+  if (!now && document.activeElement === $('netCode') && performance.now() - netCodeT < 1100) return;     // still typing
   const old = netRoom, id = ++netJoinId;
   netCodeNow = code; netMe = null;
   if (old && old !== netLobby) { try { old.leave().catch(() => {}); } catch (e) {} }
@@ -6694,7 +6747,7 @@ function netReset() {
   netHits = []; netDeath = null; netKiller = null; netKills = 0; netSeenHit.clear(); netSeenDeath.clear(); netSeenShot.clear(); netNades = []; netSeenNade.clear();
   netMode = isFFA() ? 'f' : 't';
   netTeam = 'b'; netBalT = 1.2; netRows = [];
-  if (netOn) { netPickRoom(); if (netRoom && netRoom.connect) netRoom.connect(); }
+  if (netOn) { netPickRoom(true); if (netRoom && netRoom.connect) netRoom.connect(); }
   else for (const r of [netLobby, netRoom]) { if (r && r.disconnect) r.disconnect(); }     // direct mode: stop relaying when online is off
 }
 // score table: built from what everyone says about themselves
@@ -10210,6 +10263,9 @@ document.querySelectorAll('#helpTabs .tab').forEach(tb => tb.addEventListener('c
 netInit();
 try { $('netName').value = localStorage.getItem('fps-name') || ''; } catch (e) {}
 $('netName').addEventListener('change', () => { try { localStorage.setItem('fps-name', $('netName').value); } catch (e) {} });
+$('netCode').addEventListener('input', () => { netCodeT = performance.now(); });
+$('netCode').addEventListener('change', () => { if (!running && !LD.on && $('netTgl').checked) netPickRoom(true); });
+$('netCode').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
 $('netTgl').addEventListener('change', () => {
   $('netBox').hidden = !$('netTgl').checked;
   const r = netRoom || netLobby;
