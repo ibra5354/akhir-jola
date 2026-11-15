@@ -6493,10 +6493,11 @@ function makeP2PRoom(name) {
     setStatus('connecting');
     clearTimeout(retryT); retryT = setTimeout(() => join(0), ms);
   }
-  function retry() {                                 // the broker or the network let us down: back off a little and start again
+  function retry() {                                 // the broker or the network let us down: back off a little and start again (never give up)
     if (!started) return;
-    if (++tries > 7) { fail(); return; }
-    regroup(250 + Math.random() * 700 + tries * 400);
+    ++tries;
+    regroup(250 + Math.random() * 700 + Math.min(tries, 8) * 500);
+    if (tries > 5) setStatus('failed');
   }
   function becomeHostOf(p, k) {
     peer = p; room.host = true; room.slot = k; tries = 0;
@@ -6533,16 +6534,20 @@ function makeP2PRoom(name) {
     };
     h.on('open', () => { if (my !== gen) return; hostOpen = true; becomeHostOf(h, k); });
     h.on('connection', x => { if (my === gen && hostOpen) accept(x); });
-    h.on('disconnected', () => { if (my === gen && hostOpen) setTimeout(() => { try { if (my === gen && !h.destroyed) h.reconnect(); } catch (e) {} }, 1500); });
+    h.on('disconnected', () => {                   // lost the broker (phone slept, network switched): get it back or start over
+      if (my !== gen || !hostOpen) return;
+      setTimeout(() => { try { if (my === gen && !h.destroyed && h.disconnected) h.reconnect(); } catch (e) {} }, 300);
+      setTimeout(() => { if (my === gen && (h.destroyed || h.disconnected)) regroup(100); }, 4500);
+    });
     h.on('error', err => {
       if (my !== gen) return;
       const t = err && err.type;
       if (!hostOpen) {
         if (t === 'unavailable-id') { taken = true; try { h.destroy(); } catch (e) {} if (peer === h) peer = null; link(); }
         else retry();
-      } else if (t === 'peer-unavailable' && probe) {   // slot 0 is free again: take everyone there
-        probe = null; relay(null, { t: 'mv' }); setTimeout(() => { if (my === gen) regroup(0); }, 250);
-      }
+      } else if (t === 'peer-unavailable') {             // slot 0 is free again: take everyone there
+        if (probe) { probe = null; relay(null, { t: 'mv' }); setTimeout(() => { if (my === gen) regroup(0); }, 250); }
+      } else if (['unavailable-id', 'network', 'server-error', 'socket-error', 'socket-closed', 'disconnected'].includes(t)) regroup(300 + Math.random() * 400);   // our id is gone (or the broker is): start over
     });
     c.on('open', () => { if (my !== gen) return; cliOpen = true; link(); });
     c.on('error', err => {
@@ -6574,8 +6579,17 @@ function makeP2PRoom(name) {
     let ch = false; for (const [k, v] of others) if (t - v.t > P2P_SILENT) { others.delete(k); ch = true; }
     if (ch) emit();
   }
+  let hidAt = 0;
+  document.addEventListener('visibilitychange', () => {   // back from another app: the phone may have cut everything while away
+    if (document.hidden) { hidAt = now(); return; }
+    if (!started || !hidAt || now() - hidAt < 2500) return;
+    hidAt = 0;
+    if (room.status === 'host' && peer && !peer.disconnected && !peer.destroyed) return;
+    if (room.status === 'client' && ok(upstream) && now() - lastRx < 2500) return;
+    tries = 0; regroup(50);
+  });
   room.connect = function () {
-    if (started) { if (room.status === 'failed') { tries = 0; setStatus('connecting'); join(0); } return; }
+    if (started) { if (room.status === 'failed') { tries = 0; regroup(0); } return; }
     if (typeof window.Peer !== 'function') { setStatus('failed'); return; }
     started = true; tries = 0; setStatus('connecting'); join(0);
     clearInterval(timer); timer = setInterval(tick, P2P_BEAT);
@@ -6594,7 +6608,7 @@ function makeP2PRoom(name) {
     return out;
   };
   room.onPeers = function (cb, onClose) { listeners.push(cb); if (onClose) closers.push(onClose); return () => { const i = listeners.indexOf(cb); if (i >= 0) listeners.splice(i, 1); }; };
-  room.statusText = () => ({ idle: '', connecting: room.stage === 'link' ? 'لقينا الغرفة، نربطك مع اللي فيها…' : 'جاري الاتصال بالوسيط…', host: 'متصل (أنت المضيف)', client: 'متصل', failed: 'ما قدرت أتصل بالوسيط. تأكد من الإنترنت وشغّل الأونلاين من جديد' })[room.status] || '';
+  room.statusText = () => ({ idle: '', connecting: room.stage === 'link' ? 'لقينا الغرفة، نربطك مع اللي فيها…' : 'جاري الاتصال بالوسيط…', host: 'متصل (أنت المضيف)', client: 'متصل', failed: 'الشبكة صعبة شوي، نحاول نوصلك… تأكد من الإنترنت' })[room.status] || '';
   return room;
 }
 let netOn = false, netRoom = null, netLobby = null, netT = 0, netSeen = 0;
@@ -6605,7 +6619,7 @@ const NET_MAT = { body: lam(0x16a34a), head: lam(0xf1c27d) };
 // ---- lobby: everyone with online on in the same room is in one lobby; whoever came in first is the leader ----
 const LD = { on: false, t: 0, dur: 5, shots: [], cut: [0, 1.9, 3.5], fromLobby: false };
 const LB = { j: performance.now(), go: 0, seen: new Map(), mem: [], isLead: true, lead: null, t: 0, code: null, sig: '', wasOn: false };
-function lbMine() { return { a: +((performance.now() - LB.j) / 1000).toFixed(1), n: netMyName(), s: { m: selectedMap, gm: gmId, b: botN }, go: LB.go, ig: running || LD.on ? 1 : 0, lk: LBY.look }; }
+function lbMine() { return { a: +((performance.now() - LB.j) / 1000).toFixed(1), n: netMyName(), s: { m: selectedMap, gm: gmId, b: botN }, go: LB.go, ig: running || LD.on ? 1 : 0, lk: LBY.look, ld: LB.isLead ? 1 : 0 }; }
 function netPres(r, o) {
   if (!r) return Promise.resolve();
   o.lb = $('netTgl').checked ? lbMine() : null;
@@ -6630,6 +6644,7 @@ function lbTick(dt) {
   }
   // the one who has been in the lobby longest leads (time in the lobby, not the clock: phones' clocks disagree)
   mem.sort((a, b) => (Math.abs(a.L.a - b.L.a) > 1 ? b.L.a - a.L.a : 0) || (a.peer < b.peer ? -1 : a.peer > b.peer ? 1 : 0));
+  if (mem[0].me && netMe) { const i = mem.findIndex(m => !m.me && m.L.ld === 1 && m.peer < netMe); if (i > 0) mem.unshift(mem.splice(i, 1)[0]); }
   LB.mem = mem; LB.lead = mem[0]; LB.isLead = mem[0].me;
   if (!LB.isLead) lbFollow(mem[0]);
   lbUi();
