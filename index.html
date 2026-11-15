@@ -667,6 +667,7 @@
       <div class="row"><span>بدون</span><span>ما فيه نقاط ولا صندوق ولا مشروبات، مهارة بس</span></div>
       <div class="row"><span>التشكيلة</span><span>من <b>🛠️ عدّل التشكيلة</b>: سلاح أساسي وثانوي وقنبلة أو سكاكين رمي، ومنظار ومقبض وليزر. تقدر تسمّي كل تشكيلة</span></div>
       <div class="row"><span>يد التحكم 🎮</span><span>R2 نار، L2 تصويب، X/A قفز، O/B نزول، □/X تعبئة واستخدام، △/Y تبديل، R1 قنبلة، R3 سكين، L3 ركض، ↑ السلسلة</span></div>
+      <div class="row"><span>الملك 👑</span><span>منطقة وحدة تتنقل كل دقيقة. فريقك لحاله فيها ياخذ نقطة كل ثانية، وأول فريق يوصل 250 يفوز</span></div>
       <div class="row"><span>السلسلات</span><span>قتلات ورا بعض بدون ما تموت: <b>3</b> طيارة كاشفة، <b>5</b> صواريخ تختار مكانها، <b>10</b> مروحية. تشغلها بـ <b>Z</b> أو زرها</span></div>
       <div class="row"><span>الرادار</span><span>يبين فريقك دايم. العدو يطلع لثانيتين إذا طلّق، وكلهم يطلعون مع الطيارة الكاشفة</span></div>
       <div class="row"><span>الفينش</span><span>تعال من ورا العدو واضغط السكين: ترفسه ويطيح على ركبه وتخلّص عليه. أنت مكشوف خلال اللقطة</span></div>
@@ -2906,6 +2907,246 @@ MAPS.souq = { build: buildSouq, tdm: true, cam: { x: -17, y: 10, z: 22, tx: 0, t
               flags: [[-6, 9.6], [0, 0], [6, -9.6]], sites: [[-16, -8], [16.5, -8.6]] };
 MAPS.tdm.flags = [[0, 9.8], [0.5, 2.2], [0, -9.8]]; MAPS.tdm.sites = [[-14.5, -13], [14.5, -13]];
 MAPS.port.flags = [[-1.2, 9.6], [0, 0], [1.2, -9.6]]; MAPS.port.sites = [[-11.4, -5.6], [11.3, -6.6]];
+
+// ================= The test town for team games: two houses with two floors, stairs, a garage, a balcony and back yards =================
+// obstacles may now float: { bot } is where they start. You walk under anything that starts above your head.
+function ob(x0, x1, z0, z1, y0, y1, c, hidden) {
+  boxMM(x0, x1, z0, z1, y0, y1, c, hidden);
+  if (y0 >= 0.5 && x1 > x0 && z1 > z0 && y1 > y0) obstacles.push({ minX: x0, maxX: x1, minZ: z0, maxZ: z1, top: y1, bot: y0 });
+}
+// a wall with holes: runs along x at z = c (ax 'x') or along z at x = c (ax 'z')
+function nWall(ax, c, a, b, y0, y1, col, ops) {
+  const T = 0.13, seg = (p, q, ya, yb) => { if (q - p < 0.01 || yb - ya < 0.01) return; if (ax === 'x') ob(p, q, c - T, c + T, ya, yb, col); else ob(c - T, c + T, p, q, ya, yb, col); };
+  let cur = a;
+  for (const o of (ops || []).slice().sort((p, q) => p.a - q.a)) {
+    seg(cur, o.a, y0, y1);
+    if (o.y0 > y0) seg(o.a, o.b, y0, o.y0);
+    if (o.y1 < y1) seg(o.a, o.b, o.y1, y1);
+    if (o.glass) { const m = new THREE.Mesh(ax === 'x' ? bg(o.b - o.a, o.y1 - o.y0, 0.05) : bg(0.05, o.y1 - o.y0, o.b - o.a), glassMat); m.position.set(ax === 'x' ? (o.a + o.b) / 2 : c, (o.y0 + o.y1) / 2, ax === 'x' ? c : (o.a + o.b) / 2); track(m, true);
+      if (ax === 'x') decor((o.a + o.b) / 2, (o.y0 + o.y1) / 2, c, 0.06, o.y1 - o.y0, 0.1, 0xf3f3f3); else decor(c, (o.y0 + o.y1) / 2, (o.a + o.b) / 2, 0.1, o.y1 - o.y0, 0.06, 0xf3f3f3); }
+    cur = o.b;
+  }
+  seg(cur, b, y0, y1);
+}
+const nWin = (a, b, y) => ({ a, b, y0: y + 1.0, y1: y + 2.2, glass: true });
+const nDoor = (a, b, y) => ({ a, b, y0: y, y1: y + 2.4 });
+// rectangle minus a hole, as up to four rectangles
+function rectMinus(R, H) {
+  const [x0, x1, z0, z1] = R, [hx0, hx1, hz0, hz1] = H, out = [];
+  if (hz0 > z0) out.push([x0, x1, z0, hz0]);
+  if (hz1 < z1) out.push([x0, x1, hz1, z1]);
+  if (hx0 > x0) out.push([x0, hx0, Math.max(z0, hz0), Math.min(z1, hz1)]);
+  if (hx1 < x1) out.push([hx1, x1, Math.max(z0, hz0), Math.min(z1, hz1)]);
+  return out.filter(r => r[1] > r[0] && r[3] > r[2]);
+}
+// stairs along x from xa (bottom) to xb (top), between z0 and z1, up to height H
+function nStairs(xa, xb, z0, z1, H, col) {
+  const N = 12, dir = Math.sign(xb - xa), L = Math.abs(xb - xa) / N;
+  for (let i = 1; i <= N; i++) {
+    const p = xa + dir * L * (i - 1), q = xa + dir * L * i;
+    boxMM(Math.min(p, q), Math.max(p, q), z0, z1, 0, H * i / N, col);
+    obstacles[obstacles.length - 1].step = true;
+  }
+}
+const NK = { H: 3.2, F: 3.4, R: 6.4 };          // ground ceiling, upper floor, upper ceiling
+// one house. s = -1: the blue house (south side), +1: the green house (north side)
+function nukeHouse(s, col) {
+  const W = 8, zf = s * 10, zb = s * 19, za = Math.min(zf, zb), zbb = Math.max(zf, zb), F = NK.F, H = NK.H, R = NK.R, IN = 0xdacfb8, garage = s < 0;
+  const zm = s * 15, zu = s * 14.5;                       // the ground split and the upstairs split
+  // stairs along the back wall: blue goes up towards -x, green towards +x
+  const sx0 = s * 2.2, sx1 = s * 7.6, szA = Math.min(s * 17.45, s * 18.87), szB = Math.max(s * 17.45, s * 18.87);
+  nStairs(sx0, sx1, szA, szB, F, 0x8b6b4a);
+  // ---- ground floor ----
+  const front = garage ? [nWin(-6.6, -4.6, 0), nDoor(-2.3, -0.7, 0), { a: 3.0, b: 7.4, y0: 0, y1: 2.6 }] : [nWin(-6.6, -4.6, 0), nDoor(-0.8, 0.8, 0), nWin(4.6, 6.6, 0)];
+  nWall('x', zf, -W, W, 0, H, col, front);
+  nWall('x', zb, -W, W, 0, H, col, [nDoor(s < 0 ? 0.2 : -1.8, s < 0 ? 1.8 : -0.2, 0), nWin(s < 0 ? 3.5 : -5.5, s < 0 ? 5.5 : -3.5, 0)]);
+  for (const x of [-W, W]) nWall('z', x, za, zbb, 0, H, col, [nWin(Math.min(s * 11.6, s * 13.2), Math.max(s * 11.6, s * 13.2), 0), nWin(Math.min(s * 16.4, s * 17.6), Math.max(s * 16.4, s * 17.6), 0)]);
+  nWall('x', zm, -W, W, 0, H, IN, [nDoor(-4.5, -2.9, 0), nDoor(garage ? 4.0 : 2.9, garage ? 5.6 : 4.5, 0)]);
+  if (garage) nWall('z', 2.5, Math.min(zf, zm), Math.max(zf, zm), 0, H, IN, [nDoor(Math.min(s * 12.0, s * 13.6), Math.max(s * 12.0, s * 13.6), 0)]);
+  decor(0, 0.03, (zf + zb) / 2, 16, 0.04, 9, 0x9a7b55);                                  // wooden floor
+  if (garage) { decor(5.25, 0.035, (zf + zm) / 2, 5.3, 0.04, 4.8, 0x6b6b70); carZ(5.2, s * 12.6, 0x8e2a2a); boxMM(7.2, 7.75, s * 14.3 - 0.4, s * 14.3 + 0.4, 0, 1.3, 0x5a4a3a); }
+  else { boxMM(-6.2, -3.4, Math.min(s * 11.2, s * 12.1), Math.max(s * 11.2, s * 12.1), 0, 0.85, 0x7a4e3a); boxMM(2.6, 5.2, Math.min(s * 12.6, s * 13.6), Math.max(s * 12.6, s * 13.6), 0, 0.75, 0x6b4a33); }   // couch, low table
+  boxMM(garage ? 3.5 : -5.4, garage ? 6.5 : -2.4, Math.min(s * 16.4, s * 17.2), Math.max(s * 16.4, s * 17.2), 0, 0.95, 0xe5e0d5);   // kitchen counter
+  boxMM(garage ? 7.0 : -7.7, garage ? 7.75 : -6.6, Math.min(s * 15.3, s * 16.1), Math.max(s * 15.3, s * 16.1), 0, 1.8, 0xb9b4aa);   // fridge
+  // ---- the floor between, with the stairwell cut out, and a rail round the hole ----
+  const hole = [Math.min(sx0, sx1), Math.max(sx0, sx1) + 0.0, szA, szB];
+  for (const r of rectMinus([-W - 0.13, W + 0.13, za - 0.13, zbb + 0.13], hole)) ob(r[0], r[1], r[2], r[3], H, F, 0x8a7a66);
+  const railZ = s < 0 ? szB : szA, exitX = sx1 - s * 0.9;                                                // gap at the top of the stairs
+  ob(Math.min(exitX, sx0), Math.max(exitX, sx0), railZ - 0.05, railZ + 0.05, F, F + 1.0, 0x6b4a33);
+  ob(sx0 - 0.05, sx0 + 0.05, szA, szB, F, F + 1.0, 0x6b4a33);
+  decor(0, F + 0.02, (zf + zb) / 2, 16, 0.03, 9, 0x8f6c4a);
+  // ---- upstairs ----
+  nWall('x', zf, -W, W, F, R, col, [nWin(-6.2, -4.4, F), nWin(-0.9, 0.9, F), nWin(4.4, 6.2, F)]);
+  nWall('x', zb, -W, W, F, R, col, garage ? [nWin(3.6, 5.6, F)] : [nDoor(-4.6, -3.0, F), nWin(3.6, 5.6, F)]);
+  for (const x of [-W, W]) nWall('z', x, za, zbb, F, R, col, [nWin(Math.min(s * 11.4, s * 13.0), Math.max(s * 11.4, s * 13.0), F), nWin(Math.min(s * 16.2, s * 17.4), Math.max(s * 16.2, s * 17.4), F)]);
+  nWall('x', zu, -W, W, F, R, IN, [nDoor(-5.8, -4.1, F), nDoor(2.0, 3.7, F)]);
+  nWall('z', -s * -0.5, Math.min(zu, zb), Math.max(zu, zb), F, R, IN, [nDoor(Math.min(s * 15.7, s * 17.4), Math.max(s * 15.7, s * 17.4), F)]);
+  ob(-7.6, -5.6, Math.min(s * 10.5, s * 12.6), Math.max(s * 10.5, s * 12.6), F, F + 0.6, 0x3f5b8a);      // bed, front room
+  ob(5.6, 7.6, Math.min(s * 10.5, s * 11.2), Math.max(s * 10.5, s * 11.2), F, F + 1.3, 0x6b4a33);         // chest of drawers
+  ob(s < 0 ? 5.2 : -7.6, s < 0 ? 7.6 : -5.2, Math.min(s * 17.0, s * 18.7), Math.max(s * 17.0, s * 18.7), F, F + 0.6, 0x7a3b3b);   // bed, back room
+  // ---- roof ----
+  ob(-W - 0.4, W + 0.4, za - 0.4, zbb + 0.4, R, R + 0.3, 0x6b4f3a);
+  const roof = new THREE.Mesh(roofGeo, phong(s < 0 ? 0x7d3f30 : 0x5a4636, 0, true));
+  roof.scale.set(17.2, 1.8, 10.2 / 1.732); roof.position.set(0, R + 0.3 + 0.9, (zf + zb) / 2); track(roof);
+  decor(s * -4.5, R + 1.8, (zf + zb) / 2 + s * 1.8, 0.8, 1.8, 0.8, 0x7a6d5a);
+  decor(0, 0.1, zf - s * 0.9, 3, 0.2, 1.4, 0x9a9a9a);                                                   // porch step
+  // ---- balcony over the back yard (green house) ----
+  if (!garage) {
+    const z0 = 19.13, z1 = 21.6;
+    ob(-5.2, -2.4, z0, z1, H, F, 0x8a7a66); decor(-3.8, F + 0.02, (z0 + z1) / 2, 2.8, 0.03, z1 - z0, 0x8f6c4a);
+    ob(-5.25, -2.35, z1 - 0.06, z1 + 0.06, F, F + 1.0, 0xe5e7eb);
+    for (const x of [-5.2, -2.4]) ob(x - 0.06, x + 0.06, z0, z1, F, F + 1.0, 0xe5e7eb);
+    for (const x of [-5.1, -2.5]) boxMM(x - 0.1, x + 0.1, z1 - 0.2, z1, 0, H, 0xd6d0c4);          // posts
+  }
+  // ---- the back yard: a fence with gates on both sides, a shed, a table, a tree ----
+  const yb = s * 28, fc = 0x9c7a4f, gate = s * 23;
+  for (const x of [-11, 11]) {
+    nWall('z', x, Math.min(zb, yb), Math.max(zb, yb), 0, 1.5, fc, [{ a: Math.min(gate - s * 1.3, gate + s * 1.3), b: Math.max(gate - s * 1.3, gate + s * 1.3), y0: 0, y1: 2 }]);
+  }
+  boxMM(4, 7.5, Math.min(s * 24.5, s * 27.2), Math.max(s * 24.5, s * 27.2), 0, 2.4, 0x8a6d4a);          // shed
+  decor(5.75, 2.5, s * 25.85, 3.9, 0.2, 3.1, 0x5a4636);
+  boxMM(-4.2, -1.8, Math.min(s * 23.2, s * 24.4), Math.max(s * 23.2, s * 24.4), 0, 0.8, 0x7a5a3a);         // picnic table
+  boxMM(-8.3, -7.7, s * 25.5 - 0.3, s * 25.5 + 0.3, 0, 3, 0x5a3d26);                                       // tree
+  { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(2.1, 0), lam(0x3f7a3a)); m.position.set(-8, 4.2, s * 25.5); track(m); }
+  boxMM(-0.4, 0.4, s * 21.2 - 0.4, s * 21.2 + 0.4, 0, 1.0, 0x2a2a2a);                                      // barbecue
+}
+function buildNuke() {
+  ARENA = 30; radarRange = 24;
+  setSky(0xe0c498);
+  makeGround(0x86a85a);
+  perimeter(0x8b7d6b, {});
+  backdrop(0xa98d62, false);
+  [[-10, 6.5], [10, -6.5], [22, 6.5], [-22, -6.5]].forEach(([x, z]) => lamp(x, z));
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(ARENA * 2, 11), new THREE.MeshLambertMaterial({ color: 0x5a5a60, map: getTex('asphalt', ARENA * 2 / 4, 11 / 4) }));
+  road.rotation.x = -Math.PI / 2; road.position.y = 0.02; track(road, true); road.receiveShadow = true;
+  decor(0, 0.06, -5.6, ARENA * 2, 0.12, 0.3, 0x9a9a9a); decor(0, 0.06, 5.6, ARENA * 2, 0.12, 0.3, 0x9a9a9a);
+  for (let x = -26; x <= 26; x += 4) decor(x, 0.035, 0, 1.8, 0.02, 0.18, 0xf1c40f);
+  nukeHouse(-1, 0x4a7fb5);
+  nukeHouse(1, 0x6aa84f);
+  // the bus and the cars in the street
+  boxMM(-14, -5, -3.2, -0.6, 0, 2.8, 0xf1c40f);
+  decor(-9.5, 1.8, -3.22, 8.4, 0.6, 0.05, 0x222222); decor(-9.5, 1.8, -0.58, 8.4, 0.6, 0.05, 0x222222);
+  decor(-9.5, 2.83, -1.9, 8.6, 0.08, 2.2, 0xf5f0e0); decor(-4.97, 1.75, -1.9, 0.05, 0.9, 2.2, 0x222222); decor(-14.03, 1.75, -1.9, 0.05, 0.9, 2.2, 0x222222);
+  { const g = new THREE.Group(); for (const wx of [-12.2, -6.8]) for (const wz of [-3.2, -0.6]) wheel(g, wx, 0.5, wz, 0.5, 0.2); track(g); }
+  carX(10, 2.8, 0xc0392b); carX(3.5, -3.4, 0x888888); carZ(16, -2.5, 0x2c6fbb); carZ(-20, 3.5, 0xd4a017);
+  // front-yard hedges, side-yard cover
+  [[-11, -8.2], [11, -8.2], [-11, 8.2], [11, 8.2]].forEach(([x, z]) => addBox(x, z, 5, 1.1, 0.5, 0x2f6b2f));
+  [[-19, -14, 2, 1.2, 2], [19, -14, 2, 1.2, 2], [-19, 14, 2, 1.2, 2], [19, 14, 2, 1.2, 2],
+   [-24, -22, 1.6, 1.4, 3], [24, 22, 1.6, 1.4, 3], [-24, 22, 1.6, 1.4, 3], [24, -22, 1.6, 1.4, 3]].forEach(([x, z, w, h, d]) => addBox(x, z, w, h, d, 0x8a6d3b));
+  [[-3, -8.4], [3, -8.4], [-14, -8], [14, -8], [-3, 8.4], [3, 8.4], [-14, 8], [14, 8], [-16, -25], [16, 25]].forEach(([x, z]) => mannequin(x, z));
+  [[-20, 9], [20, -9]].forEach(([x, z]) => fireBarrel(x, z));
+  navUpRebuild();
+}
+// ---- getting about upstairs: a second walking grid for the upper floors, joined to the ground by the stairs ----
+const NAV2 = { n: 0, blocked: null, dist: null, q: null, sig: '' };
+const NUKE_STAIRS = [                                       // ground approach -> along the steps -> out on the landing
+  { side: -1, path: [[-1.4, -18.15], [-2.6, -18.15], [-7.3, -18.15], [-7.1, -16.6]] },
+  { side: 1, path: [[1.4, 18.15], [2.6, 18.15], [7.3, 18.15], [7.1, 16.6]] }
+];
+function navUpRebuild() {
+  const cs = NAV.cs, n = Math.ceil(ARENA * 2 / cs), pad = 0.45;
+  NAV2.n = n; NAV2.blocked = new Uint8Array(n * n).fill(1); NAV2.dist = new Int16Array(n * n); NAV2.q = new Int32Array(n * n);
+  const bl = NAV2.blocked;
+  for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) {
+    const x = -ARENA + (ix + 0.5) * cs, z = -ARENA + (iz + 0.5) * cs;
+    if (floorAt(x, z, 0, NK.F + 0.1) < NK.F - 0.05) continue;          // no floor here
+    let ok = true;
+    for (const o of obstacles) {
+      if (o.top <= NK.F + 0.05 || (o.bot !== undefined && o.bot > NK.F + 1.6)) continue;
+      if (x > o.minX - pad && x < o.maxX + pad && z > o.minZ - pad && z < o.maxZ + pad) { ok = false; break; }
+    }
+    if (ok) bl[iz * n + ix] = 0;
+  }
+}
+function navFlow2(tx, tz, own) {
+  const n = NAV2.n, bl = NAV2.blocked, dist = own, q = NAV2.q, cs = NAV.cs;
+  dist.fill(-1);
+  let seed = clamp(Math.floor((tz + ARENA) / cs), 0, n - 1) * n + clamp(Math.floor((tx + ARENA) / cs), 0, n - 1);
+  if (bl[seed]) { let f = -1; const ix = seed % n, iz = (seed / n) | 0; for (let r = 1; r <= 6 && f < 0; r++) for (let dz = -r; dz <= r && f < 0; dz++) for (let dx = -r; dx <= r; dx++) { const x = ix + dx, z = iz + dz; if (x < 0 || z < 0 || x >= n || z >= n) continue; if (!bl[z * n + x]) { f = z * n + x; break; } } if (f < 0) return; seed = f; }
+  let h = 0, t = 0; q[t++] = seed; dist[seed] = 0;
+  while (h < t) {
+    const c = q[h++], d = dist[c] + 1, x = c % n;
+    for (const k of [x > 0 ? c - 1 : -1, x < n - 1 ? c + 1 : -1, c - n, c + n]) if (k >= 0 && k < n * n && !bl[k] && dist[k] < 0) { dist[k] = d; q[t++] = k; }
+  }
+}
+function navStep2(b, px, pz) {
+  const n = NAV2.n, cs = NAV.cs, dist = b.dist2, bl = NAV2.blocked;
+  const ix = clamp(Math.floor((px + ARENA) / cs), 0, n - 1), iz = clamp(Math.floor((pz + ARENA) / cs), 0, n - 1), d0 = dist[iz * n + ix];
+  let bd = d0 < 0 ? 32767 : d0, bx = 0, bz = 0, found = false;
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dz) continue;
+    const x = ix + dx, z = iz + dz; if (x < 0 || z < 0 || x >= n || z >= n) continue;
+    const dk = dist[z * n + x]; if (dk < 0) continue;
+    if (dx && dz && (bl[iz * n + x] || bl[z * n + ix])) continue;
+    const cost = dk + (dx && dz ? 0.4 : 0);
+    if (cost < bd) { bd = cost; bx = dx; bz = dz; found = true; }
+  }
+  if (!found) return false;
+  const vx = -ARENA + (ix + bx + 0.5) * cs - px, vz = -ARENA + (iz + bz + 0.5) * cs - pz, l = Math.hypot(vx, vz) || 1;
+  _nx = vx / l; _nz = vz / l; return true;
+}
+const upLvl = y => y > 2 ? 1 : 0;
+let _rgx = 0, _rgz = 0;
+// where a bot should walk next on a map with two floors. Returns true if it set (_nx, _nz).
+function botRoute(b, dt, gx, gz, gy) {
+  const P = b.group.position, L = upLvl(b.y || 0), G0 = upLvl(gy || 0), mySide = Math.sign(P.z) || 1, gSide = Math.sign(gz) || 1;
+  const G = L === 1 && G0 === 1 && mySide !== gSide ? 0 : G0;      // the other house upstairs: down first
+  if (b.climb) {                                            // on the stairs: follow the points
+    const S = b.climb, pts = S.path, i = b.climbI;
+    const [tx, tz] = pts[i], d = Math.hypot(tx - P.x, tz - P.z);
+    if (d < 0.45) { b.climbI += b.climbD; if (b.climbI < 0 || b.climbI >= pts.length) { b.climb = null; b.flowT = 0; b.flow2T = 0; } return botRoute(b, dt, gx, gz, gy); }
+    _nx = (tx - P.x) / d; _nz = (tz - P.z) / d; return 1;
+  }
+  if (L === G) {
+    if (L === 0) return 0;                                  // the usual ground route
+    if (!b.dist2 || b.dist2.length !== NAV2.n * NAV2.n) { b.dist2 = new Int16Array(NAV2.n * NAV2.n); b.flow2T = 0; }
+    b.flow2T = (b.flow2T || 0) - dt;
+    if (b.flow2T <= 0) { b.flow2T = 0.4 + Math.random() * 0.3; navFlow2(gx, gz, b.dist2); }
+    const d = Math.hypot(gx - P.x, gz - P.z);
+    if (d < 1.2) { if (d < 0.05) return 0; _nx = (gx - P.x) / d; _nz = (gz - P.z) / d; return 1; }
+    if (navStep2(b, P.x, P.z)) return 1;
+    if (d > 0.05) { _nx = (gx - P.x) / d; _nz = (gz - P.z) / d; return 1; }
+    return 0;
+  }
+  // other floor: the nearest stairs, walk to their end on this floor, then climb
+  let best = null, bs = 1e9;
+  for (const S of NUKE_STAIRS) { if (S.side !== (L === 0 ? gSide : mySide)) continue; const e = L === 0 ? S.path[0] : S.path[S.path.length - 1], f = L === 0 ? S.path[S.path.length - 1] : S.path[0]; const sc = Math.hypot(e[0] - P.x, e[1] - P.z) + Math.hypot(f[0] - gx, f[1] - gz); if (sc < bs) { bs = sc; best = S; } }
+  if (!best) return 0;
+  const e = L === 0 ? best.path[0] : best.path[best.path.length - 1], de = Math.hypot(e[0] - P.x, e[1] - P.z);
+  if (de < 0.6) { b.climb = best; b.climbD = L === 0 ? 1 : -1; b.climbI = L === 0 ? 1 : best.path.length - 2; return botRoute(b, dt, gx, gz, gy); }
+  if (L === 0) { _rgx = e[0]; _rgz = e[1]; return 2; }
+  return botRoute(b, dt, e[0], e[1], b.y || 0);
+}
+// feet: up the stairs, down off a ledge
+function botFeet(b, dt) {
+  const P = b.group.position, f = floorAt(P.x, P.z, 0.4, b.y || 0);
+  if (f >= (b.y || 0) - 0.05) { b.y = f; b.vy = 0; }
+  else { b.vy = (b.vy || 0) - 20 * dt; b.y = Math.max(f, (b.y || 0) + b.vy * dt); }
+  P.y = b.y;
+}
+Object.assign(MAPS.tdm, {
+  build: buildNuke, floors: true, cam: { x: 24, y: 15, z: 26, tx: 0, ty: 2, tz: 0 }, sideBias: 12,
+  spawns: [[-6, -24.5], [0, -26], [7.5, -21.5], [-15, -22], [15, -21], [-22, -15], [22, -16], [-24, -10], [24, -10],
+           [6, 22.5], [0, 26.5], [-6, 21.5], [15, 22], [-15, 21], [22, 15], [-22, 16], [24, 10], [-24, 10]],
+  flags: [[0, -24], [1, 0.8], [0, 24]], sites: [[-17, -17], [17, 17]],
+  hills: [
+    { n: 'صالة البيت الأزرق', x: -2.7, z: -12.5, w: 9.5, d: 4.6, y: 0 },
+    { n: 'صالة البيت الأخضر', x: 0, z: 12.5, w: 14, d: 4.6, y: 0 },
+    { n: 'غرفة فوق · الأزرق', x: 0, z: -12.2, w: 13, d: 4, y: NK.F },
+    { n: 'غرفة فوق · الأخضر', x: 0, z: 12.2, w: 13, d: 4, y: NK.F },
+    { n: 'الشارع عند الباص', x: -2, z: 0, w: 8, d: 6, y: 0 },
+    { n: 'حوش الأزرق', x: 0, z: -23.5, w: 14, d: 7, y: 0 },
+    { n: 'حوش الأخضر', x: 0, z: 23.5, w: 14, d: 7, y: 0 }
+  ]
+});
+MAPS.souq.hills = [
+  { n: 'النافورة', x: 0, z: 0, w: 8, d: 8, y: 0 }, { n: 'السوق الشرقي', x: -6, z: 9.6, w: 7, d: 6, y: 0 }, { n: 'السوق الغربي', x: 6, z: -9.6, w: 7, d: 6, y: 0 },
+  { n: 'الخان', x: -16, z: -8, w: 7, d: 7, y: 0 }, { n: 'المقهى', x: 16.5, z: -8.6, w: 7, d: 7, y: 0 }
+];
+MAPS.port.hills = [
+  { n: 'وسط الميناء', x: 0, z: 0, w: 8, d: 8, y: 0 }, { n: 'الرصيف الشمالي', x: -1.2, z: 9.6, w: 8, d: 6, y: 0 }, { n: 'الرصيف الجنوبي', x: 1.2, z: -9.6, w: 8, d: 6, y: 0 },
+  { n: 'الحاويات الغربية', x: -11.4, z: -5.6, w: 6, d: 6, y: 0 }, { n: 'الحاويات الشرقية', x: 11.3, z: -6.6, w: 6, d: 6, y: 0 }
+];
 const isTdmMap = id => !!(MAPS[id] && MAPS[id].tdm);
 let builtMode = 'waves';
 function buildMap(id) { clearMap(); MAPS[id].build(); flushInst(); currentMap = id; builtMode = mode; raining = night && id === 'town'; rainMesh.visible = raining; if (raining) { scene.fog.near = 5; scene.fog.far = 50; } }
@@ -4764,6 +5005,7 @@ function collide(x, z, r, feet) {
   for (const o of obstacles) {
     if (fy > 0 && o.top !== undefined && o.top <= fy + 0.02) continue;   // we're above it
     if (o.step && feet !== undefined && o.top <= fy + 0.36) continue;    // a stair: walk up it
+    if (o.bot !== undefined && fy + 1.75 <= o.bot) continue;            // overhead: walk under it
     const cx = clamp(x, o.minX, o.maxX), cz = clamp(z, o.minZ, o.maxZ);
     const dx = x - cx, dz = z - cz, d2 = dx * dx + dz * dz;
     if (d2 < r * r) {
@@ -5118,7 +5360,7 @@ const locTeam = at => isFFA() ? 'red' : at === myAt() ? 'blue' : 'red';
 const atOfLoc = team => team === 'blue' ? myAt() : otherAt(myAt());
 const gsHost = () => GS.role === 'host';
 const meId = () => netMe || 'me';
-function gmLimit(id, n) { return id === 'dom' ? DOM_LIMIT : id === 'snd' ? SND_WINS : id === 'gg' ? GG_LADDER.length : id === 'kc' ? (n >= 3 ? 50 : 25) : id === 'ffa' ? (n >= 3 ? 30 : 20) : (n >= 3 ? TDM_LIMIT : 30); }
+function gmLimit(id, n) { return id === 'hp' ? HP_LIMIT : id === 'dom' ? DOM_LIMIT : id === 'snd' ? SND_WINS : id === 'gg' ? GG_LADDER.length : id === 'kc' ? (n >= 3 ? 50 : 25) : id === 'ffa' ? (n >= 3 ? 30 : 20) : (n >= 3 ? TDM_LIMIT : 30); }
 function gsEmit(e) { e.unshift(++GS.evSeq); GS.ev.push(e); if (GS.ev.length > 10) GS.ev.shift(); netT = 0; modeEvent(e, true); }
 function gsClear() {                           // take this match's markers out of the world
   for (const o of GS.objs) scene.remove(o);
@@ -5136,6 +5378,7 @@ function gsReset() {
   GS.role = netOn ? 'wait' : 'host';
   const MP = MAPS[currentMap] || {};
   if (GS.id === 'dom') GS.flags = (MP.flags || []).map(([x, z]) => ({ x, z, own: '', p: 0 }));
+  GS.kh = null; if (GS.id === 'hp') hpInit();
   if (GS.id === 'snd') GS.snd = { round: 0, w: { b: 0, r: 0 }, atk: 'b', ph: 'wait', t: 0, bomb: null, plan: 0, had: { b: 0, r: 0 } };
 }
 // ---- things you can see: flags, bomb sites, the bomb, dog tags ----
@@ -5199,6 +5442,7 @@ function gsVisuals(dt) {
 }
 function gsRadar() {
   const me = myAt();
+  if (GS.id === 'hp' && GS.kh && hpHills()[GS.kh.i]) { const Z = hpHills()[GS.kh.i], c = hpCol(); radarDot(Z.x, Z.z, HP_COL[c], 14); }
   for (const f of GS.flags) radarDot(f.x, f.z, !f.own ? '#e5e7eb' : f.own === me ? '#3b82f6' : '#ef4444', 13);
   for (const t of GS.tags) radarDot(t.x, t.z, isFFA() || t.at !== me ? '#fbbf24' : '#93c5fd', 6);
   const S = GS.snd;
@@ -5209,7 +5453,8 @@ function gsHud() {
   const left = Math.max(0, Math.ceil(S ? (S.bomb ? S.bomb.t : S.t) : tdm.t));
   let tm = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'), obj = '';
   const sc = id === 'gg' ? 'السلاح ' + Math.min(GS.tier + 1, L) + ' / ' + L : isFFA() ? 'قتلات ' + tdm.blue + ' · موتات ' + tdm.red : '🔵 ' + tdm.blue + ' — ' + tdm.red + ' 🔴';
-  if (id === 'dom') obj = GS.flags.map((f, i) => FLAG_NAME[i] + (!f.own ? '⚪' : f.own === myAt() ? '🔵' : '🔴')).join('  ');
+  if (id === 'hp') obj = hpObj();
+  else if (id === 'dom') obj = GS.flags.map((f, i) => FLAG_NAME[i] + (!f.own ? '⚪' : f.own === myAt() ? '🔵' : '🔴')).join('  ');
   else if (id === 'gg') {
     let ln = GS.pb.p === meId() ? '' : GS.pb.n, lk = GS.pb.k;
     for (const n in GS.bk) if (Math.floor(GS.bk[n] / 2) > lk) { lk = Math.floor(GS.bk[n] / 2); ln = n; }
@@ -5397,11 +5642,11 @@ function giveClassLoadout() {
 // ---- who is where (host) ----
 function modeEnts() {
   const L = [];
-  if (player.alive && running) L.push({ x: player.x, z: player.z, at: myAt(), name: netMyName(), peer: meId() });
+  if (player.alive && running) L.push({ x: player.x, y: player.y, z: player.z, at: myAt(), name: netMyName(), peer: meId() });
   for (const o of enemies) {
     if (o.dead) continue;
-    if (o.net) L.push({ x: o.tx, z: o.tz, at: o.gat || 'r', name: o.name, peer: o.peer });
-    else L.push({ x: o.group.position.x, z: o.group.position.z, at: o.at, name: o.name, bot: o });
+    if (o.net) L.push({ x: o.tx, y: o.ty || 0, z: o.tz, at: o.gat || 'r', name: o.name, peer: o.peer });
+    else L.push({ x: o.group.position.x, y: o.group.position.y, z: o.group.position.z, at: o.at, name: o.name, bot: o });
   }
   return L;
 }
@@ -5658,7 +5903,8 @@ function goalAt(b, x, z, spread) {
   b.gx = x; b.gz = z;
 }
 function modeGoal(b) {                          // where this bot wants to stand, if the mode gives it somewhere to be
-  b.gx = undefined; b.gr = 0.9; b.hard = false;
+  b.gx = undefined; b.gr = 0.9; b.hard = false; b.gy = 0;
+  if (GS.id === 'hp') { hpGoal(b); return; }
   const P = b.group.position;
   if (GS.id === 'dom') {
     let f = GS.flags[b.gf];
@@ -5696,6 +5942,7 @@ function updateTdmBots(dt) {
       if (b.tx !== undefined) {
         const P = g.position;
         if (Math.hypot(b.tx - P.x, b.tz - P.z) > 6) { P.x = b.tx; P.z = b.tz; b.px = undefined; } else { P.x += (b.tx - P.x) * k; P.z += (b.tz - P.z) * k; }
+        P.y += ((b.tyy || 0) - P.y) * k; b.y = P.y;
         let da = b.tr - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
         g.rotation.y += da * k;
       }
@@ -5716,14 +5963,15 @@ function updateTdmBots(dt) {
     if (t) {
       tx = atPlayer ? player.x : t.net ? t.tx : t.group.position.x;
       tz = atPlayer ? player.z : t.net ? t.tz : t.group.position.z;
-      ty = atPlayer ? eyeH - 0.2 + player.y : t.net ? 1.4 + (t.ty || 0) : 1.4;
+      ty = atPlayer ? eyeH - 0.2 + player.y : t.net ? 1.4 + (t.ty || 0) : 1.4 + (t.y || 0);
       dx = tx - ox; dz = tz - oz; d = Math.hypot(dx, dz) || 1;
       b.losT -= dt;
-      if (b.losT <= 0) { b.losT = 0.2; b.los = hasLOS(ox, 1.5, oz, tx, ty, tz); }
+      if (b.losT <= 0) { b.losT = 0.2; b.los = hasLOS(ox, 1.5 + (b.y || 0), oz, tx, ty, tz); }
       b.seen = b.los ? b.seen + dt : 0;
     } else { b.los = false; b.seen = 0; }
     const hasGoal = b.gx !== undefined, gx = hasGoal ? b.gx : tx, gz = hasGoal ? b.gz : tz, gd = Math.hypot(gx - ox, gz - oz);
-    const fight = !!t && b.los && d <= b.range;
+    const flo = !!MAPS[currentMap].floors, gy = hasGoal ? (b.gy || 0) : (atPlayer ? player.y : t ? (t.net ? (t.ty || 0) : (t.y || 0)) : 0), sameL = !flo || upLvl(b.y || 0) === upLvl(gy);
+    const fight = !!t && b.los && d <= b.range && (sameL || hasGoal);
     let ux = 0, uz = 0, sp = b.speed;
     b.crouch = !!b.act;
     if (b.act) sp = 0;                                 // planting or defusing: hold still
@@ -5739,12 +5987,17 @@ function updateTdmBots(dt) {
       if (hasGoal && gd > 2.2) { ux += (gx - ox) / gd * 0.6; uz += (gz - oz) / gd * 0.6; }      // drift back to where it should be
       const l = Math.hypot(ux, uz);
       if (l > 0) { ux /= l; uz /= l; sp *= 0.6; } else sp = 0;
-    } else if ((!hasGoal && !t) || (hasGoal && gd <= b.gr)) sp = 0;
+    } else if ((!hasGoal && !t) || (hasGoal && gd <= b.gr && sameL)) sp = 0;
     else {
-      if (!b.dist || b.dist.length !== cells) { b.dist = new Int16Array(cells); b.flowT = 0; }
-      b.flowT -= dt;
-      if (b.flowT <= 0) { b.flowT = 0.45 + Math.random() * 0.35; navFlow(gx, gz, b.dist); }
-      if (navStep(b, dt, ox, oz, gx, gz) === 2) { ux = _nx; uz = _nz; } else if (gd > 0.01) { ux = (gx - ox) / gd; uz = (gz - oz) / gd; }
+      const rt = flo ? botRoute(b, dt, gx, gz, gy) : 0;
+      if (rt === 1) { ux = _nx; uz = _nz; }
+      else {
+        const fx = rt === 2 ? _rgx : gx, fz = rt === 2 ? _rgz : gz, fd = Math.hypot(fx - ox, fz - oz);
+        if (!b.dist || b.dist.length !== cells) { b.dist = new Int16Array(cells); b.flowT = 0; }
+        b.flowT -= dt;
+        if (b.flowT <= 0 || b.rtT !== rt) { b.rtT = rt; b.flowT = 0.45 + Math.random() * 0.35; navFlow(fx, fz, b.dist); }
+        if (navStep(b, dt, ox, oz, fx, fz) === 2) { ux = _nx; uz = _nz; } else if (fd > 0.01) { ux = (fx - ox) / fd; uz = (fz - oz) / fd; }
+      }
     }
     for (const o of enemies) {                         // don't stand inside a teammate
       if (o === b || o.dead) continue;
@@ -5752,7 +6005,7 @@ function updateTdmBots(dt) {
       if (e2 < 1 && e2 > 1e-4) { const q = 0.5 / Math.sqrt(e2); ux += ex * q; uz += ez * q; if (sp === 0 && !b.act) sp = b.speed * 0.3; }
     }
     const step = sp * dt;
-    collide(ox + ux * step, oz + uz * step, 0.5);
+    collide(ox + ux * step, oz + uz * step, 0.5, flo ? (b.y || 0) : undefined);
     const moved = Math.hypot(_cx - ox, _cz - oz);
     if (step > 0 && moved < step * 0.35) {
       if (fight) b.side = -b.side || 1;
@@ -5760,6 +6013,7 @@ function updateTdmBots(dt) {
     } else b.stuck = 0;
     g.position.x = clamp(_cx, -ARENA + 2, ARENA - 2);
     g.position.z = clamp(_cz, -ARENA + 2, ARENA - 2);
+    if (flo) botFeet(b, dt);
     const want = b.los && t ? Math.atan2(dx, dz) : (ux || uz) ? Math.atan2(ux, uz) : g.rotation.y;
     let da = want - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
     g.rotation.y += da * Math.min(1, dt * 10);
@@ -5783,9 +6037,9 @@ function updateTdmBots(dt) {
       else if (moving) acc *= (held('sprint') || sprintToggle) ? 0.5 : 0.7;
     } else if (t.net) acc *= 0.75;
     const hit = Math.random() < acc;
-    _m.set(g.position.x, 1.3, g.position.z);
+    _m.set(g.position.x, 1.3 + (b.y || 0), g.position.z);
     if (hit) _e.set(tx, ty, tz);
-    else _e.set(tx + (Math.random() - 0.5) * 3, 1.2 + Math.random() * 0.6, tz + (Math.random() - 0.5) * 3);
+    else _e.set(tx + (Math.random() - 0.5) * 3, ty - 0.5 + Math.random() * 0.6, tz + (Math.random() - 0.5) * 3);
     b.kick = 1; b.shots = (b.shots + 1) & 255;
     addTracer(_m, _e, b.team === 'red' ? 0xff6a3d : 0x7dd3fc);
     fxMuzzle(_m, null, 1, 0.8, 0.45, false); shotNoise(0.035, 0.12, 2600);
@@ -5809,7 +6063,7 @@ function updateTdm(dt) {
       if (q.t <= 0) { tdm.queue.splice(i, 1); mkModeBot(q.at, q.name); rebuildTargets(); }
     }
     botsSync(dt);
-    if (GS.id === 'dom') domTick(dt); else if (GS.id === 'kc') kcTick(dt); else if (GS.snd) sndTick(dt); else checkTdmEnd();
+    if (GS.id === 'dom') domTick(dt); else if (GS.id === 'hp') hpTick(dt); else if (GS.id === 'kc') kcTick(dt); else if (GS.snd) sndTick(dt); else checkTdmEnd();
     if (tdm.over) return;
   }
   if (player.alive) updateRegen(dt);
@@ -5830,9 +6084,10 @@ function gsEncode() {
     if (o.net || o.dead) continue;
     const P = o.group.position;
     b.push([o.id, o.at === 'b' ? 0 : 1, Math.round(P.x * 10), Math.round(P.z * 10), Math.round(Math.atan2(Math.sin(o.group.rotation.y), Math.cos(o.group.rotation.y)) * 10),
-            Math.max(1, Math.ceil(o.hp)), o.act ? 1 : 0, o.shots & 255, Math.max(0, BOT_CLS.indexOf(o.cls)), o.seed, Math.max(0, BOT_NAMES.indexOf(o.name)), GS.bk[o.name] || 0, (GS.bd || {})[o.name] || 0, (GS.bbest || {})[o.name] || 0]);
+            Math.max(1, Math.ceil(o.hp)), o.act ? 1 : 0, o.shots & 255, Math.max(0, BOT_CLS.indexOf(o.cls)), o.seed, Math.max(0, BOT_NAMES.indexOf(o.name)), GS.bk[o.name] || 0, (GS.bd || {})[o.name] || 0, (GS.bbest || {})[o.name] || 0, Math.round(P.y * 10)]);
   }
   const h = { n: GS.n, lim: GS.lim, s: [GS.sc.b, GS.sc.r], t: Math.ceil(tdm.t), b, ev: GS.ev, at: GS.at };
+  if (GS.id === 'hp') h.kh = hpEncode();
   if (GS.id === 'dom') h.f = GS.flags.map(f => [f.own === 'b' ? 1 : f.own === 'r' ? 2 : 0, Math.round(f.p * 100)]);
   if (GS.id === 'kc') h.tg = GS.tags.map(t => [t.id, Math.round(t.x * 10), Math.round(t.z * 10), t.at === 'b' ? 0 : 1]);
   const S = GS.snd;
@@ -5946,7 +6201,7 @@ function gsApply(hs, hostId) {                  // draw the host's match
       o = mkModeBot(at, BOT_NAMES[e[10]] || 'بوت', { id, x, z, cls: BOT_CLS[e[8]] || 'assault', seed: Math.abs(Math.floor(e[9])) % 9973, mir: true, hp: Math.max(1, e[5]) });
       o.shots = e[7]; have.set(id, o); changed = true;
     }
-    o.tx = x; o.tz = z; o.tr = e[4] / 10; o.hp = Math.min(o.hp, Math.max(1, e[5])); o.crouch = !!e[6];
+    o.tx = x; o.tz = z; o.tr = e[4] / 10; o.tyy = e.length > 14 ? clamp(+e[14] / 10 || 0, 0, 12) : 0; o.hp = Math.min(o.hp, Math.max(1, e[5])); o.crouch = !!e[6];
     if (e[7] !== o.shots) {                            // it fired: flash and a tracer the way it is facing
       o.shots = e[7]; o.kick = 1;
       const P = o.group.position, w = o.tr;
@@ -5964,6 +6219,7 @@ function gsApply(hs, hostId) {                  // draw the host's match
   }
   for (const [id, t] of GS.dead) if (!seen.has(id) || now - t > 4000) GS.dead.delete(id);
   if (changed) { enemies = enemies.filter(e => !e.dead); rebuildTargets(); }
+  if (GS.id === 'hp') hpApply(hs.kh);
   if (Array.isArray(hs.f)) hs.f.forEach((v, i) => { const f = GS.flags[i]; if (f && Array.isArray(v)) { f.own = v[0] === 1 ? 'b' : v[0] === 2 ? 'r' : ''; f.p = clamp((+v[1] || 0) / 100, -1, 1); } });
   if (Array.isArray(hs.tg)) GS.tags = hs.tg.filter(v => Array.isArray(v) && v.length >= 4 && v.every(q => typeof q === 'number' && isFinite(q))).slice(0, 16).map(v => ({ id: v[0], x: clamp(v[1] / 10, -ARENA, ARENA), z: clamp(v[2] / 10, -ARENA, ARENA), at: v[3] ? 'r' : 'b' }));
   if (S && Array.isArray(hs.sn)) {
@@ -6009,9 +6265,88 @@ function startTdm() {
   giveClassLoadout();
   rebuildTargets();
   const G = GM[GS.id];
-  toast((netOn ? '🌐 ' : '⚔️ ') + G.name + ': ' + (GS.id === 'snd' ? 'أول فريق يفوز بـ' + GS.lim + ' جولات' : GS.id === 'gg' ? G.tag : GS.id === 'dom' ? 'أول فريق يوصل ' + GS.lim : 'أول ' + (G.ffa ? 'واحد' : 'فريق') + ' يوصل ' + GS.lim));
+  toast((netOn ? '🌐 ' : '⚔️ ') + G.name + ': ' + (GS.id === 'snd' ? 'أول فريق يفوز بـ' + GS.lim + ' جولات' : GS.id === 'gg' ? G.tag : GS.id === 'dom' || GS.id === 'hp' ? 'أول فريق يوصل ' + GS.lim : 'أول ' + (G.ffa ? 'واحد' : 'فريق') + ' يوصل ' + GS.lim));
 }
 // ---- the menu: which mode, how many bots ----
+
+// ================= King of the hill (Hardpoint): one zone that moves every minute =================
+const HP_LIMIT = 250, HP_TIME = 60;
+GM.hp = { name: 'الملك', tag: 'منطقة وحدة تتنقل كل دقيقة. امسكوها لحالكم، وأول فريق يوصل ' + HP_LIMIT + ' يفوز' };
+function hpHills() { return (MAPS[currentMap] && MAPS[currentMap].hills) || []; }
+function hpInit() {
+  const H = hpHills(), order = H.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  GS.kh = { order, k: 0, i: order[0] || 0, t: HP_TIME, own: '', acc: 0, nx: order[1 % Math.max(1, order.length)] || 0 };
+  HPV.shown = -1; HPV.warn = -1;
+}
+function hpIn(Z, x, y, z) { return Math.abs(x - Z.x) < Z.w / 2 && Math.abs(z - Z.z) < Z.d / 2 && Math.abs((y || 0) - Z.y) < 1.6; }
+function hpTick(dt) {                              // the host keeps the zone and the score
+  const K = GS.kh, H = hpHills(); if (!K || !H.length) return;
+  const Z = H[K.i];
+  let nb = 0, nr = 0;
+  for (const e of modeEnts()) if (hpIn(Z, e.x, e.y, e.z)) { if (e.at === 'b') nb++; else nr++; }
+  K.own = nb && nr ? 'c' : nb ? 'b' : nr ? 'r' : '';
+  K.acc += dt;
+  if (K.acc >= 1) { K.acc -= 1; if (K.own === 'b' || K.own === 'r') { GS.sc[K.own]++; checkTdmEnd(); } }
+  K.t -= dt;
+  if (K.t <= 0) { K.k = (K.k + 1) % K.order.length; K.i = K.order[K.k]; K.nx = K.order[(K.k + 1) % K.order.length]; K.t = HP_TIME; K.own = ''; }
+}
+function hpEncode() { const K = GS.kh; return K ? [K.i, K.own === 'b' ? 1 : K.own === 'r' ? 2 : K.own === 'c' ? 3 : 0, Math.ceil(K.t), K.nx] : 0; }
+function hpApply(a) {
+  if (!Array.isArray(a)) return;
+  const H = hpHills(), i = Math.floor(+a[0]), nx = Math.floor(+a[3]);
+  if (!(i >= 0 && i < H.length)) return;
+  if (!GS.kh) GS.kh = { order: H.map((_, j) => j), k: 0, i, t: HP_TIME, own: '', acc: 0, nx: 0 };
+  GS.kh.i = i; GS.kh.own = ['', 'b', 'r', 'c'][clamp(Math.floor(+a[1]) || 0, 0, 3)]; GS.kh.t = clamp(+a[2] || 0, 0, HP_TIME); GS.kh.nx = nx >= 0 && nx < H.length ? nx : i;
+}
+// ---- what you see: the outline on the floor, a crown above it ----
+const HPV = { shown: -1, warn: -1, col: '', objs: [], fill: null, edges: [], tag: null };
+const HP_COL = { mine: '#3b82f6', theirs: '#ef4444', c: '#f59e0b', none: '#e5e7eb' };
+function hpCol() { const o = GS.kh && GS.kh.own; return !o ? 'none' : o === 'c' ? 'c' : o === myAt() ? 'mine' : 'theirs'; }
+function hpBuild(Z) {
+  for (const o of HPV.objs) { scene.remove(o); const k = GS.objs.indexOf(o); if (k >= 0) GS.objs.splice(k, 1); }
+  HPV.objs = []; HPV.edges = [];
+  const add = o => { scene.add(o); GS.objs.push(o); HPV.objs.push(o); return o; };
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false });
+  const y = Z.y + 0.07;
+  for (const [w, d, x, z] of [[Z.w, 0.14, Z.x, Z.z - Z.d / 2], [Z.w, 0.14, Z.x, Z.z + Z.d / 2], [0.14, Z.d, Z.x - Z.w / 2, Z.z], [0.14, Z.d, Z.x + Z.w / 2, Z.z]]) {
+    const m = add(new THREE.Mesh(bg(w, 0.06, d), mat)); m.position.set(x, y, z); m.renderOrder = 2;
+  }
+  HPV.mat = mat;
+  const fm = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide });
+  const fill = add(new THREE.Mesh(new THREE.PlaneGeometry(Z.w, Z.d).rotateX(-Math.PI / 2), fm)); fill.position.set(Z.x, y - 0.01, Z.z); HPV.fm = fm;
+  HPV.col = ''; HPV.tagY = Z.y + 3.4; HPV.Z = Z;
+}
+function hpFrame(dt) {
+  if (GS.id !== 'hp' || !GS.kh) { if (HPV.objs.length) { for (const o of HPV.objs) scene.remove(o); HPV.objs = []; HPV.shown = -1; } return; }
+  const K = GS.kh, H = hpHills(), Z = H[K.i]; if (!Z) return;
+  if (HPV.shown !== K.i) {
+    const first = HPV.shown < 0; HPV.shown = K.i; HPV.warn = -1; hpBuild(Z);
+    if (!first) { toast('👑 الملك تنقل: ' + Z.n); [64, 67, 71].forEach((m, j) => bell(m, j * 0.08, 0.06, 1)); }
+  }
+  if (K.t <= 10 && HPV.warn !== K.i && H[K.nx] && K.nx !== K.i) { HPV.warn = K.i; toast('⏳ الملك بيتنقل بعد ١٠ ثواني لـ ' + H[K.nx].n); }
+  const c = hpCol();
+  if (c !== HPV.col) {
+    HPV.col = c; const hex = HP_COL[c];
+    HPV.mat.color.set(hex); HPV.fm.color.set(hex);
+    if (HPV.tag) { scene.remove(HPV.tag); const k = GS.objs.indexOf(HPV.tag); if (k >= 0) GS.objs.splice(k, 1); HPV.objs.splice(HPV.objs.indexOf(HPV.tag), 1); }
+    HPV.tag = tagSprite('👑 الملك', hex, 1.6); HPV.tag.position.set(Z.x, HPV.tagY, Z.z); scene.add(HPV.tag); GS.objs.push(HPV.tag); HPV.objs.push(HPV.tag);
+  }
+  HPV.fm.opacity = 0.1 + 0.06 * Math.sin(performance.now() / 300);
+}
+function hpObj() {
+  const K = GS.kh, H = hpHills(); if (!K || !H[K.i]) return '👑 الملك';
+  const Z = H[K.i], me = player.alive && hpIn(Z, player.x, player.y, player.z), c = hpCol();
+  const st = c === 'mine' ? '🔵 لكم' : c === 'theirs' ? '🔴 لهم' : c === 'c' ? '🟠 متنازع عليه' : '⚪ فاضي';
+  return '👑 ' + Z.n + ' · ' + st + ' · ' + Math.ceil(K.t) + 'ث' + (me ? ' · أنت فيه' : '');
+}
+function hpGoal(b) {
+  const K = GS.kh, H = hpHills(); if (!K || !H[K.i]) return;
+  const Z = H[K.i], P = b.group.position;
+  goalAt(b, Z.x, Z.z, Math.max(0.6, Math.min(Z.w, Z.d) / 2 - 0.6));
+  b.gy = Z.y; b.gr = 0.9; b.hard = Math.hypot(Z.x - P.x, Z.z - P.z) < 10 || b.id % 3 === 0;
+}
+
 function selectGm(id) {
   if (!GM[id]) id = 'tdm';
   gmId = id;
@@ -6020,7 +6355,7 @@ function selectGm(id) {
   if ($('gmWrap') && !$('gmWrap').hidden) $('tagline').textContent = GM[id].tag;
   if (E.clsWrap) E.clsWrap.style.display = isTdmMap(selectedMap) && id !== 'gg' ? 'flex' : 'none';
 }
-for (const id of ['tdm', 'dom', 'kc', 'snd', 'gg', 'ffa']) {
+for (const id of ['tdm', 'dom', 'hp', 'kc', 'snd', 'gg', 'ffa']) {
   const b = document.createElement('button');
   b.className = 'gmBtn'; b.type = 'button'; b.dataset.gm = id; b.textContent = GM[id].name;
   b.addEventListener('click', () => selectGm(id));
@@ -6777,6 +7112,7 @@ function navRebuild() {
     for (let ix = 0; ix < n; ix++) { const x = -ARENA + (ix + 0.5) * cs; if (Math.abs(x) > lim || Math.abs(z) > lim) bl[iz * n + ix] = 1; }
   }
   for (const o of obstacles) {                     // walls and cover, grown by a zombie's width
+    if (o.bot !== undefined && o.bot >= 2) continue;   // a floor or wall overhead
     const x0 = Math.max(0, Math.floor((o.minX - pad + ARENA) / cs)), x1 = Math.min(n - 1, Math.floor((o.maxX + pad + ARENA) / cs));
     const z0 = Math.max(0, Math.floor((o.minZ - pad + ARENA) / cs)), z1 = Math.min(n - 1, Math.floor((o.maxZ + pad + ARENA) / cs));
     for (let iz = z0; iz <= z1; iz++) {
@@ -7513,7 +7849,7 @@ function buildBoxObject() {
 
 function spotFree(x, z, m) {
   if (Math.abs(x) > ARENA - 3 || Math.abs(z) > ARENA - 3) return false;
-  for (const o of obstacles) if (x > o.minX - m && x < o.maxX + m && z > o.minZ - m && z < o.maxZ + m) return false;
+  for (const o of obstacles) if ((o.bot === undefined || o.bot < 2) && x > o.minX - m && x < o.maxX + m && z > o.minZ - m && z < o.maxZ + m) return false;
   return true;
 }
 function removeBoxCollider() {
@@ -9399,7 +9735,7 @@ function ksEndBoard() {
   const box = document.createElement('div'); box.id = 'endBoard2';
   const card = document.createElement('div'); card.className = 'mvp';
   card.innerHTML = '<span>🏅 أفضل لاعب</span><b></b><small></small>';
-  card.querySelector('b').textContent = mvp.n + (mvp.me ? ' (أنت)' : '');
+  card.querySelector('b').textContent = mvp.n + (mvp.me && mvp.n !== 'أنت' ? ' (أنت)' : '');
   card.querySelector('small').textContent = mvp.k + ' قتلة · ' + mvp.d + ' موتة · أطول سلسلة ' + mvp.s + (ls.s > 0 && ls !== mvp ? '   |   🔥 أطول سلسلة: ' + ls.n + ' ' + ls.s : '');
   box.appendChild(card);
   const tbl = document.createElement('div'); tbl.className = 'eb';
@@ -9805,7 +10141,7 @@ function loop(now) {
       }
       if (mode === 'tdm') {
         updateTdm(dt);
-        try { kcamRecord(dt); ksFrame(dt); sbUpdate(); } catch (e) { if (loopErrors++ < 5) console.error('streak error:', e); }
+        try { kcamRecord(dt); ksFrame(dt); sbUpdate(); hpFrame(dt); } catch (e) { if (loopErrors++ < 5) console.error('streak error:', e); }
       } else {
         updateBots(dt);
         updateRegen(dt);
