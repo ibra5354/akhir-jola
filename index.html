@@ -155,6 +155,15 @@
   #tdmBar { right:12px; text-align:center; min-width:150px; }
   #tdmScore { font-size:20px; font-weight:800; letter-spacing:1px; direction:ltr; }
   #tdmTime { font-size:15px; color:#ddd; }
+  #tdmObj { font-size:13px; color:#fde68a; font-weight:800; margin-top:1px; white-space:nowrap; }
+  #gmRow { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 8px; }
+  .gmBtn { flex:1 1 30%; border:1px solid rgba(141,151,170,.22); border-radius:10px; padding:8px 6px; background:rgba(20,28,46,.72); color:var(--steel); font:inherit; font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap; }
+  .gmBtn.sel { background:#b91c1c; border-color:#ef4444; color:#fff; }
+  #botRow { display:flex; align-items:center; gap:10px; margin:0 0 10px; font-size:14px; font-weight:700; color:var(--steel); }
+  #botRow input { flex:1; accent-color:#ef4444; min-width:0; }
+  #botRow b { min-width:1.2em; text-align:center; color:#fff; font-size:16px; }
+  #gmWrap[hidden] { display:none !important; }
+  #respawn { transition:opacity .4s; }
   #feed { position:absolute; top:112px; right:12px; text-align:right; font-size:13px; line-height:1.7; pointer-events:none; }
   #feed div { background:rgba(0,0,0,.5); border-radius:7px; padding:2px 8px; margin-bottom:3px; display:inline-block; }
   #respawn { position:absolute; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); transform:translateX(-50%); width:min(94vw,440px); max-height:56vh; overflow-y:auto; display:none; flex-direction:column; gap:9px;
@@ -365,7 +374,7 @@
   </div>
   <canvas id="radar" width="192" height="192"></canvas>
   <div class="bar" id="right"><div id="tally"></div><b id="wave">0</b><div id="ptsRow"><b id="pts">300</b><small>نقطة</small></div><div id="subRow">القتلى <b id="kills">0</b> · الأعداء <b id="alive">0</b></div></div>
-  <div class="bar" id="tdmBar" style="display:none"><div id="tdmScore"></div><div id="tdmTime">10:00</div></div>
+  <div class="bar" id="tdmBar" style="display:none"><div id="tdmScore"></div><div id="tdmTime">10:00</div><div id="tdmObj"></div></div>
   <div id="feed"></div>
   <div id="respawn">
     <div id="dTop"><span id="dLbl">قتلك</span><b id="dName"></b></div>
@@ -418,14 +427,20 @@
       <button class="mapBtn" data-map="town" data-sec="z" type="button"><span class="mName">الحي النووي</span><small>بيتين وشارع وباص، وقتال قريب</small></button>
       <button class="mapBtn" data-map="base" data-sec="z" type="button"><span class="mName">المجمّع</span><span class="mKind n">جديد</span><small>قاعدة عسكرية ومختبر سري: أبواب بالنقاط، كهرباء، فخاخ، ناقل وسر مدفون</small></button>
       <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind t">6 ضد 6</span><small>فريقك ضد فريقهم في الشارع، وأول 75 قتلة تفوز</small></button>
+      <button class="mapBtn" data-map="souq" data-sec="m" type="button"><span class="mName">السوق</span><span class="mKind n">جديد</span><small>ميدان ونافورة وحارات دكاكين، وسطحين تطلع لهم بالدرج</small></button>
       <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><span class="mKind t">6 ضد 6</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
     </div>
     <p id="best"></p>
+    <div id="gmWrap" hidden>
+      <div class="secLbl">الطور</div>
+      <div id="gmRow"></div>
+      <div id="botRow"><span>بوتات كل فريق</span><input id="botN" type="range" min="0" max="5" step="1" value="5" aria-label="عدد البوتات في كل فريق"><b id="botNV">5</b></div>
+    </div>
     <div id="clsWrap">
       <div class="secLbl">اختر سلاحك</div>
       <div id="classes"></div>
     </div>
-    <label class="opt" id="netOpt" for="netTgl" hidden><span><i id="netTitle" style="font-style:normal">🌐 لعب أونلاين (تجريبي)</i><small id="netInfo">الكل ضد الكل مع اللي فاتحين اللعبة، بدون بوتات</small></span><input type="checkbox" id="netTgl"><span class="sw"></span></label>
+    <label class="opt" id="netOpt" for="netTgl" hidden><span><i id="netTitle" style="font-style:normal">🌐 لعب أونلاين (تجريبي)</i><small id="netInfo">مع اللي فاتحين اللعبة الحين</small></span><input type="checkbox" id="netTgl"><span class="sw"></span></label>
     <div id="netBox" hidden>
       <div id="netModes"><button class="nMode sel" data-q="t" type="button">فرق</button><button class="nMode" data-q="f" type="button">الكل ضد الكل</button></div>
       <input id="netName" type="text" maxlength="12" placeholder="اسمك" autocomplete="off">
@@ -475,6 +490,7 @@
       <div class="row"><span>الصندوق</span><span>بـ<b>500</b> يعطيك سلاح عشوائي. عمود النور الأزرق يدلّك عليه</span></div>
       <div class="row"><span>المشروبات</span><span>قوة (تتحمل 4 ضربات)، تعبئة سريعة، إطلاق سريع، جري أسرع، شفاء سريع (500: لو طحت تقوم لحالك، 3 مرات بس)</span></div>
       <div class="row"><span>التطوير</span><span>البوابة البنفسجية تضاعف ضرر سلاحك ومخزنه</span></div>
+      <div class="row"><span>أطوار الجماعي</span><span>السيطرة: امسك النقاط أ ب ج. تأكيد القتل: لمّ التاق الذهبي عشان تنحسب قتلتك، والأزرق عشان تحرمهم. سباق الأسلحة: كل قتلة بسلاح جديد. السيرش: المهاجم يزرع القنبلة بزر الاستخدام في أحد الموقعين (4 ثواني بدون حركة) والمدافع يفكّها (5 ثواني)، وما فيه رجعة لين الجولة الجاية.</span></div>
       <div class="row"><span>المجمّع</span><span>تبدأ في غرفة الحراسة. الأبواب تنفتح بالنقاط (750 إلى 1250)، والزومبي يجون من شبابيك المناطق المفتوحة بس. شغّل الكهرباء من غرفة المولدات عشان تشتغل المشروبات والفخاخ (1000) والناقل. وفيه سر: ثلاث راديوات قديمة…</span></div>
       <div class="row"><span>القوى</span><span>الزومبي يطيّحون أحياناً: ذخيرة كاملة، قتل فوري، نقاط مضاعفة، قنبلة تمسحهم، ونجّار يسكّر كل الشبابيك</span></div>
       <div class="row"><span>الزعيم</span><span>يجيك كل <b>5</b> جولات</span></div>
@@ -551,7 +567,7 @@ document.body.classList.add('inmenu');
 // ---------- DOM refs ----------
 const E = {};
 ['hpTxt', 'hp', 'ammoMag', 'ammoRes', 'reload', 'boost', 'wave', 'kills', 'alive', 'toast', 'cross', 'flash', 'endTxt', 'endScr', 'startScr', 'best', 'wname', 'pts', 'boxMsg', 'prompt', 'useBtn', 'powers', 'bossBar', 'bossFill', 'shTxt', 'sh', 'perkRow',
-                 'tdmBar', 'tdmScore', 'tdmTime', 'feed', 'respawn', 'endTitle', 'right', 'clsWrap', 'classes', 'tally', 'rlRing', 'rlArc', 'lowAmmo', 'wpn', 'shRow']
+                 'tdmBar', 'tdmScore', 'tdmTime', 'tdmObj', 'feed', 'respawn', 'endTitle', 'right', 'clsWrap', 'classes', 'tally', 'rlRing', 'rlArc', 'lowAmmo', 'wpn', 'shRow']
   .forEach(id => { E[id] = $(id); });
 
 // ---------- Renderer / scene ----------
@@ -1263,6 +1279,7 @@ function cover(kind, x, z, w, h, d, i) {
 }
 
 function clearMap() {
+  gsClear();
   baseClear();
   resetDecals(); resetBlood(); lamps.length = 0; glows.length = 0; fires.length = 0; barriers.length = 0; repairing = null;
   for (const o of mapObjects) scene.remove(o);
@@ -2582,10 +2599,151 @@ function thunderBlast(def) {
     if (n >= 3) toast('⚡ ×' + n);
   }
 }
+// ---------- Team map: the old market ----------
+// A square with a fountain, shop blocks on the four corners, a cafe and a khan with roof terraces you reach by
+// outside stairs, and a ring of back alleys. Three ways from one side to the other: through the square or round either flank.
+KIND[0xd8c49a] = 'concrete'; KIND[0xc7a877] = 'brick'; KIND[0xb89a6c] = 'concrete'; KIND[0xe6d9bd] = 'concrete';
+const AWN = [0xb3261e, 0x1f6f8b, 0x2f7a4a, 0xc98a1f, 0x7a3b8a];
+function shopFront(x0, x1, z, dir, seed) {       // a row of little shops along a wall that runs in x; dir = which way they face in z
+  const n = Math.max(1, Math.round((x1 - x0) / 3.3)), s = (x1 - x0) / n, f = z + dir * 0.02;
+  for (let i = 0; i < n; i++) {
+    const cx = x0 + s * (i + 0.5), col = AWN[(seed + i) % AWN.length];
+    inst('box', cx, 1.15, f, s - 1.0, 2.3, 0.06, 0, 0x2a2118);                               // dark doorway
+    inst('box', cx, 2.42, f + dir * 0.02, s - 0.7, 0.16, 0.1, 0, 0x5a4129);                  // lintel
+    for (let k = 0; k < 4; k++) inst('box', cx - (s - 0.7) / 2 + (k + 0.5) * (s - 0.7) / 4, 2.62, f + dir * 0.55, (s - 0.7) / 4, 0.06, 1.1, 0, k % 2 ? 0xf1ead8 : col);   // striped awning
+    inst('box', cx, 2.52, f + dir * 1.08, s - 0.7, 0.16, 0.04, 0, col);
+    for (const sx of [-1, 1]) inst('box', cx + sx * (s / 2 - 0.42), 1.3, f + dir * 1.06, 0.06, 2.6, 0.06, 0, 0x5a4129);
+    inst('box', cx, 3.55, f, 0.9, 0.9, 0.05, 0, 0x263847); inst('box', cx, 3.55, f + dir * 0.03, 1.06, 0.08, 0.05, 0, 0x8a6d3b);        // window over the shop
+    if ((seed + i) % 3 === 0) { inst('box', cx - s / 2 + 0.75, 0.3, f + dir * 0.5, 0.7, 0.6, 0.7, 0.2, 0x8a6d3b); inst('box', cx - s / 2 + 0.75, 0.68, f + dir * 0.5, 0.6, 0.16, 0.6, 0.2, [0xc0392b, 0xe0a030, 0x6a9a3a][i % 3]); }   // crate of goods
+    if ((seed + i) % 3 === 1) inst('barrel', cx + s / 2 - 0.75, 0.4, f + dir * 0.45, 0.9, 0.9, 0.9, 0, 0x7a5a36);
+    if ((seed + i) % 2 === 0) inst('box', cx + 0.2, 1.7, f + dir * 0.05, 1.0, 1.5, 0.03, 0, [0x8a2f2f, 0x2f4f8a, 0x7a5a1e][i % 3]);                                                                                                // carpet hung by the door
+  }
+}
+function shopFrontZ(x, z0, z1, dir, seed) {      // the same along a wall that runs in z
+  const n = Math.max(1, Math.round((z1 - z0) / 3.3)), s = (z1 - z0) / n, f = x + dir * 0.02;
+  for (let i = 0; i < n; i++) {
+    const cz = z0 + s * (i + 0.5), col = AWN[(seed + i) % AWN.length];
+    inst('box', f, 1.15, cz, 0.06, 2.3, s - 1.0, 0, 0x2a2118);
+    inst('box', f + dir * 0.02, 2.42, cz, 0.1, 0.16, s - 0.7, 0, 0x5a4129);
+    for (let k = 0; k < 4; k++) inst('box', f + dir * 0.55, 2.62, cz - (s - 0.7) / 2 + (k + 0.5) * (s - 0.7) / 4, 1.1, 0.06, (s - 0.7) / 4, 0, k % 2 ? 0xf1ead8 : col);
+    inst('box', f + dir * 1.08, 2.52, cz, 0.04, 0.16, s - 0.7, 0, col);
+    for (const sz of [-1, 1]) inst('box', f + dir * 1.06, 1.3, cz + sz * (s / 2 - 0.42), 0.06, 2.6, 0.06, 0, 0x5a4129);
+    inst('box', f, 3.55, cz, 0.05, 0.9, 0.9, 0, 0x263847); inst('box', f + dir * 0.03, 3.55, cz, 0.05, 0.08, 1.06, 0, 0x8a6d3b);
+    if ((seed + i) % 3 === 0) inst('barrel', f + dir * 0.45, 0.4, cz + s / 2 - 0.75, 0.9, 0.9, 0.9, 0, 0x7a5a36);
+    if ((seed + i) % 2 === 1) inst('box', f + dir * 0.05, 1.7, cz - 0.2, 0.03, 1.5, 1.0, 0, [0x8a2f2f, 0x2f4f8a, 0x7a5a1e][i % 3]);
+  }
+}
+function souqBlock(x0, x1, z0, z1, h, col, seed) {
+  const n = obstacles.length;
+  boxMM(x0, x1, z0, z1, 0, h, col);
+  delete obstacles[n].top;                                                                    // nobody climbs a shop block
+  inst('box', (x0 + x1) / 2, h + 0.12, (z0 + z1) / 2, x1 - x0 + 0.3, 0.24, z1 - z0 + 0.3, 0, shade(col, 0.8));
+  for (let x = x0 + 0.6; x < x1; x += 1.2) { inst('box', x, h + 0.4, z0 + 0.12, 0.6, 0.34, 0.24, 0, col); inst('box', x, h + 0.4, z1 - 0.12, 0.6, 0.34, 0.24, 0, col); }       // crenellated roof line
+  shopFront(x0 + 0.4, x1 - 0.4, z0, -1, seed); shopFront(x0 + 0.4, x1 - 0.4, z1, 1, seed + 2);
+  shopFrontZ(x0, z0 + 0.4, z1 - 0.4, -1, seed + 1); shopFrontZ(x1, z0 + 0.4, z1 - 0.4, 1, seed + 3);
+}
+function roofHouse(x0, x1, z0, z1, h, col, stairSide, seed) {     // a block you can stand on, with stairs along its north or south face
+  boxMM(x0, x1, z0, z1, 0, h, col);
+  const steps = 11, run = 0.5, rise = h / steps, zs = stairSide > 0 ? [z1, z1 + 1.2] : [z0 - 1.2, z0];
+  for (let i = 0; i < steps; i++) {
+    const xa = stairSide > 0 ? x0 + i * run : x1 - (i + 1) * run;
+    boxMM(xa, xa + run, zs[0], zs[1], 0, +(rise * (i + 1)).toFixed(3), 0xb89a6c); obstacles[obstacles.length - 1].step = true;
+  }
+  const lx = stairSide > 0 ? x0 + steps * run : x1 - steps * run;                               // landing at the top
+  boxMM(Math.min(lx, lx + stairSide * 1.2), Math.max(lx, lx + stairSide * 1.2), zs[0], zs[1], 0, h, 0xb89a6c);
+  inst('box', (x0 + x1) / 2, h + 0.05, (z0 + z1) / 2, x1 - x0 - 0.2, 0.06, z1 - z0 - 0.2, 0, shade(col, 0.72));     // terrace tiles
+  // rail along the back and sides (looks only), open towards the square
+  const back = x0 < 0 ? x0 + 0.1 : x1 - 0.1;
+  inst('box', back, h + 0.55, (z0 + z1) / 2, 0.1, 0.08, z1 - z0, 0, 0x5a4129);
+  for (let z = z0 + 0.3; z < z1; z += 1.4) inst('box', back, h + 0.3, z, 0.07, 0.55, 0.07, 0, 0x5a4129);
+  // tables under umbrellas on the terrace
+  for (const [tx, tz, c] of [[(x0 + x1) / 2 - 1.2, z0 + 2.2, AWN[seed % 5]], [(x0 + x1) / 2 + 1.0, z1 - 2.4, AWN[(seed + 2) % 5]]]) {
+    inst('barrel', tx, h + 0.4, tz, 1.3, 0.08, 1.3, 0, 0x6b4f3a); inst('box', tx, h + 0.2, tz, 0.08, 0.4, 0.08, 0, 0x3a2f24);
+    inst('box', tx, h + 1.2, tz, 0.05, 2.0, 0.05, 0, 0x3a2f24); inst('barrel', tx, h + 2.15, tz, 3.4, 0.07, 3.4, 0, c);
+  }
+  const front = x0 < 0 ? x1 : x0, dir = x0 < 0 ? 1 : -1;
+  shopFrontZ(front, z0 + 0.4, z1 - 0.4, dir, seed);
+  shopFront(x0 + 0.4, x1 - 0.4, stairSide > 0 ? z0 : z1, stairSide > 0 ? -1 : 1, seed + 1);
+}
+function stall(x, z, alongX, c) {                 // a market stand: counter you can vault, cloth roof on four poles
+  const w = alongX ? 2.6 : 1.1, d = alongX ? 1.1 : 2.6;
+  boxMM(x - w / 2, x + w / 2, z - d / 2, z + d / 2, 0, 1.0, 0x8a7f70, 2);
+  inst('box', x, 0.5, z, w, 1.0, d, 0, 0x7a5a36); inst('box', x, 1.03, z, w + 0.12, 0.06, d + 0.12, 0, 0x4a3320);
+  for (let i = 0; i < 3; i++) { const u = (i - 1) * 0.75; inst('box', x + (alongX ? u : 0), 1.16, z + (alongX ? 0 : u), 0.5, 0.2, 0.5, 0.3 * i, [0xc0392b, 0xe0a030, 0x6a9a3a, 0xd9d2c0][(i + (c | 0)) % 4]); }
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) inst('box', x + sx * (w / 2 + 0.25), 1.35, z + sz * (d / 2 + 0.25), 0.07, 2.7, 0.07, 0, 0x4a3320);
+  for (let k = 0; k < 4; k++) inst('box', x + (alongX ? -w / 2 - 0.3 + (k + 0.5) * (w + 0.6) / 4 : 0), 2.74, z + (alongX ? 0 : -d / 2 - 0.3 + (k + 0.5) * (d + 0.6) / 4), alongX ? (w + 0.6) / 4 : w + 0.7, 0.05, alongX ? d + 0.7 : (d + 0.6) / 4, 0, k % 2 ? 0xf1ead8 : AWN[c % 5]);
+}
+const palmLeafGeo = new THREE.ConeGeometry(0.34, 2.6, 4).translate(0, 1.3, 0);
+function palm(x, z) {
+  const g = new THREE.Group(), tm = lam(0x7a5a36), lm = phong(0x3f7a34, 0, true);
+  for (let i = 0; i < 5; i++) { const m = part(g, trunkGeo, tm, Math.sin(i * 0.5) * 0.12, 0.55 + i * 1.05, 0); m.scale.set(1.15 - i * 0.1, 1.1, 1.15 - i * 0.1); }
+  for (let i = 0; i < 7; i++) { const l = part(g, palmLeafGeo, lm, 0.2, 5.5, 0); l.rotation.set(0, i / 7 * 6.283, 0); l.rotateZ(-1.15 - (i % 2) * 0.2); l.scale.set(1.5, 1, 0.5); }
+  g.position.set(x, 0, z); g.rotation.y = rnd() * 6; track(g);
+  const n = obstacles.length; boxMM(x - 0.25, x + 0.25, z - 0.25, z + 0.25, 0, 3, 0x8a7f70, 2); delete obstacles[n].top;
+}
+function buildSouq() {
+  ARENA = 24; radarRange = 20;
+  setSky(0xe0c498);
+  scene.fog.near = 34; scene.fog.far = 130;
+  makeGround(0xc9b48a, 'concrete');
+  perimeter(0xc7a877);
+  backdrop(0xb89a66, false);
+  // the paved square
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(26, 22), new THREE.MeshLambertMaterial({ color: 0xd9c8a4, map: getTex('brick', 13, 11) }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.02; track(m, true); m.receiveShadow = true; }
+  // four shop blocks on the corners
+  souqBlock(-19, -9, -20, -11, 5.2, 0xd8c49a, 0); souqBlock(9, 19, -20, -11, 4.6, 0xc7a877, 1);
+  souqBlock(-19, -9, 11, 20, 4.6, 0xc7a877, 2); souqBlock(9, 19, 11, 20, 5.2, 0xd8c49a, 3);
+  // the cafe (west) and the khan (east): flat roofs you can fight from
+  roofHouse(-19, -13, -5, 5, 3.3, 0xe6d9bd, 1, 0);
+  roofHouse(13, 19, -5, 5, 3.3, 0xe6d9bd, -1, 2);
+  // gates that hide each spawn from the square
+  for (const z of [14, -14]) {
+    for (const sx of [-1, 1]) { const n = obstacles.length; boxMM(sx < 0 ? -9 : 3.2, sx < 0 ? -3.2 : 9, z - 0.45, z + 0.45, 0, 3.6, 0xb89a6c); delete obstacles[n].top; }
+    boxMM(-3.2, 3.2, z - 0.45, z + 0.45, 3.0, 4.1, 0xb89a6c);
+    inst('box', 0, 4.25, z, 7.2, 0.3, 1.1, 0, 0x8a6d3b);
+    for (const sx of [-1, 1]) inst('box', sx * 3.2, 4.6, z, 0.5, 1.0, 0.5, 0, 0xb89a6c);
+    for (let k = -5; k <= 5; k++) inst('box', k * 0.55, 2.82 - Math.abs(k % 2) * 0.1, z, 0.3, 0.34, 0.03, 0, AWN[(k + 5) % 5]);             // bunting under the arch
+  }
+  // the fountain
+  { const n = obstacles.length; boxMM(-1.7, 1.7, -1.7, 1.7, 0, 0.75, 0x8a7f70, 2);
+    boxMM(-0.4, 0.4, -0.4, 0.4, 0, 2.4, 0x8a7f70, 2); delete obstacles[n + 1].top;
+    const st = phong(0xd9cdb4, 20), wm = phong(0x3f9fc0, 90);
+    const basin = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.15, 0.75, 8), st); basin.position.y = 0.375; basin.rotation.y = Math.PI / 8; track(basin);
+    const water = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 0.06, 8), wm); water.position.y = 0.72; water.rotation.y = Math.PI / 8; track(water, true);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.4, 2.3, 8), st); col.position.y = 1.15; track(col);
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.35, 0.3, 8), st); bowl.position.y = 2.35; track(bowl);
+    const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.05, 8), wm); w2.position.y = 2.5; track(w2, true); }
+  // stands, crates, barrels, two parked cars
+  stall(-7, -4.5, true, 0); stall(7, 4.5, true, 1); stall(-9.5, 3.4, false, 2); stall(9.5, -3.4, false, 3);
+  cover('crates', 5.2, -5.8, 2, 1.2, 2, 0); cover('crates', -5.2, 5.8, 2, 1.2, 2, 1);
+  cover('barrel', -3.6, -8.6, 1.3, 0.9, 1.3, 0); cover('barrel', 3.6, 8.6, 1.3, 0.9, 1.3, 1);
+  cover('sand', 0, 7.2, 3.2, 1.0, 1, 0); cover('sand', 0, -7.2, 3.2, 1.0, 1, 1);
+  carZ(-11.2, -7.6, 0x9c3b2e); carZ(11.2, 7.6, 0x2d5f8b);
+  cover('crates', -21.2, 12.5, 1.5, 1.2, 1.5, 0); cover('crates', 21.2, -12.5, 1.5, 1.2, 1.5, 1);         // in the back alleys
+  cover('barrel', -21.3, -8, 1.3, 0.9, 1.3, 0); cover('barrel', 21.3, 8, 1.3, 0.9, 1.3, 1);
+  cover('crates', -6, 21.2, 2, 1.2, 1.5, 0); cover('crates', 6, -21.2, 2, 1.2, 1.5, 1);
+  for (const [x, z] of [[-11.5, 9.2], [11.5, -9.2], [-11.8, -9.6], [11.8, 9.6]]) palm(x, z);
+  // lines of bunting over the lanes
+  for (const [x0, x1, z] of [[-13, -9, 8], [9, 13, -8], [-13, -9, -8], [9, 13, 8]]) for (let k = 0; k < 8; k++) inst('box', x0 + (k + 0.5) * (x1 - x0) / 8, 3.9 - Math.sin((k + 0.5) / 8 * Math.PI) * 0.5, z, 0.3, 0.34, 0.03, 0, AWN[k % 5]);
+  // something on the skyline: two minarets and a dome beyond the walls
+  for (const [x, z, h] of [[-33, -31, 19], [34, 30, 16]]) {
+    inst('box', x, h / 2, z, 2.6, h, 2.6, 0, 0xd8c49a); inst('box', x, h * 0.72, z, 3.6, 0.4, 3.6, 0, 0xb89a6c); inst('box', x, h + 0.9, z, 1.6, 1.8, 1.6, 0, 0xd8c49a);
+    const d = new THREE.Mesh(new THREE.SphereGeometry(1.25, 10, 7), phong(0x2f8f7a, 30)); d.position.set(x, h + 2.2, z); track(d, true);
+    inst('box', x, h + 4.0, z, 0.1, 1.4, 0.1, 0, 0xc9a23a);
+  }
+  { inst('box', 31, 4, -31, 13, 8, 11, 0, 0xcdb891); const d = new THREE.Mesh(new THREE.SphereGeometry(5, 14, 9, 0, 6.2832, 0, 1.5708), phong(0x2f8f7a, 30)); d.position.set(31, 8, -31); track(d, true); }
+}
+const SOUQ_SPAWNS = [[-6, 17.2], [0, 17.6], [6, 17.2], [-4, 20.4], [4, 20.4], [-8, 20.6], [8, 20.6],
+                     [-6, -17.2], [0, -17.6], [6, -17.2], [-4, -20.4], [4, -20.4], [-8, -20.6], [8, -20.6]];
 const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x: 25, y: 9.5, z: 25.5, tx: 3, ty: 0.5, tz: 1 }, start: [-17, 20.5, 0], boxSpots: BASE_BOX }, town: { build: buildTown }, tdm: { build: buildTown, tdm: true },
   port: { build: buildPort, tdm: true, cam: { x: -11.5, y: 7.5, z: 12.5, tx: 1, ty: 0.6, tz: -1 },
           spawns: [[-11.6, 12.2], [11.6, 12.2], [-6.4, 12.3], [6.4, 12.3], [-12.4, 7], [12.4, 7.2], [-12.4, 0], [12.4, 0],
                    [-11.6, -12.2], [11.6, -12.2], [-6.4, -12.3], [6.4, -12.3], [-12.4, -7.2], [12.4, -7]] } };
+MAPS.souq = { build: buildSouq, tdm: true, cam: { x: -17, y: 10, z: 22, tx: 0, ty: 1, tz: 0 }, spawns: SOUQ_SPAWNS, sideBias: 14,
+              flags: [[-6, 9.6], [0, 0], [6, -9.6]], sites: [[-16, -8], [16.5, -8.6]] };
+MAPS.tdm.flags = [[0, 9.8], [0.5, 2.2], [0, -9.8]]; MAPS.tdm.sites = [[-14.5, -13], [14.5, -13]];
+MAPS.port.flags = [[-1.2, 9.6], [0, 0], [1.2, -9.6]]; MAPS.port.sites = [[-11.4, -5.6], [11.3, -6.6]];
 const isTdmMap = id => !!(MAPS[id] && MAPS[id].tdm);
 let builtMode = 'waves';
 function buildMap(id) { clearMap(); MAPS[id].build(); flushInst(); currentMap = id; builtMode = mode; raining = night && id === 'town'; rainMesh.visible = raining; if (raining) { scene.fog.near = 5; scene.fog.far = 50; } }
@@ -3947,6 +4105,7 @@ function collide(x, z, r, feet) {
   const fy = feet || 0;
   for (const o of obstacles) {
     if (fy > 0 && o.top !== undefined && o.top <= fy + 0.02) continue;   // we're above it
+    if (o.step && feet !== undefined && o.top <= fy + 0.36) continue;    // a stair: walk up it
     const cx = clamp(x, o.minX, o.maxX), cz = clamp(z, o.minZ, o.maxZ);
     const dx = x - cx, dz = z - cz, d2 = dx * dx + dz * dz;
     if (d2 < r * r) {
@@ -4190,60 +4349,6 @@ function faceOpen() {
   }
   player.yaw = best; player.pitch = 0;
 }
-function teamSpawn(team) {
-  const S = MAPS[currentMap] && MAPS[currentMap].spawns;
-  if (S) {                                              // small maps: the point furthest from the other team, own side first
-    let best = null, bs = -1e9;
-    for (const [sx, sz] of S) {
-      let x = sx + (Math.random() - 0.5) * 1.2, z = sz + (Math.random() - 0.5) * 1.2;
-      if (!spotFree(x, z, 0.7)) { x = sx; z = sz; if (!spotFree(x, z, 0.55)) continue; }
-      let md = 22, crowd = 0;
-      for (const o of enemies) {
-        if (o.dead) continue;
-        const d = Math.hypot(o.group.position.x - x, o.group.position.z - z);
-        if (o.team !== team) md = Math.min(md, d); else if (d < 2) crowd++;
-      }
-      if (team === 'red' && player.alive && running) md = Math.min(md, Math.hypot(player.x - x, player.z - z));
-      const sc = md + ((team === 'blue') === (sz > 0) ? 5 : 0) + Math.random() * 3 - crowd * 5;
-      if (sc > bs) { bs = sc; best = [x, z]; }
-    }
-    if (best) return best;
-  }
-  const Z = SPAWN_ZONES[team];
-  let fallback = null;
-  for (let i = 0; i < 40; i++) {
-    const x = Z.x[0] + Math.random() * (Z.x[1] - Z.x[0]);
-    const z = Z.z[0] + Math.random() * (Z.z[1] - Z.z[0]);
-    if (!spotFree(x, z, 0.9)) continue;
-    if (!fallback) fallback = [x, z];
-    let near = false;                                 // never drop someone on top of an enemy
-    for (const b of enemies) {
-      if (b.dead || b.team === team) continue;
-      if (Math.hypot(b.group.position.x - x, b.group.position.z - z) < 9) { near = true; break; }
-    }
-    if (!near && team === 'red' && player.alive && Math.hypot(player.x - x, player.z - z) < 9) near = true;
-    if (!near) return [x, z];
-  }
-  return fallback || [(Math.random() - 0.5) * 18, team === 'blue' ? 24 : -24];
-}
-function spawnTeamBot(team, name) {
-  const M = TEAM_MAT[team];
-  const group = new THREE.Group();
-  const { body, head, op } = opRig(group, team, BOT_CLS[botSeed % BOT_CLS.length], botSeed++);
-  const [x, z] = teamSpawn(team);
-  group.position.set(x, 0, z);
-  group.rotation.y = team === 'blue' ? Math.PI : 0;
-  scene.add(group);
-  const bot = {
-    group, body, head, op, type: 'normal', scale: 1, team, name,
-    hp: TDM_BOT_HP, maxHp: TDM_BOT_HP, speed: 4.2, dmg: 1,
-    cool: 0.6 + Math.random(), hitT: 0, detour: 0, side: 1, los: false, losT: 0,
-    charge: null, dead: false, tgt: null, retgt: 0
-  };
-  body.userData.bot = bot; head.userData.bot = bot;
-  enemies.push(bot);
-  return bot;
-}
 function feedAdd(killer, victim, team) {
   const txt = killer === 'أنت' ? 'قتلت ' + victim
             : victim === 'أنت' ? 'قتلك ' + killer
@@ -4252,33 +4357,7 @@ function feedAdd(killer, victim, team) {
   if (tdm.feed.length > 5) tdm.feed.pop();
   hc.feed = null;                                      // force the HUD to redraw it
 }
-function botDamage(b, d, byTeam, byName) {
-  if (b.dead) return;
-  b.hp -= d; b.hitT = 0.08;
-  if (b.hp <= 0) tdmKill(b, byTeam, byName || null);
-}
-function tdmKill(b, byTeam, killerName) {
-  if (killerName === 'أنت') { killMark(); popPoints(100, 'kill'); }
-  fxDeath(b.group.position.x, b.group.position.z);
-  if (b.dead || tdm.over) return;
-  b.dead = true;
-  dying.push({ group: b.group, t: 0.4, dur: 0.4 });
-  enemies = enemies.filter(e => !e.dead);
-  rebuildTargets();
-  tdm[byTeam]++;
-  if (killerName === 'أنت') { tdm.myKills++; kills++; }
-  tdm.queue.push({ team: b.team, name: b.name, t: TDM_RESPAWN });
-  feedAdd(killerName || (byTeam === 'blue' ? 'زميلك' : 'الأحمر'), b.name, byTeam);
-  tone(500, 0.1, 'square', killerName === 'أنت' ? 0.06 : 0.02, 300);
-  checkTdmEnd();
-}
 function classDef() { return CLASSES.find(c => c.id === myClass) || CLASSES[0]; }
-function giveClassLoadout() {
-  player.weapons = [mkWeapon(classDef().w), mkWeapon('pistol')];
-  player.cur = 0;
-  player.reloading = 0;
-  applyGunModel(cw().def);
-}
 function respawnPlayer() {
   const [x, z] = teamSpawn('blue');
   Object.assign(player, { x, z, y: 0, vy: 0, grounded: true, hp: 100, alive: true,
@@ -4291,7 +4370,7 @@ function respawnPlayer() {
   aimHeld = aimToggle = sprintToggle = false; aimT = 0;
   E.respawn.style.display = 'none';
   for (const m of dmgMarks) m.el.remove(); dmgMarks.length = 0;
-  lastHit = null; death = null; netKiller = null; hc.scoped = undefined; gun.visible = true;
+  lastHit = null; death = null; netKiller = null; hc.scoped = undefined; gun.visible = true; GS.spec = null; if (GS.specOn) { GS.specOn = false; E.respawn.style.opacity = ''; }
 }
 // ---------- Death: the view drops, turns to whoever got you, and a card says who, with what, and how much they had left ----------
 let lastHit = null, death = null, deathT = 0;
@@ -4313,6 +4392,8 @@ function deathCard() {
 function deathCam(dt) {
   const d = death; if (!d) return;
   d.t += dt;
+  if (mode === 'tdm' && GS.snd && d.t > 2.4 && sndSpectate(dt)) { if (!GS.specOn) { GS.specOn = true; E.respawn.style.opacity = 0; } return; }
+  if (GS.specOn) { GS.specOn = false; E.respawn.style.opacity = ''; }
   const u = Math.min(1, d.t / (d.dur || 0.55)), e = u * u * (3 - 2 * u);
   const cy = d.y0 + (player.y + (d.low || 0.42) - d.y0) * e;
   let ty = d.yaw, tp = -0.04;
@@ -4340,82 +4421,672 @@ function deathHud() {
   }
   if (!on) return;
   const sec = Math.ceil(Math.max(0, tdm.respawn));
-  if (hc.respawnSec !== sec) { hc.respawnSec = sec; $('dSec').textContent = 'ترجع خلال ' + sec; }
-  $('dFill').style.transform = 'scaleX(' + clamp(tdm.respawn / TDM_RESPAWN, 0, 1).toFixed(3) + ')';
+  if (GS.snd) { if (hc.respawnSec !== -9) { hc.respawnSec = -9; $('dSec').textContent = 'ترجع الجولة الجاية'; $('dFill').style.transform = 'scaleX(0)'; } }
+  else {
+    if (hc.respawnSec !== sec) { hc.respawnSec = sec; $('dSec').textContent = 'ترجع خلال ' + sec; }
+    $('dFill').style.transform = 'scaleX(' + clamp(tdm.respawn / TDM_RESPAWN, 0, 1).toFixed(3) + ')';
+  }
   const now = performance.now();
   if (now - deathT > 400) { deathT = now; deathChips(); if (netOn && netRows.length) netBoardFill($('dBoard')); }
+}
+let tdmTokens = 0;
+// ---------- Team modes ----------
+// One device is the host of a match (alone, that is you): it runs the bots, the flags, the tags, the bomb and the
+// score, and publishes them. Everyone else draws what it says and sends back what they did. Each player is still
+// the authority on their own body, their own shots and their own death, exactly as before.
+const GM = {
+  tdm: { name: 'قتال فرق', tag: 'فريقك ضد فريقهم، وأول فريق يوصل حد القتلات يفوز' },
+  dom: { name: 'السيطرة', tag: 'خذوا النقاط الثلاث وامسكوها. أول فريق يوصل 200 يفوز' },
+  kc:  { name: 'تأكيد القتل', tag: 'القتلة ما تنحسب إلا لما تلمّ التاق' },
+  gg:  { name: 'سباق الأسلحة', ffa: true, tag: 'كل قتلة تعطيك السلاح اللي بعده. أول واحد يخلّص الأسلحة يفوز' },
+  snd: { name: 'السيرش', tag: 'ازرعوا القنبلة أو امنعوهم. ما فيه رجعة لين الجولة الجاية' },
+  ffa: { name: 'الكل ضد الكل', ffa: true, tag: 'كل واحد لنفسه' }
+};
+const GG_LADDER = ['pistol', 'smg', 'shotgun', 'ar', 'hunting', 'lmg', 'sniper', 'magnum', 'ray', 'thunder'];
+const DOM_R = 4.2, DOM_LIMIT = 200, SND_WINS = 6, SND_ROUND = 120, SND_BOMB = 40, PLANT_T = 4, DEFUSE_T = 5, TAG_LIFE = 30, FLAG_NAME = ['أ', 'ب', 'ج'];
+let gmId = 'tdm', botN = 5;
+try { const g = localStorage.getItem('fps-gm'); if (GM[g]) gmId = g; const n = localStorage.getItem('fps-bots'); if (n !== null && +n >= 0 && +n <= 5) botN = Math.floor(+n); } catch (e) {}
+const GS = { id: 'tdm', role: 'host', n: 5, lim: 75, sc: { b: 0, r: 0 }, flags: [], tags: [], tagSeq: 0, ev: [], evSeq: 0, at: [], atSeq: 0, botSeq: 0,
+             pend: new Map(), hits: [], hitSeq: 0, seenHit: new Map(), seenPEv: new Map(), seenEv: -1, seenAt: -1, hostId: '', dead: new Map(), bk: {},
+             myEv: [], myEvSeq: 0, age: 0, noHost: 0, synced: false, over: false, win: '', winP: '', winN: '', snd: null, act: null, domT: 0, botT: 0,
+             objs: [], fobj: [], tagObjs: new Map(), bombObj: null, tier: 0, hum: { b: 1, r: 0 }, humT: { b: 0, r: 0 }, pb: { k: 0, n: '', p: '' }, hp: '', hg: null, beep: 0, specT: 0 };
+const isFFA = () => !!GM[GS.id].ffa;
+const myAt = () => netOn && netTeam === 'r' ? 'r' : 'b';
+const otherAt = a => a === 'b' ? 'r' : 'b';
+const locTeam = at => isFFA() ? 'red' : at === myAt() ? 'blue' : 'red';
+const atOfLoc = team => team === 'blue' ? myAt() : otherAt(myAt());
+const gsHost = () => GS.role === 'host';
+const meId = () => netMe || 'me';
+function gmLimit(id, n) { return id === 'dom' ? DOM_LIMIT : id === 'snd' ? SND_WINS : id === 'gg' ? GG_LADDER.length : id === 'kc' ? (n >= 3 ? 50 : 25) : id === 'ffa' ? (n >= 3 ? 30 : 20) : (n >= 3 ? TDM_LIMIT : 30); }
+function gsEmit(e) { e.unshift(++GS.evSeq); GS.ev.push(e); if (GS.ev.length > 10) GS.ev.shift(); netT = 0; modeEvent(e, true); }
+function gsClear() {                           // take this match's markers out of the world
+  for (const o of GS.objs) scene.remove(o);
+  for (const o of GS.tagObjs.values()) scene.remove(o);
+  if (GS.bombObj) scene.remove(GS.bombObj.g);
+  GS.objs.length = 0; GS.fobj.length = 0; GS.tagObjs.clear(); GS.bombObj = null; GS.act = null;
+}
+function gsReset() {
+  gsClear();
+  Object.assign(GS, { id: gmId, n: netOn ? botN : Math.max(1, botN), sc: { b: 0, r: 0 }, flags: [], tags: [], tagSeq: 0, ev: [], evSeq: 0, at: [], atSeq: 0, botSeq: 0,
+                      hits: [], hitSeq: 0, seenEv: -1, seenAt: -1, hostId: '', bk: {}, myEv: [], myEvSeq: 0, age: 0, noHost: 0, synced: false, over: false, win: '', winP: '', winN: '',
+                      snd: null, domT: 0, botT: 0, tier: 0, hum: { b: 1, r: 0 }, pb: { k: 0, n: '', p: '' }, hp: '', hg: null, beep: 0, specT: 0 });
+  GS.pend.clear(); GS.seenHit.clear(); GS.seenPEv.clear(); GS.dead.clear();
+  GS.lim = gmLimit(GS.id, GS.n);
+  GS.role = netOn ? 'wait' : 'host';
+  const MP = MAPS[currentMap] || {};
+  if (GS.id === 'dom') GS.flags = (MP.flags || []).map(([x, z]) => ({ x, z, own: '', p: 0 }));
+  if (GS.id === 'snd') GS.snd = { round: 0, w: { b: 0, r: 0 }, atk: 'b', ph: 'wait', t: 0, bomb: null, plan: 0, had: { b: 0, r: 0 } };
+}
+// ---- things you can see: flags, bomb sites, the bomb, dog tags ----
+const FLAG_COL = { mine: 0x3b82f6, theirs: 0xef4444, none: 0xd1d5db };
+const flagRingGeo = new THREE.RingGeometry(DOM_R - 0.18, DOM_R, 40).rotateX(-Math.PI / 2), flagClothGeo = new THREE.BoxGeometry(1.5, 0.95, 0.05).translate(0.78, 0, 0);
+const siteGeo = new THREE.RingGeometry(2.5, 2.75, 4, 1).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), tagGeo = new THREE.BoxGeometry(0.34, 0.5, 0.05);
+function gsBuildObjects() {
+  const add = (o, x, y, z) => { o.position.set(x, y, z); scene.add(o); GS.objs.push(o); return o; };
+  GS.flags.forEach((f, i) => {
+    const mat = new THREE.MeshBasicMaterial({ color: FLAG_COL.none }), rm = new THREE.MeshBasicMaterial({ color: FLAG_COL.none, transparent: true, opacity: 0.75, depthWrite: false });
+    add(new THREE.Mesh(bg(0.09, 5.4, 0.09), lam(0xe5e7eb)), f.x, 2.7, f.z);
+    const cloth = add(new THREE.Mesh(flagClothGeo, mat), f.x, 2.2, f.z);
+    add(new THREE.Mesh(flagRingGeo, rm), f.x, 0.06, f.z).renderOrder = 2;
+    const tag = add(tagSprite(FLAG_NAME[i], '#ffffff', 1.3), f.x, 5.9, f.z);
+    GS.fobj.push({ cloth, mat, rm, tag, col: -1 });
+  });
+  if (GS.id === 'snd') (MAPS[currentMap].sites || []).forEach(([x, z], i) => {
+    add(new THREE.Mesh(siteGeo, new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.8, depthWrite: false })), x, 0.06, z).renderOrder = 2;
+    add(new THREE.Mesh(bg(0.9, 0.5, 0.6), lam(0x4a5040)), x, 0.25, z);
+    add(new THREE.Mesh(bg(0.92, 0.08, 0.62), lam(0xd9a514)), x, 0.3, z);
+    add(tagSprite('💣 ' + FLAG_NAME[i], '#fbbf24', 1.5), x, 3.2, z);
+  });
+}
+function gsVisuals(dt) {
+  const me = myAt(), now = performance.now();
+  GS.flags.forEach((f, i) => {
+    const o = GS.fobj[i]; if (!o) return;
+    const col = !f.own ? FLAG_COL.none : f.own === me ? FLAG_COL.mine : FLAG_COL.theirs;
+    if (o.col !== col) { o.col = col; o.mat.color.setHex(col); o.rm.color.setHex(col); }
+    o.cloth.position.y = 1.6 + Math.abs(f.p) * 3.2;
+    o.cloth.rotation.y = Math.sin(now / 400 + i) * 0.25;
+    o.rm.opacity = Math.abs(f.p) < 1 && f.p !== 0 ? 0.45 + Math.sin(now / 90) * 0.3 : 0.7;      // flickers while someone is taking it
+  });
+  const live = new Set();
+  for (const t of GS.tags) {
+    live.add(t.id);
+    let g = GS.tagObjs.get(t.id);
+    if (!g) {
+      g = new THREE.Group();
+      const m = glowMat(isFFA() || t.at !== me ? 0xfbbf24 : 0x60a5fa);       // gold: pick it up to score. blue: one of yours, deny it
+      const a = new THREE.Mesh(tagGeo, m), b = new THREE.Mesh(tagGeo, m); a.position.x = -0.1; b.position.set(0.12, -0.06, 0.04); b.rotation.z = 0.3; g.add(a, b);
+      g.position.set(t.x, 1, t.z); scene.add(g); GS.tagObjs.set(t.id, g);
+    }
+    g.rotation.y += dt * 3; g.position.y = 1 + Math.sin(now / 300 + t.id) * 0.12;
+  }
+  for (const [id, g] of GS.tagObjs) if (!live.has(id)) { scene.remove(g); GS.tagObjs.delete(id); }
+  const S = GS.snd, B = S && S.bomb;
+  if (B && !GS.bombObj) {
+    const g = new THREE.Group(), lm = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+    part(g, bg(0.5, 0.22, 0.34), lam(0x1c1d20), 0, 0.11, 0); part(g, bg(0.3, 0.06, 0.2), lam(0x8a6d3b), 0, 0.25, 0); part(g, bg(0.08, 0.08, 0.08), lm, 0.16, 0.27, 0);
+    g.position.set(B.x, 0.5, B.z); scene.add(g); GS.bombObj = { g, lm }; GS.beep = 0;
+  } else if (!B && GS.bombObj) { scene.remove(GS.bombObj.g); GS.bombObj = null; }
+  if (B && GS.bombObj && S.ph === 'live') {
+    GS.beep -= dt;
+    const on = GS.beep < 0.08; GS.bombObj.lm.color.setHex(on ? 0xff2a2a : 0x3a0808);
+    if (GS.beep <= 0) {
+      GS.beep = clamp(B.t / 24, 0.14, 1.1);
+      const d = Math.hypot(B.x - player.x, B.z - player.z); if (d < 45) tone(1250, 0.06, 'square', 0.07 * clamp(1 - d / 45, 0.12, 1));
+    }
+  }
+}
+function gsRadar() {
+  const me = myAt();
+  for (const f of GS.flags) radarDot(f.x, f.z, !f.own ? '#e5e7eb' : f.own === me ? '#3b82f6' : '#ef4444', 13);
+  for (const t of GS.tags) radarDot(t.x, t.z, isFFA() || t.at !== me ? '#fbbf24' : '#93c5fd', 6);
+  const S = GS.snd;
+  if (S) { if (S.bomb) radarDot(S.bomb.x, S.bomb.z, performance.now() % 500 < 250 ? '#ff2a2a' : '#fbbf24', 12); else for (const s of MAPS[currentMap].sites || []) radarDot(s[0], s[1], '#fbbf24', 10); }
+}
+function gsHud() {
+  const id = GS.id, S = GS.snd, L = GG_LADDER.length;
+  const left = Math.max(0, Math.ceil(S ? (S.bomb ? S.bomb.t : S.t) : tdm.t));
+  let tm = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'), obj = '';
+  const sc = id === 'gg' ? 'السلاح ' + Math.min(GS.tier + 1, L) + ' / ' + L : isFFA() ? 'قتلات ' + tdm.blue + ' · موتات ' + tdm.red : '🔵 ' + tdm.blue + ' — ' + tdm.red + ' 🔴';
+  if (id === 'dom') obj = GS.flags.map((f, i) => FLAG_NAME[i] + (!f.own ? '⚪' : f.own === myAt() ? '🔵' : '🔴')).join('  ');
+  else if (id === 'kc' || id === 'tdm') obj = 'الهدف ' + GS.lim;
+  else if (id === 'ffa') obj = 'الهدف ' + GS.lim + ' قتلة';
+  else if (id === 'gg') {
+    let ln = GS.pb.p === meId() ? '' : GS.pb.n, lk = GS.pb.k;
+    for (const n in GS.bk) if (Math.floor(GS.bk[n] / 2) > lk) { lk = Math.floor(GS.bk[n] / 2); ln = n; }
+    obj = ln ? 'المتصدر ' + ln + ' ' + Math.min(lk + 1, L) : 'أنت المتصدر';
+  }
+  else if (S) {
+    if (S.ph === 'wait') { obj = 'بانتظار المضيف'; tm = '—'; }
+    else if (S.ph === 'pre') obj = 'الجولة ' + S.round + ' — استعد';
+    else if (S.ph === 'post') { obj = 'انتهت الجولة'; tm = '—'; }
+    else obj = S.bomb ? '💣 القنبلة مزروعة!' : (myAt() === S.atk ? 'هجوم' : 'دفاع') + ' · الجولة ' + S.round;
+  }
+  setT('tdmScore', sc); setT('tdmTime', tm); setT('tdmObj', obj);
+}
+// ---- spawning ----
+function spawnSign(team) {
+  if (isFFA()) return 0;
+  const at = atOfLoc(team);
+  if (GS.snd) return at === GS.snd.atk ? 1 : -1;
+  return at === 'b' ? 1 : -1;
+}
+function teamSpawn(team) {
+  const MP = MAPS[currentMap] || {}, S = MP.spawns, sign = spawnSign(team), strict = !!GS.snd, ffa = isFFA();
+  const hostile = o => ffa || o.team !== team, vsMe = (ffa || team === 'red') && player.alive && running;
+  if (S) {                                              // listed points: the one furthest from the other side, own end first
+    let best = null, bs = -1e9;
+    for (const [sx, sz] of S) {
+      if (strict && sign && (sz > 0) !== (sign > 0)) continue;
+      let x = sx + (Math.random() - 0.5) * 1.2, z = sz + (Math.random() - 0.5) * 1.2;
+      if (!spotFree(x, z, 0.7)) { x = sx; z = sz; if (!spotFree(x, z, 0.55)) continue; }
+      let md = 22, crowd = 0;
+      for (const o of enemies) {
+        if (o.dead) continue;
+        const d = Math.hypot(o.group.position.x - x, o.group.position.z - z);
+        if (hostile(o)) md = Math.min(md, d); else if (d < 2) crowd++;
+      }
+      if (vsMe) md = Math.min(md, Math.hypot(player.x - x, player.z - z));
+      if (!vsMe && player.alive && Math.hypot(player.x - x, player.z - z) < 2) crowd++;
+      const sc = md + (sign && (sz > 0) === (sign > 0) ? (MP.sideBias || 5) : 0) + Math.random() * 3 - crowd * 5;
+      if (sc > bs) { bs = sc; best = [x, z]; }
+    }
+    if (best) return best;
+  }
+  const Z = SPAWN_ZONES[sign > 0 ? 'blue' : sign < 0 ? 'red' : Math.random() < 0.5 ? 'blue' : 'red'];
+  let fallback = null;
+  for (let i = 0; i < 40; i++) {
+    const x = Z.x[0] + Math.random() * (Z.x[1] - Z.x[0]), z = Z.z[0] + Math.random() * (Z.z[1] - Z.z[0]);
+    if (!spotFree(x, z, 0.9)) continue;
+    if (!fallback) fallback = [x, z];
+    let near = false;                                   // never drop someone on top of an enemy
+    for (const b of enemies) { if (b.dead || !hostile(b)) continue; if (Math.hypot(b.group.position.x - x, b.group.position.z - z) < 9) { near = true; break; } }
+    if (!near && vsMe && Math.hypot(player.x - x, player.z - z) < 9) near = true;
+    if (!near) return [x, z];
+  }
+  return fallback || [(Math.random() - 0.5) * 18, Z.z[0] > 0 ? 24 : -24];
+}
+function mkModeBot(at, name, o) {
+  o = o || {};
+  const team = locTeam(at), group = new THREE.Group();
+  const seed = o.seed !== undefined ? o.seed : botSeed++, cls = o.cls || BOT_CLS[seed % BOT_CLS.length];
+  const rig = opRig(group, isFFA() ? 'ffa' : team, cls, seed);
+  let x = o.x, z = o.z;
+  if (x === undefined) [x, z] = teamSpawn(team);
+  group.position.set(x, 0, z); group.rotation.y = z > 0 ? Math.PI : 0;
+  scene.add(group);
+  const bot = { group, body: rig.body, head: rig.head, op: rig.op, cls, seed, type: 'normal', scale: 1, team, at, name, id: o.id || ++GS.botSeq,
+                hp: o.hp || TDM_BOT_HP, maxHp: TDM_BOT_HP, speed: 4.2, dmg: 1, cool: 0.6 + Math.random(), hitT: 0, detour: 0, side: 1, los: false, losT: 0,
+                charge: null, dead: false, tgt: null, retgt: 0, shots: 0, mir: !!o.mir };
+  rig.body.userData.bot = bot; rig.head.userData.bot = bot;
+  enemies.push(bot);
+  return bot;
+}
+function spawnTeamBot(team, name) { return mkModeBot(atOfLoc(team), name); }
+function freeName() {
+  const used = new Set(); for (const b of enemies) used.add(b.name); for (const q of tdm.queue) used.add(q.name);
+  const pool = BOT_NAMES.filter(n => !used.has(n));
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+}
+function botsWant() {                           // how many bots each side should have right now
+  const n = GS.n, h = GS.hum;
+  if (isFFA()) return { b: 0, r: n ? Math.max(0, n * 2 - (h.b + h.r - 1)) : 0 };
+  return { b: n ? Math.max(0, n + 1 - h.b) : 0, r: n ? Math.max(0, n + 1 - h.r) : 0 };
+}
+function botsSync(dt) {
+  GS.botT -= dt; if (GS.botT > 0 || GS.snd) return;
+  GS.botT = 0.5;
+  const have = { b: 0, r: 0 }, want = botsWant();
+  for (const b of enemies) if (!b.net && !b.dead) have[b.at]++;
+  for (const q of tdm.queue) have[q.at]++;
+  for (const at of ['b', 'r']) {
+    for (let i = have[at]; i < want[at]; i++) tdm.queue.push({ at, name: freeName(), t: GS.age < 3 ? 0 : TDM_RESPAWN });
+    if (have[at] > want[at]) {
+      const qi = tdm.queue.findIndex(q => q.at === at);
+      if (qi >= 0) tdm.queue.splice(qi, 1);
+      else { const b = enemies.find(e => !e.net && !e.dead && e.at === at); if (b) { b.dead = true; scene.remove(b.group); enemies = enemies.filter(e => !e.dead); rebuildTargets(); } }
+    }
+  }
+}
+function gsReskin() {                           // I changed sides: every bot's colours flip with me
+  for (const b of enemies.slice()) {
+    if (b.net || b.dead || b.team === locTeam(b.at)) continue;
+    const P = b.group.position;
+    b.dead = true; scene.remove(b.group);
+    if (!b.mir) { const nb = mkModeBot(b.at, b.name, { id: b.id, x: P.x, z: P.z, cls: b.cls, seed: b.seed, hp: b.hp }); nb.group.rotation.y = b.group.rotation.y; }
+  }
+  enemies = enemies.filter(e => !e.dead); rebuildTargets();
+}
+// ---- kills and deaths ----
+function botDamage(b, d, byTeam, byName, byPeer, kb) {
+  if (b.dead) return;
+  b.hp -= d; b.hitT = 0.08;
+  if (b.hp <= 0) tdmKill(b, byTeam, byName || null, byPeer, kb);
+}
+function modeDeath(d) {                         // host: someone (bot or person) just died at x, z
+  if (GS.over || tdm.over) return;
+  if (GS.id === 'tdm') GS.sc[otherAt(d.at)]++;
+  else if (GS.id === 'kc') { if (GS.tags.length >= 14) GS.tags.shift(); GS.tags.push({ id: ++GS.tagSeq, x: d.x, z: d.z, at: d.at, t: TAG_LIFE }); }
+}
+function tdmKill(b, byTeam, killerName, byPeer, kb) {
+  const mine = killerName === 'أنت';
+  if (mine) { killMark(); popPoints(100, 'kill'); }
+  fxDeath(b.group.position.x, b.group.position.z);
+  if (b.dead || tdm.over) return;
+  b.dead = true;
+  dying.push({ group: b.group, t: 0.4, dur: 0.4 });
+  enemies = enemies.filter(e => !e.dead);
+  rebuildTargets();
+  if (mine) { tdm.myKills++; kills++; if (netOn) netKills++; ggKill(); }
+  if (kb) GS.bk[kb.name] = (GS.bk[kb.name] || 0) + 1;
+  modeDeath({ x: b.group.position.x, z: b.group.position.z, at: b.at, name: b.name });
+  if (!GS.snd) tdm.queue.push({ at: b.at, name: b.name, t: TDM_RESPAWN });
+  const kn = killerName || (byTeam === 'blue' ? 'زميلك' : 'الأحمر');
+  feedAdd(kn, b.name, byTeam);
+  gsEmit(['k', mine ? netMyName() : kn, b.name, isFFA() ? '' : atOfLoc(byTeam), byPeer || (mine ? meId() : '')]);
+  tone(500, 0.1, 'square', mine ? 0.06 : 0.02, 300);
+  checkTdmEnd();
+}
+function mirHit(b, d) {                         // I shot a bot that another device runs: tell it, and show the result now
+  GS.pend.set(b.id, (GS.pend.get(b.id) || 0) + d); netT = Math.min(netT, 0.02);
+  b.hp -= d; b.hitT = 0.08;
+  if (b.hp > 0) return;
+  b.dead = true; fxDeath(b.group.position.x, b.group.position.z);
+  dying.push({ group: b.group, t: 0.4, dur: 0.4 });
+  enemies = enemies.filter(e => !e.dead); rebuildTargets();
+  GS.dead.set(b.id, performance.now());
 }
 function playerDiedTdm() {
   const lh = lastHit || {};
   death = { name: lh.name, obj: lh.obj, kind: lh.kind, w: lh.w, self: !!lh.self, t: 0, y0: camera.position.y, yaw: player.yaw, pitch: player.pitch };
   $('scope').style.display = 'none';
-  player.alive = false;
+  player.alive = false; GS.act = null; GS.specT = 0;
   tdm.myDeaths++;
-  tdm.red++;
   tdm.respawn = TDM_RESPAWN;
-  if (netOn) { feedAdd(netKiller ? netKiller.name : 'لاعب', 'أنت', 'red'); netDied(); return; }
-  feedAdd('الأحمر', 'أنت', 'red');
+  if (gsHost()) {
+    modeDeath({ x: player.x, z: player.z, at: myAt(), name: netMyName() });
+    if (lh.obj && !lh.obj.net && !lh.self && lh.obj.name) GS.bk[lh.obj.name] = (GS.bk[lh.obj.name] || 0) + 1;
+  }
+  feedAdd(lh.self ? 'قنبلتك' : lh.name || (netKiller ? netKiller.name : netOn ? 'لاعب' : 'الأحمر'), 'أنت', 'red');
+  if (netOn) netDied();
   checkTdmEnd();
 }
-let tdmTokens = 0;
+function ggGive(anim) {
+  const w = mkWeapon(GG_LADDER[Math.min(GS.tier, GG_LADDER.length - 1)]); w.reserve = 999;
+  player.weapons = [w]; player.cur = 0; player.reloading = 0;
+  applyGunModel(w.def);
+  if (anim) { swapT = 1; swapDone = false; SFX.swap(); }
+}
+function ggKill() {
+  if (GS.id !== 'gg') return;
+  GS.tier = Math.min(GG_LADDER.length, GS.tier + 1);
+  if (GS.tier >= GG_LADDER.length) return;
+  ggGive(true);
+  toast('🔫 ' + WEAPONS[GG_LADDER[GS.tier]].name + ' — ' + (GS.tier + 1) + ' من ' + GG_LADDER.length);
+  tone(660, 0.1, 'triangle', 0.07, 300);
+}
+function giveClassLoadout() {
+  if (GS.id === 'gg') { ggGive(false); return; }
+  player.weapons = [mkWeapon(classDef().w), mkWeapon('pistol')];
+  player.cur = 0;
+  player.reloading = 0;
+  applyGunModel(cw().def);
+}
+// ---- who is where (host) ----
+function modeEnts() {
+  const L = [];
+  if (player.alive && running) L.push({ x: player.x, z: player.z, at: myAt(), name: netMyName(), peer: meId() });
+  for (const o of enemies) {
+    if (o.dead) continue;
+    if (o.net) L.push({ x: o.tx, z: o.tz, at: o.gat || 'r', name: o.name, peer: o.peer });
+    else L.push({ x: o.group.position.x, z: o.group.position.z, at: o.at, name: o.name, bot: o });
+  }
+  return L;
+}
+function domTick(dt) {
+  const ents = modeEnts();
+  GS.flags.forEach((f, i) => {
+    let nb = 0, nr = 0;
+    for (const e of ents) if (Math.hypot(e.x - f.x, e.z - f.z) < DOM_R) { if (e.at === 'b') nb++; else nr++; }
+    if ((nb && !nr) || (nr && !nb)) {
+      const side = nb ? 'b' : 'r', dir = nb ? 1 : -1, rate = 0.22 + 0.08 * Math.min(3, (nb || nr) - 1);
+      if (f.own !== side || Math.abs(f.p) < 1) {
+        f.p = clamp(f.p + dir * rate * dt, -1, 1);
+        if (f.own && f.own !== side && f.p * dir >= 0) f.own = '';
+        if (f.own !== side && f.p * dir >= 1) { f.own = side; gsEmit(['f', i, side]); }
+      }
+    } else if (!nb && !nr) {
+      const tg = f.own === 'b' ? 1 : f.own === 'r' ? -1 : 0;
+      f.p += clamp(tg - f.p, -0.15 * dt, 0.15 * dt);
+    }
+  });
+  GS.domT += dt;
+  if (GS.domT >= 2) { GS.domT -= 2; for (const f of GS.flags) if (f.own) GS.sc[f.own]++; checkTdmEnd(); }
+}
+function kcTick(dt) {
+  if (!GS.tags.length) return;
+  const ents = modeEnts();
+  for (let i = GS.tags.length - 1; i >= 0; i--) {
+    const t = GS.tags[i];
+    t.t -= dt;
+    if (t.t <= 0) { GS.tags.splice(i, 1); continue; }
+    for (const e of ents) {
+      if (Math.hypot(e.x - t.x, e.z - t.z) > 1.4) continue;
+      const conf = e.at !== t.at;
+      if (conf) GS.sc[e.at]++;
+      GS.tags.splice(i, 1);
+      gsEmit(['c', e.name, e.peer || '', conf ? 1 : 0]);
+      break;
+    }
+  }
+  checkTdmEnd();
+}
+// ---- search and destroy ----
+function sndLocalRound() {
+  const S = GS.snd;
+  respawnPlayer(); GS.act = null;
+  toast('الجولة ' + S.round + ' — ' + (myAt() === S.atk ? 'هجوم: ازرعوا القنبلة 💣' : 'دفاع: لا تخلّونهم يزرعون'));
+  tone(392, 0.16, 'triangle', 0.08); setTimeout(() => tone(523, 0.3, 'triangle', 0.09), 170);
+}
+function sndStartRound() {
+  const S = GS.snd;
+  S.round++; S.atk = Math.floor((S.round - 1) / 2) % 2 === 0 ? 'b' : 'r';
+  S.ph = 'pre'; S.t = 5; S.bomb = null; S.plan = Math.random() < 0.5 ? 0 : 1;
+  for (const b of enemies) if (!b.net) { scene.remove(b.group); b.dead = true; }
+  enemies = enemies.filter(e => !e.dead); tdm.queue.length = 0;
+  const w = botsWant();
+  for (const at of ['b', 'r']) for (let i = 0; i < w[at]; i++) mkModeBot(at, freeName());
+  rebuildTargets();
+  sndLocalRound();
+  netT = 0;
+}
+function sndEnd(winAt, why) {
+  const S = GS.snd, B = S.bomb;
+  S.w[winAt]++; S.ph = 'post'; S.t = 5;
+  for (const b of enemies) b.act = null;
+  gsEmit(['r', winAt, why, B ? +B.x.toFixed(1) : 0, B ? +B.z.toFixed(1) : 0]);
+  if (why !== 'boom') S.bomb = null;
+}
+function sndPlant(site, x, z, name) {
+  const S = GS.snd;
+  if (!S || S.ph !== 'live' || S.bomb) return;
+  S.bomb = { site, x, z, t: SND_BOMB };
+  for (const b of enemies) { b.act = null; b.goalT = 0; }
+  gsEmit(['p', name, site]);
+}
+function sndDefuse(name) {
+  const S = GS.snd;
+  if (!S || S.ph !== 'live' || !S.bomb) return;
+  gsEmit(['d', name]);
+  sndEnd(otherAt(S.atk), 'defuse');
+}
+function sndTick(dt) {
+  const S = GS.snd;
+  if (S.ph === 'wait') { sndStartRound(); return; }
+  S.t -= dt;
+  if (S.ph === 'pre') {
+    if (S.t <= 0) { S.ph = 'live'; S.t = SND_ROUND; S.had = { b: 0, r: 0 }; for (const e of modeEnts()) S.had[e.at]++; S.had[myAt()] = Math.max(1, S.had[myAt()]); }
+    return;
+  }
+  if (S.ph === 'post') {
+    if (S.t <= 0) {
+      if (S.w.b >= GS.lim || S.w.r >= GS.lim) { GS.over = true; GS.win = S.w.b >= GS.lim ? 'b' : 'r'; endTdm(); }
+      else sndStartRound();
+    }
+    return;
+  }
+  const alive = { b: 0, r: 0 }, def = otherAt(S.atk), sites = MAPS[currentMap].sites || [];
+  for (const e of modeEnts()) alive[e.at]++;
+  if (S.bomb) {
+    S.bomb.t -= dt;
+    if (S.bomb.t <= 0) { sndEnd(S.atk, 'boom'); return; }
+    if (S.had[def] && !alive[def]) { sndEnd(S.atk, 'kill'); return; }
+  } else {
+    if (S.had[S.atk] && !alive[S.atk]) { sndEnd(def, 'kill'); return; }
+    if (S.had[def] && !alive[def]) { sndEnd(S.atk, 'kill'); return; }
+    if (S.t <= 0) { sndEnd(def, 'time'); return; }
+  }
+  // the bots' part: one attacker plants, the nearest free defender defuses
+  let planter = null;
+  for (const b of enemies) if (!b.net && !b.dead && b.at === S.atk && (!planter || b.id < planter.id)) planter = b;
+  for (const b of enemies) {
+    if (b.net || b.dead) continue;
+    const P = b.group.position;
+    if (!S.bomb && b === planter && sites[S.plan] && Math.hypot(P.x - sites[S.plan][0], P.z - sites[S.plan][1]) < 1.5) { if (b.act !== 'plant') { b.act = 'plant'; b.actT = 0; } }
+    else if (S.bomb && b.at === def && Math.hypot(P.x - S.bomb.x, P.z - S.bomb.z) < 1.6 && !(b.los && b.tgt)) { if (b.act !== 'defuse') { b.act = 'defuse'; b.actT = 0; } }
+    else b.act = null;
+    if (!b.act) continue;
+    b.actT += dt;
+    if (b.act === 'plant' && b.actT >= PLANT_T) { sndPlant(S.plan, P.x, P.z, b.name); return; }
+    if (b.act === 'defuse' && b.actT >= DEFUSE_T) { sndDefuse(b.name); return; }
+  }
+}
+function sndCanAct() {
+  const S = GS.snd;
+  if (!S || S.ph !== 'live' || !player.alive) return null;
+  const atk = myAt() === S.atk;
+  if (atk && !S.bomb) { const sites = MAPS[currentMap].sites || []; for (let i = 0; i < sites.length; i++) if (Math.hypot(player.x - sites[i][0], player.z - sites[i][1]) < 2.8) return { kind: 'plant', site: i }; }
+  if (!atk && S.bomb && Math.hypot(player.x - S.bomb.x, player.z - S.bomb.z) < 1.9) return { kind: 'defuse' };
+  return null;
+}
+function sndUse() {
+  const a = sndCanAct();
+  if (!a || GS.act) return false;
+  GS.act = { kind: a.kind, site: a.site, t: 0, x: player.x, z: player.z, tick: 0 };
+  return true;
+}
+function sndActTick(dt) {
+  const A = GS.act; if (!A) return;
+  const now = sndCanAct();
+  if (!now || now.kind !== A.kind || Math.hypot(player.x - A.x, player.z - A.z) > 1.0) { GS.act = null; toast(A.kind === 'plant' ? 'انقطع الزرع: لا تتحرك' : 'انقطع التفكيك: لا تتحرك'); return; }
+  A.t += dt; A.tick -= dt;
+  if (A.tick <= 0) { A.tick = 0.4; click(0, 1900, 0.2, 0.03, 4); }
+  if (A.t < (A.kind === 'plant' ? PLANT_T : DEFUSE_T)) return;
+  GS.act = null;
+  if (gsHost()) { if (A.kind === 'plant') sndPlant(A.site, player.x, player.z, netMyName()); else sndDefuse(netMyName()); }
+  else { GS.myEv.push(A.kind === 'plant' ? [++GS.myEvSeq, 'pl', A.site, +player.x.toFixed(1), +player.z.toFixed(1)] : [++GS.myEvSeq, 'df']); if (GS.myEv.length > 4) GS.myEv.shift(); netT = 0; }
+}
+function gsPrompt() {                           // the use button while a team match is on
+  const A = GS.act;
+  if (A) return (A.kind === 'plant' ? 'جاري الزرع… ' : 'جاري التفكيك… ') + Math.round(A.t / (A.kind === 'plant' ? PLANT_T : DEFUSE_T) * 100) + '%';
+  const c = sndCanAct();
+  return c ? (c.kind === 'plant' ? 'ازرع القنبلة 💣' : 'فكّ القنبلة ✂️') : '';
+}
+const _sv = new THREE.Vector3();
+function sndSpectate(dt) {                      // out for the round: watch a teammate who is still in it
+  let a = null;
+  for (const o of enemies) if (!o.dead && o.team === 'blue' && (!a || o === GS.spec)) a = o;
+  if (!a) return false;
+  if (GS.spec !== a) { GS.spec = a; toast('👁️ تتفرج على ' + a.name); }
+  const P = a.group.position, yaw = a.group.rotation.y;
+  let cx = P.x - Math.sin(yaw) * 3.2, cz = P.z - Math.cos(yaw) * 3.2, cy = 2.5;
+  if (!hasLOS(P.x, 1.6, P.z, cx, cy, cz)) { cx = P.x - Math.sin(yaw) * 0.7; cz = P.z - Math.cos(yaw) * 0.7; cy = 3.3; }
+  camera.position.lerp(_sv.set(cx, cy, cz), Math.min(1, dt * 5));
+  camera.lookAt(P.x, 1.35, P.z);
+  camera.updateMatrixWorld();
+  gun.visible = false;
+  return true;
+}
+// ---- what happened, told to everyone ----
+function modeEvent(e, local) {
+  const k = e[1], me = myAt();
+  if (k === 'k') {
+    if (local) return;
+    if (e[5] && e[5] === netMe) { netKills++; tdm.myKills++; kills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', e[3], 'blue'); tone(500, 0.1, 'square', 0.06, 300); ggKill(); }
+    else feedAdd(e[2], e[3], isFFA() ? 'red' : locTeam(e[4]));
+  } else if (k === 'f') {
+    const mine = e[3] === me;
+    toast('🚩 ' + (mine ? 'فريقك أخذ النقطة ' : 'خسرتوا النقطة ') + (FLAG_NAME[e[2]] || ''));
+    if (mine) { tone(523, 0.12, 'triangle', 0.08); setTimeout(() => tone(784, 0.25, 'triangle', 0.08), 120); } else tone(196, 0.4, 'sawtooth', 0.06, -40);
+  } else if (k === 'c') {
+    if (e[3] !== meId()) return;
+    toast(e[4] ? '🏷️ +1 تأكيد' : '🛡️ حرمتهم من القتلة'); popPoints(e[4] ? 50 : 25, 'kill');
+    tone(e[4] ? 880 : 587, 0.1, 'triangle', 0.08, 200);
+  } else if (k === 'p') {
+    toast('💣 ' + e[2] + ' زرع القنبلة في ' + (FLAG_NAME[e[3]] || '')); tone(880, 0.12, 'square', 0.07); setTimeout(() => tone(660, 0.3, 'square', 0.07), 140);
+  } else if (k === 'd') { toast('✂️ ' + e[2] + ' فكّ القنبلة'); tone(660, 0.12, 'triangle', 0.08, 300); }
+  else if (k === 'r') {
+    const win = e[2] === me, why = e[3];
+    if (why === 'boom') { explode(+e[4] || 0, 0.5, +e[5] || 0, 9, 0, 1, 0.6, 0.2, true); shakeT = Math.max(shakeT, 0.5); }
+    toast((win ? '✅ فزتوا بالجولة' : '❌ خسرتوا الجولة') + (why === 'boom' ? ' — انفجرت القنبلة' : why === 'defuse' ? ' — انفكّت القنبلة' : why === 'time' ? ' — خلص الوقت' : ''));
+    if (win) [60, 64, 67].forEach((m, i) => bell(m, i * 0.14, 0.08, 2)); else tone(160, 0.6, 'sawtooth', 0.07, -50);
+  }
+}
+// ---- end of a match ----
+function checkTdmEnd() {
+  if (!gsHost() || tdm.over || GS.over) return;
+  let win = '';
+  if (isFFA()) {
+    const need = GS.lim, per = GS.id === 'gg' ? 2 : 1;        // bots need two kills for each step of the ladder
+    if (GS.pb.k >= need) { GS.winP = GS.pb.p; GS.winN = GS.pb.n; win = 'x'; }
+    else for (const n in GS.bk) if (GS.bk[n] >= need * per) { GS.winP = 'B'; GS.winN = n; win = 'x'; break; }
+  } else if (GS.snd) return;
+  else if (GS.sc.b >= GS.lim) win = 'b'; else if (GS.sc.r >= GS.lim) win = 'r';
+  if (win) { GS.over = true; GS.win = win; netT = 0; endTdm(); }
+}
+function modeTimeUp() {
+  GS.over = true;
+  if (isFFA()) {
+    let bn = '', bk = -1; for (const n in GS.bk) { const v = GS.bk[n] / (GS.id === 'gg' ? 2 : 1); if (v > bk) { bk = v; bn = n; } }
+    if (GS.pb.k >= bk) { GS.winP = GS.pb.p; GS.winN = GS.pb.n; } else { GS.winP = 'B'; GS.winN = bn; }
+    GS.win = 'x';
+  } else GS.win = GS.sc.b === GS.sc.r ? '' : GS.sc.b > GS.sc.r ? 'b' : 'r';
+  endTdm();
+}
+function endTdm() {
+  if (tdm.over) return;
+  tdm.over = true;
+  running = false;
+  gsScore();
+  const ffa = isFFA(), draw = !ffa && !GS.win, win = ffa ? GS.winP === meId() : GS.win === myAt();
+  if (win && !netOn && !ffa) { bests.tdm++; try { localStorage.setItem('fps-best-tdm', String(bests.tdm)); } catch (e) {} }
+  E.endTitle.textContent = ffa ? (win ? 'فزت 🏆' : GS.winN ? 'الفايز: ' + GS.winN : 'انتهت المباراة') : draw ? 'تعادل' : win ? 'فزتوا' : 'خسرتوا';
+  E.endTxt.innerHTML = statTiles(ffa ? [[tdm.myKills, 'قتلاتك'], [tdm.myDeaths, 'موتاتك']] : [[tdm.blue, 'فريقك'], [tdm.red, 'فريقهم'], [tdm.myKills, 'قتلاتك'], [tdm.myDeaths, 'موتاتك']]);
+  if (netOn && netRows.length) { const eb = document.createElement('div'); eb.id = 'endBoard'; netBoardFill(eb); E.endTxt.appendChild(eb); }
+  E.endScr.style.display = 'flex'; setMenu(true);
+  E.respawn.style.display = 'none';
+  if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
+  updateLockHint();
+}
+function gsScore() {                            // the two numbers on the bar, from this player's side
+  if (isFFA()) { tdm.blue = tdm.myKills; tdm.red = tdm.myDeaths; return; }
+  const me = myAt(), src = GS.snd ? GS.snd.w : GS.sc;
+  tdm.blue = src[me]; tdm.red = src[otherAt(me)];
+}
+// ---- the bots ----
 function tdmFindTarget(b) {
   let best = null, bd = 1e9;
-  const g = b.group.position;
-  if (b.team === 'red' && player.alive) { bd = Math.hypot(player.x - g.x, player.z - g.z); best = 'player'; }
+  const g = b.group.position, ffa = isFFA();
+  if ((ffa || b.team === 'red') && player.alive) { bd = Math.hypot(player.x - g.x, player.z - g.z); best = 'player'; }
   for (const o of enemies) {
-    if (o.dead || o.team === b.team) continue;
+    if (o === b || o.dead || (!ffa && o.team === b.team)) continue;
     const d = Math.hypot(o.group.position.x - g.x, o.group.position.z - g.z);
     if (d < bd) { bd = d; best = o; }
   }
   return best;
 }
-// Team bots: each one routes round cover to its target on its own flow field, fights from a range it likes
-// (strafing, backing off when crowded), needs a moment to react when it first sees someone, and gives teammates room.
+function goalAt(b, x, z, spread) {
+  if (b.ga === undefined) { b.ga = Math.random() * 6.283; b.gd = Math.random(); }
+  for (let i = 0; i < 6; i++) {
+    const a = b.ga + i * 1.05, r = Math.min(spread, spread * (0.45 + 0.55 * b.gd) + i * 0.5);
+    const gx = x + Math.cos(a) * r, gz = z + Math.sin(a) * r;
+    if (spotFree(gx, gz, 0.5)) { b.gx = gx; b.gz = gz; return; }
+  }
+  b.gx = x; b.gz = z;
+}
+function modeGoal(b) {                          // where this bot wants to stand, if the mode gives it somewhere to be
+  b.gx = undefined; b.gr = 0.9; b.hard = false;
+  const P = b.group.position;
+  if (GS.id === 'dom') {
+    let f = GS.flags[b.gf];
+    if (!f || (f.own === b.at && Math.abs(f.p) >= 1 && (b.holdT = (b.holdT || 0) - 1) <= 0)) {
+      let bs = 1e9; b.gf = -1;
+      GS.flags.forEach((q, i) => { if (q.own === b.at && Math.abs(q.p) >= 1) return; const s = Math.hypot(q.x - P.x, q.z - P.z) * (0.6 + Math.random() * 0.8); if (s < bs) { bs = s; b.gf = i; } });
+      if (b.gf < 0) { b.gf = Math.floor(Math.random() * GS.flags.length); b.holdT = 6 + Math.random() * 8; }     // all ours: go and guard one for a while
+      f = GS.flags[b.gf];
+    }
+    if (f) { goalAt(b, f.x, f.z, DOM_R - 1.2); b.hard = Math.hypot(f.x - P.x, f.z - P.z) < 9 || b.id % 3 === 0; }
+  } else if (GS.id === 'kc') {
+    let bd = 26, t = null;
+    for (const q of GS.tags) { const d = Math.hypot(q.x - P.x, q.z - P.z); if (d < bd) { bd = d; t = q; } }
+    if (t) { b.gx = t.x; b.gz = t.z; b.gr = 0.2; b.hard = bd < 9; }
+  } else if (GS.snd) {
+    const S = GS.snd, sites = MAPS[currentMap].sites || [], atk = b.at === S.atk;
+    if (S.ph !== 'live' || !sites.length) return;
+    if (S.bomb) { if (atk) goalAt(b, S.bomb.x, S.bomb.z, 5); else { b.gx = S.bomb.x; b.gz = S.bomb.z; b.gr = 1.1; b.hard = true; } }
+    else if (atk) {
+      let first = true; for (const o of enemies) if (!o.net && !o.dead && o.at === S.atk && o.id < b.id) { first = false; break; }
+      const s = sites[S.plan];
+      if (first) { b.gx = s[0]; b.gz = s[1]; b.gr = 1.0; b.hard = true; } else goalAt(b, s[0], s[1], 4.5);
+    } else { const s = sites[b.id % sites.length]; goalAt(b, s[0], s[1], 5); }
+  }
+}
 function updateTdmBots(dt) {
   const sig = currentMap + ARENA + '|' + obstacles.length + '|tdm';
   if (NAV.sig !== sig) { NAV.sig = sig; navRebuild(); }
-  const cells = NAV.n * NAV.n;
+  const cells = NAV.n * NAV.n, host = gsHost(), frozen = !!GS.snd && GS.snd.ph !== 'live', k = Math.min(1, dt * 12), now = performance.now();
   tdmTokens = Math.min(3, tdmTokens + 3 * dt);         // caps how fast the player can be shot at
   for (const b of enemies) {
     if (b.dead || b.net) continue;
     const g = b.group;
-    if (b.range === undefined) { b.range = 8 + Math.random() * 10; b.react = 0.28 + Math.random() * 0.3; b.navT = 0; b.flowT = 0; b.strT = 0; b.seen = 0; b.side = Math.random() < 0.5 ? -1 : 1; b.stuck = 0; b.nudge = 0; }
+    if (b.mir || !host) {                              // run by another device: glide to where it last put this one
+      if (b.tx !== undefined) {
+        const P = g.position;
+        if (Math.hypot(b.tx - P.x, b.tz - P.z) > 6) { P.x = b.tx; P.z = b.tz; b.px = undefined; } else { P.x += (b.tx - P.x) * k; P.z += (b.tz - P.z) * k; }
+        let da = b.tr - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
+        g.rotation.y += da * k;
+      }
+      if (b.hitT > 0) b.hitT -= dt;
+      g.scale.setScalar(b.hitT > 0 ? 1.1 : 1);
+      animBot(b, dt);
+      continue;
+    }
+    if (b.range === undefined) { b.range = 8 + Math.random() * 10; b.react = 0.28 + Math.random() * 0.3; b.navT = 0; b.flowT = 0; b.strT = 0; b.seen = 0; b.side = Math.random() < 0.5 ? -1 : 1; b.stuck = 0; b.nudge = 0; b.goalT = Math.random() * 0.5; }
+    if (frozen) { b.crouch = false; animBot(b, dt); continue; }
     b.retgt -= dt;
-    const stale = !b.tgt || (b.tgt === 'player' ? !player.alive : b.tgt.dead);
+    const stale = !b.tgt || (b.tgt === 'player' ? !player.alive : (b.tgt.dead || enemies.indexOf(b.tgt) < 0));
     if (stale || b.retgt <= 0) { const nt = tdmFindTarget(b); if (nt !== b.tgt) { b.tgt = nt; b.flowT = 0; b.seen = 0; } b.retgt = 0.6 + Math.random() * 0.6; }
-    const t = b.tgt;
-    if (!t) { animBot(b, dt); continue; }
-    const atPlayer = t === 'player';
-    const tx = atPlayer ? player.x : t.group.position.x;
-    const tz = atPlayer ? player.z : t.group.position.z;
-    const ty = atPlayer ? eyeH - 0.2 + player.y : 1.4;
-    const ox = g.position.x, oz = g.position.z;
-    const dx = tx - ox, dz = tz - oz;
-    const d = Math.hypot(dx, dz) || 1;
-    b.losT -= dt;
-    if (b.losT <= 0) { b.losT = 0.2; b.los = hasLOS(ox, 1.5, oz, tx, ty, tz); }
-    b.seen = b.los ? b.seen + dt : 0;
+    b.goalT -= dt;
+    if (b.goalT <= 0) { b.goalT = 0.7 + Math.random() * 0.6; const og = b.gx; modeGoal(b); if ((og === undefined) !== (b.gx === undefined)) b.flowT = 0; }
+    const t = b.tgt, atPlayer = t === 'player', ox = g.position.x, oz = g.position.z;
+    let tx = ox, tz = oz, ty = 1.4, dx = 0, dz = 0, d = 1e9;
+    if (t) {
+      tx = atPlayer ? player.x : t.net ? t.tx : t.group.position.x;
+      tz = atPlayer ? player.z : t.net ? t.tz : t.group.position.z;
+      ty = atPlayer ? eyeH - 0.2 + player.y : t.net ? 1.4 + (t.ty || 0) : 1.4;
+      dx = tx - ox; dz = tz - oz; d = Math.hypot(dx, dz) || 1;
+      b.losT -= dt;
+      if (b.losT <= 0) { b.losT = 0.2; b.los = hasLOS(ox, 1.5, oz, tx, ty, tz); }
+      b.seen = b.los ? b.seen + dt : 0;
+    } else { b.los = false; b.seen = 0; }
+    const hasGoal = b.gx !== undefined, gx = hasGoal ? b.gx : tx, gz = hasGoal ? b.gz : tz, gd = Math.hypot(gx - ox, gz - oz);
+    const fight = !!t && b.los && d <= b.range;
     let ux = 0, uz = 0, sp = b.speed;
-    const fight = b.los && d <= b.range;
-    if (b.nudge > 0) {                                   // wedged on something: slide sideways for a moment
-      b.nudge -= dt; ux = -dz / d * b.side; uz = dx / d * b.side;
-    } else if (!fight) {
-      if (!b.dist || b.dist.length !== cells) { b.dist = new Int16Array(cells); b.flowT = 0; }
-      b.flowT -= dt;
-      if (b.flowT <= 0) { b.flowT = 0.45 + Math.random() * 0.35; navFlow(tx, tz, b.dist); }
-      if (navStep(b, dt, ox, oz, tx, tz) === 2) { ux = _nx; uz = _nz; } else { ux = dx / d; uz = dz / d; }
-    } else {
+    b.crouch = !!b.act;
+    if (b.act) sp = 0;                                 // planting or defusing: hold still
+    else if (b.nudge > 0) {                            // wedged on something: slide sideways for a moment
+      b.nudge -= dt;
+      const mx = gd > 0.01 ? (gx - ox) / gd : 1, mz = gd > 0.01 ? (gz - oz) / gd : 0;
+      ux = -mz * b.side; uz = mx * b.side;
+    } else if (fight && !(hasGoal && b.hard && gd > b.gr)) {
       b.strT -= dt;
       if (b.strT <= 0) { b.strT = 0.5 + Math.random() * 1.1; b.side = Math.random() < 0.15 ? 0 : Math.random() < 0.5 ? -1 : 1; }
       const fx = dx / d, fz = dz / d, adv = d < 4.5 ? -0.8 : d > b.range * 0.8 ? 0.45 : 0;
       ux = -fz * b.side + fx * adv; uz = fx * b.side + fz * adv;
+      if (hasGoal && gd > 2.2) { ux += (gx - ox) / gd * 0.6; uz += (gz - oz) / gd * 0.6; }      // drift back to where it should be
       const l = Math.hypot(ux, uz);
       if (l > 0) { ux /= l; uz /= l; sp *= 0.6; } else sp = 0;
+    } else if ((!hasGoal && !t) || (hasGoal && gd <= b.gr)) sp = 0;
+    else {
+      if (!b.dist || b.dist.length !== cells) { b.dist = new Int16Array(cells); b.flowT = 0; }
+      b.flowT -= dt;
+      if (b.flowT <= 0) { b.flowT = 0.45 + Math.random() * 0.35; navFlow(gx, gz, b.dist); }
+      if (navStep(b, dt, ox, oz, gx, gz) === 2) { ux = _nx; uz = _nz; } else if (gd > 0.01) { ux = (gx - ox) / gd; uz = (gz - oz) / gd; }
     }
-    for (const o of enemies) {                           // don't stand inside a teammate
+    for (const o of enemies) {                         // don't stand inside a teammate
       if (o === b || o.dead) continue;
       const ex = ox - o.group.position.x, ez = oz - o.group.position.z, e2 = ex * ex + ez * ez;
-      if (e2 < 1 && e2 > 1e-4) { const k = 0.5 / Math.sqrt(e2); ux += ex * k; uz += ez * k; }
+      if (e2 < 1 && e2 > 1e-4) { const q = 0.5 / Math.sqrt(e2); ux += ex * q; uz += ez * q; if (sp === 0 && !b.act) sp = b.speed * 0.3; }
     }
     const step = sp * dt;
     collide(ox + ux * step, oz + uz * step, 0.5);
@@ -4426,7 +5097,7 @@ function updateTdmBots(dt) {
     } else b.stuck = 0;
     g.position.x = clamp(_cx, -ARENA + 2, ARENA - 2);
     g.position.z = clamp(_cz, -ARENA + 2, ARENA - 2);
-    const want = b.los ? Math.atan2(dx, dz) : (ux || uz) ? Math.atan2(ux, uz) : g.rotation.y;
+    const want = b.los && t ? Math.atan2(dx, dz) : (ux || uz) ? Math.atan2(ux, uz) : g.rotation.y;
     let da = want - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
     g.rotation.y += da * Math.min(1, dt * 10);
     if (b.hitT > 0) b.hitT -= dt;
@@ -4434,62 +5105,262 @@ function updateTdmBots(dt) {
     animBot(b, dt);
 
     b.cool -= dt;
-    if (b.cool > 0 || d > 30 || !b.los || b.seen < b.react) continue;
+    if (!t || b.act || b.cool > 0 || d > 30 || !b.los || b.seen < b.react) continue;
     if (atPlayer && tdmTokens < 1) { b.cool = 0.2; continue; }
+    if (t.net) {                                       // a person on another device: the same ration of shots at them
+      t.tok = Math.min(3, (t.tok === undefined ? 3 : t.tok) + 3 * (now - (t.tokT || now)) / 1000); t.tokT = now;
+      if (t.tok < 1) { b.cool = 0.2; continue; }
+      t.tok -= 1;
+    }
     b.cool = 0.75 + Math.random() * 0.55;
     if (atPlayer) tdmTokens -= 1;
     let acc = 0.6 - clamp((d - 5) / 22, 0, 1) * 0.32;
     if (atPlayer) {
       if (!player.grounded) acc *= 0.45;
       else if (moving) acc *= (held('sprint') || sprintToggle) ? 0.5 : 0.7;
-    }
+    } else if (t.net) acc *= 0.75;
     const hit = Math.random() < acc;
     _m.set(g.position.x, 1.3, g.position.z);
     if (hit) _e.set(tx, ty, tz);
     else _e.set(tx + (Math.random() - 0.5) * 3, 1.2 + Math.random() * 0.6, tz + (Math.random() - 0.5) * 3);
-    b.kick = 1;
+    b.kick = 1; b.shots = (b.shots + 1) & 255;
     addTracer(_m, _e, b.team === 'red' ? 0xff6a3d : 0x7dd3fc);
     fxMuzzle(_m, null, 1, 0.8, 0.45, false); shotNoise(0.035, 0.12, 2600);
     const near = Math.hypot(g.position.x - player.x, g.position.z - player.z);
     if (near < 34) tone(160, 0.08, 'square', 0.035 * Math.max(0.12, 1 - near / 34), -60);
     if (!hit) continue;
-    if (atPlayer) { lastHit = { name: b.name, obj: b, kind: 'gun', w: 'بندقية' }; damagePlayer(20); hitFrom(g.position.x, g.position.z); }
-    else botDamage(t, 22, b.team, b.name);
+    if (atPlayer) { lastHit = { name: b.name, obj: b, kind: 'gun', w: 'بندقية' }; netKiller = { peer: 'B' + b.id, name: b.name }; damagePlayer(20); hitFrom(g.position.x, g.position.z); }
+    else if (t.net) { GS.at.push([++GS.atSeq, t.peer, b.id, 20]); if (GS.at.length > 12) GS.at.shift(); netT = Math.min(netT, 0.02); }
+    else botDamage(t, 22, b.team, b.name, '', b);
   }
 }
 function updateTdm(dt) {
   if (tdm.over) return;
-  tdm.t -= dt;
-  if (tdm.t <= 0) { tdm.t = 0; endTdm(); return; }
+  GS.age += dt;
+  if (!netOn) { GS.hum = { b: 1, r: 0 }; GS.pb = { k: tdm.myKills, n: 'أنت', p: 'me' }; }
+  if (gsHost()) {
+    if (!GS.snd) { tdm.t -= dt; if (tdm.t <= 0) { tdm.t = 0; modeTimeUp(); return; } }
+    for (let i = tdm.queue.length - 1; i >= 0; i--) {
+      const q = tdm.queue[i];
+      q.t -= dt;
+      if (q.t <= 0) { tdm.queue.splice(i, 1); mkModeBot(q.at, q.name); rebuildTargets(); }
+    }
+    botsSync(dt);
+    if (GS.id === 'dom') domTick(dt); else if (GS.id === 'kc') kcTick(dt); else if (GS.snd) sndTick(dt); else checkTdmEnd();
+    if (tdm.over) return;
+  }
   if (player.alive) updateRegen(dt);
-  else {
+  else if (!GS.snd) {
     tdm.respawn -= dt;
     if (tdm.respawn <= 0) respawnPlayer();
   }
-  for (let i = tdm.queue.length - 1; i >= 0; i--) {
-    const q = tdm.queue[i];
-    q.t -= dt;
-    if (q.t <= 0) { tdm.queue.splice(i, 1); spawnTeamBot(q.team, q.name); rebuildTargets(); }
-  }
   updateTdmBots(dt);
+  sndActTick(dt);
+  gsScore();
+  gsVisuals(dt);
   for (let i = tdm.feed.length - 1; i >= 0; i--) { tdm.feed[i].t -= dt; if (tdm.feed[i].t <= 0) { tdm.feed.splice(i, 1); hc.feed = null; } }
 }
-function checkTdmEnd() { if (tdm.blue >= TDM_LIMIT || tdm.red >= TDM_LIMIT) endTdm(); }
-function endTdm() {
-  if (tdm.over) return;
-  tdm.over = true;
-  running = false;
-  const draw = tdm.blue === tdm.red, win = tdm.blue > tdm.red;
-  if (win && !netOn) { bests.tdm++; try { localStorage.setItem('fps-best-tdm', String(bests.tdm)); } catch (e) {} }
-  const ffa = netOn && netMode === 'f';
-  E.endTitle.textContent = ffa ? (netKills >= NET_LIMIT.f ? 'فزت 🏆' : 'انتهت المباراة') : draw ? 'تعادل' : win ? 'فزتوا' : 'خسرتوا';
-  E.endTxt.innerHTML = statTiles(ffa ? [[tdm.myKills, 'قتلاتك'], [tdm.myDeaths, 'موتاتك']] : [[tdm.blue, 'فريقك'], [tdm.red, 'فريقهم'], [tdm.myKills, 'قتلاتك'], [tdm.myDeaths, 'موتاتك']]);
-  if (netOn && netRows.length) { const eb = document.createElement('div'); eb.id = 'endBoard'; netBoardFill(eb); E.endTxt.appendChild(eb); }
-  E.endScr.style.display = 'flex'; setMenu(true);
-  E.respawn.style.display = 'none';
-  if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
-  updateLockHint();
+// ---- online: what goes out, what comes in, who hosts ----
+function gsEncode() {
+  const b = [];
+  for (const o of enemies) {
+    if (o.net || o.dead) continue;
+    const P = o.group.position;
+    b.push([o.id, o.at === 'b' ? 0 : 1, Math.round(P.x * 10), Math.round(P.z * 10), Math.round(Math.atan2(Math.sin(o.group.rotation.y), Math.cos(o.group.rotation.y)) * 10),
+            Math.max(1, Math.ceil(o.hp)), o.act ? 1 : 0, o.shots & 255, Math.max(0, BOT_CLS.indexOf(o.cls)), o.seed, Math.max(0, BOT_NAMES.indexOf(o.name)), GS.bk[o.name] || 0]);
+  }
+  const h = { n: GS.n, lim: GS.lim, s: [GS.sc.b, GS.sc.r], t: Math.ceil(tdm.t), b, ev: GS.ev, at: GS.at };
+  if (GS.id === 'dom') h.f = GS.flags.map(f => [f.own === 'b' ? 1 : f.own === 'r' ? 2 : 0, Math.round(f.p * 100)]);
+  if (GS.id === 'kc') h.tg = GS.tags.map(t => [t.id, Math.round(t.x * 10), Math.round(t.z * 10), t.at === 'b' ? 0 : 1]);
+  const S = GS.snd;
+  if (S) h.sn = [S.round, S.w.b, S.w.r, S.atk === 'b' ? 0 : 1, S.ph, Math.ceil(S.t), S.bomb ? [S.bomb.site, Math.round(S.bomb.x * 10), Math.round(S.bomb.z * 10), Math.ceil(S.bomb.t)] : 0, S.plan, S.had.b, S.had.r];
+  if (GS.over) h.ov = [GS.win, GS.winP, GS.winN];
+  return h;
 }
+function gsOut() {                              // my part of the presence message
+  for (const [id, d] of GS.pend) GS.hits.push([++GS.hitSeq, id, Math.round(d)]);
+  GS.pend.clear();
+  while (GS.hits.length > 16) GS.hits.shift();
+  const o = { gm: GS.id, bh: GS.hits, me: GS.myEv };
+  if (gsHost()) { o.ho = 1; o.hs = gsEncode(); }
+  return o;
+}
+function gsScan() {                             // before reading the peers
+  GS.humT = { b: 0, r: 0 }; GS.humT[myAt()]++;
+  GS.pb = { k: tdm.myKills, n: netMyName(), p: meId() };
+  GS.hp = ''; GS.hg = null;
+}
+function gsPeer(peer, g, gt, name, gk) {
+  GS.humT[gt]++;
+  if (gk > GS.pb.k) GS.pb = { k: gk, n: name, p: peer };
+  if (g.ho === 1 && g.hs && typeof g.hs === 'object' && (!GS.hp || peer < GS.hp)) { GS.hp = peer; GS.hg = g; }
+  if (!gsHost()) return;
+  if (Array.isArray(g.bh)) {                           // damage they did to bots I run
+    const first = !GS.seenHit.has(peer); let last = first ? 0 : GS.seenHit.get(peer);
+    for (const h of g.bh) {
+      if (!Array.isArray(h) || typeof h[0] !== 'number' || h[0] <= last) continue;
+      last = h[0];
+      if (first) continue;
+      const b = enemies.find(e => !e.net && !e.dead && e.id === h[1]);
+      if (!b || (!isFFA() && b.at === gt)) continue;
+      botDamage(b, clamp(+h[2] || 0, 0, 20000), locTeam(gt), name, peer);
+    }
+    GS.seenHit.set(peer, last);
+  }
+  if (Array.isArray(g.me)) {                           // the bomb
+    const first = !GS.seenPEv.has(peer); let last = first ? 0 : GS.seenPEv.get(peer);
+    for (const e of g.me) {
+      if (!Array.isArray(e) || typeof e[0] !== 'number' || e[0] <= last) continue;
+      last = e[0];
+      if (first || !GS.snd) continue;
+      const sites = MAPS[currentMap].sites || [];
+      if (e[1] === 'pl' && gt === GS.snd.atk && sites[e[2]] && isFinite(e[3]) && isFinite(e[4]) && Math.hypot(e[3] - sites[e[2]][0], e[4] - sites[e[2]][1]) < 4) sndPlant(e[2], +e[3], +e[4], name);
+      else if (e[1] === 'df' && gt !== GS.snd.atk) sndDefuse(name);
+    }
+    GS.seenPEv.set(peer, last);
+  }
+}
+function gsRemoteDeath(g, gt, name, gx, gz) {          // a person on another device died
+  if (!gsHost()) return;
+  modeDeath({ x: gx, z: gz, at: gt, name });
+  const kid = g.d[1];
+  if (typeof kid === 'string' && kid[0] === 'B') { const b = enemies.find(e => !e.net && e.id === +kid.slice(1)); if (b) GS.bk[b.name] = (GS.bk[b.name] || 0) + 1; }
+}
+function gsKillerName(id, peers) {
+  if (typeof id === 'string' && id[0] === 'B') { const b = enemies.find(e => !e.net && e.id === +id.slice(1)); return b ? b.name : 'بوت'; }
+  const kp = peers.find(q => q.peer === id);
+  return kp && kp.presence && kp.presence.g ? cleanName(kp.presence.g.n) : 'لاعب';
+}
+function gsRows(rows) {                         // bots on the score table
+  for (const b of enemies) if (!b.net && !b.dead) rows.push({ n: '🤖 ' + b.name, k: GS.bk[b.name] || 0, d: '—', t: b.at });
+}
+function gsBecomeClient() {
+  for (const b of enemies) if (!b.net) { b.dead = true; scene.remove(b.group); }
+  enemies = enemies.filter(e => !e.dead); rebuildTargets(); tdm.queue.length = 0;
+  Object.assign(GS, { role: 'client', noHost: 0, synced: false, seenEv: -1, seenAt: -1, hostId: '' }); GS.dead.clear(); GS.pend.clear();
+}
+function gsBecomeHost(fresh) {
+  GS.role = 'host';
+  let mx = GS.botSeq;
+  for (const b of enemies) { if (b.net) continue; mx = Math.max(mx, b.id || 0); b.mir = false; b.range = undefined; b.tgt = null; b.act = null; b.px = undefined; }
+  GS.botSeq = mx; GS.evSeq = Math.max(GS.evSeq, GS.seenEv, 0); GS.atSeq = Math.max(GS.atSeq, GS.seenAt, 0);
+  for (const t of GS.tags) if (!t.t) t.t = 15;
+  GS.botT = 0; netT = 0;
+  if (!fresh) toast('🌐 صرت أنت المضيف');
+}
+function gsElect(dt) {
+  GS.hum = GS.humT;
+  const hostP = GS.hp;
+  if (GS.role === 'wait') { if (hostP) gsBecomeClient(); else if (GS.age > 1.2) gsBecomeHost(true); }
+  else if (GS.role === 'host') { if (hostP && netMe && hostP < netMe) gsBecomeClient(); }
+  else if (hostP) GS.noHost = 0;
+  else {
+    GS.noHost += dt;
+    let low = true; for (const id of netPeers.keys()) if (netMe && id < netMe) low = false;
+    if (GS.noHost > 2.5 && (low || GS.noHost > 6)) gsBecomeHost();
+  }
+  if (GS.role === 'client' && hostP) gsApply(GS.hg.hs, hostP);
+}
+function gsApply(hs, hostId) {                  // draw the host's match
+  if (!hs || typeof hs !== 'object' || !Array.isArray(hs.b)) return;
+  if (GS.hostId !== hostId) { GS.hostId = hostId; GS.seenEv = -1; GS.seenAt = -1; }
+  GS.synced = true;
+  GS.n = clamp(Math.floor(+hs.n || 0), 0, 5); GS.lim = clamp(Math.floor(+hs.lim || 1), 1, 999);
+  if (Array.isArray(hs.s)) { GS.sc.b = clamp(Math.floor(+hs.s[0] || 0), 0, 9999); GS.sc.r = clamp(Math.floor(+hs.s[1] || 0), 0, 9999); }
+  if (isFinite(hs.t)) tdm.t = clamp(+hs.t, 0, TDM_TIME);
+  const now = performance.now(), have = new Map(), seen = new Set(), S = GS.snd;
+  for (const o of enemies) if (!o.net && !o.dead) have.set(o.id, o);
+  let changed = false;
+  for (const e of hs.b) {
+    if (!Array.isArray(e) || e.length < 12 || !e.every(v => typeof v === 'number' && isFinite(v))) continue;
+    const id = e[0]; seen.add(id);
+    if (GS.dead.has(id)) continue;
+    const at = e[1] ? 'r' : 'b', x = clamp(e[2] / 10, -ARENA, ARENA), z = clamp(e[3] / 10, -ARENA, ARENA);
+    let o = have.get(id);
+    if (o && o.team !== locTeam(at)) { o.dead = true; scene.remove(o.group); o = null; changed = true; }
+    if (!o) {
+      if (have.size >= 14) continue;
+      o = mkModeBot(at, BOT_NAMES[e[10]] || 'بوت', { id, x, z, cls: BOT_CLS[e[8]] || 'assault', seed: Math.abs(Math.floor(e[9])) % 9973, mir: true, hp: Math.max(1, e[5]) });
+      o.shots = e[7]; have.set(id, o); changed = true;
+    }
+    o.tx = x; o.tz = z; o.tr = e[4] / 10; o.hp = Math.min(o.hp, Math.max(1, e[5])); o.crouch = !!e[6];
+    if (e[7] !== o.shots) {                            // it fired: flash and a tracer the way it is facing
+      o.shots = e[7]; o.kick = 1;
+      const P = o.group.position, w = o.tr;
+      _m.set(P.x, 1.3, P.z); _e.set(P.x + Math.sin(w) * 30, 1.3, P.z + Math.cos(w) * 30);
+      addTracer(_m, _e, o.team === 'red' ? 0xff6a3d : 0x7dd3fc); fxMuzzle(_m, null, 1, 0.8, 0.45, false); shotNoise(0.035, 0.12, 2600);
+      const near = Math.hypot(P.x - player.x, P.z - player.z);
+      if (near < 34) tone(160, 0.08, 'square', 0.035 * Math.max(0.12, 1 - near / 34), -60);
+    }
+    GS.bk[o.name] = clamp(Math.floor(e[11]), 0, 999);
+  }
+  for (const [id, o] of have) if (!seen.has(id) && !o.dead) {
+    o.dead = true; changed = true;
+    if (S && S.ph !== 'live') scene.remove(o.group); else { fxDeath(o.group.position.x, o.group.position.z); dying.push({ group: o.group, t: 0.4, dur: 0.4 }); }
+  }
+  for (const [id, t] of GS.dead) if (!seen.has(id) || now - t > 4000) GS.dead.delete(id);
+  if (changed) { enemies = enemies.filter(e => !e.dead); rebuildTargets(); }
+  if (Array.isArray(hs.f)) hs.f.forEach((v, i) => { const f = GS.flags[i]; if (f && Array.isArray(v)) { f.own = v[0] === 1 ? 'b' : v[0] === 2 ? 'r' : ''; f.p = clamp((+v[1] || 0) / 100, -1, 1); } });
+  if (Array.isArray(hs.tg)) GS.tags = hs.tg.filter(v => Array.isArray(v) && v.length >= 4 && v.every(q => typeof q === 'number' && isFinite(q))).slice(0, 16).map(v => ({ id: v[0], x: clamp(v[1] / 10, -ARENA, ARENA), z: clamp(v[2] / 10, -ARENA, ARENA), at: v[3] ? 'r' : 'b' }));
+  if (S && Array.isArray(hs.sn)) {
+    const q = hs.sn, round = clamp(Math.floor(+q[0] || 0), 0, 99), ph = ['pre', 'live', 'post'].indexOf(q[4]) >= 0 ? q[4] : 'wait';
+    S.w.b = clamp(Math.floor(+q[1] || 0), 0, 99); S.w.r = clamp(Math.floor(+q[2] || 0), 0, 99); S.atk = q[3] ? 'r' : 'b'; S.ph = ph; S.t = +q[5] || 0;
+    S.bomb = Array.isArray(q[6]) && q[6].every(v => typeof v === 'number' && isFinite(v)) ? { site: q[6][0] ? 1 : 0, x: clamp(q[6][1] / 10, -ARENA, ARENA), z: clamp(q[6][2] / 10, -ARENA, ARENA), t: +q[6][3] || 0 } : null;
+    S.plan = q[7] ? 1 : 0; S.had = { b: +q[8] || 0, r: +q[9] || 0 };
+    if (round !== S.round) { S.round = round; if (round > 0) sndLocalRound(); }
+  }
+  if (Array.isArray(hs.ev)) {
+    const init = GS.seenEv < 0; let last = init ? 0 : GS.seenEv;
+    for (const e of hs.ev) { if (!Array.isArray(e) || typeof e[0] !== 'number' || e[0] <= last) continue; last = e[0]; if (!init) modeEvent(e, false); }
+    GS.seenEv = last;
+  }
+  if (Array.isArray(hs.at)) {
+    const init = GS.seenAt < 0; let last = init ? 0 : GS.seenAt;
+    for (const a of hs.at) {
+      if (!Array.isArray(a) || typeof a[0] !== 'number' || a[0] <= last) continue;
+      last = a[0];
+      if (init || a[1] !== netMe || !player.alive) continue;
+      const bot = have.get(a[2]), name = bot ? bot.name : 'بوت';
+      netKiller = { peer: 'B' + a[2], name }; lastHit = { name, obj: bot, kind: 'gun', w: 'بندقية' };
+      damagePlayer(clamp(+a[3] || 0, 0, 60));
+      if (bot) hitFrom(bot.group.position.x, bot.group.position.z);
+    }
+    GS.seenAt = last;
+  }
+  if (Array.isArray(hs.ov) && !tdm.over) { GS.over = true; GS.win = hs.ov[0] === 'b' || hs.ov[0] === 'r' || hs.ov[0] === 'x' ? hs.ov[0] : ''; GS.winP = typeof hs.ov[1] === 'string' ? hs.ov[1] : ''; GS.winN = cleanName(hs.ov[2]); endTdm(); }
+}
+function startTdm() {
+  tdm.blue = 0; tdm.red = 0; tdm.t = TDM_TIME; tdm.over = false; tdm.respawn = 0;
+  tdm.feed.length = 0; tdm.queue.length = 0; tdm.myKills = 0; tdm.myDeaths = 0;
+  hc.feed = null;
+  netOn = $('netTgl').checked;
+  gsReset();
+  netReset();
+  gsBuildObjects();
+  const [x, z] = teamSpawn('blue');
+  player.x = x; player.z = z; faceOpen();
+  giveClassLoadout();
+  rebuildTargets();
+  const G = GM[GS.id];
+  toast((netOn ? '🌐 ' : '⚔️ ') + G.name + ': ' + (GS.id === 'snd' ? 'أول فريق يفوز بـ' + GS.lim + ' جولات' : GS.id === 'gg' ? G.tag : GS.id === 'dom' ? 'أول فريق يوصل ' + GS.lim : 'أول ' + (G.ffa ? 'واحد' : 'فريق') + ' يوصل ' + GS.lim));
+}
+// ---- the menu: which mode, how many bots ----
+function selectGm(id) {
+  if (!GM[id]) id = 'tdm';
+  gmId = id;
+  try { localStorage.setItem('fps-gm', id); } catch (e) {}
+  document.querySelectorAll('.gmBtn').forEach(b => b.classList.toggle('sel', b.dataset.gm === id));
+  if ($('gmWrap') && !$('gmWrap').hidden) $('tagline').textContent = GM[id].tag;
+  if (E.clsWrap) E.clsWrap.style.display = isTdmMap(selectedMap) && id !== 'gg' ? 'flex' : 'none';
+}
+for (const id of ['tdm', 'dom', 'kc', 'snd', 'gg', 'ffa']) {
+  const b = document.createElement('button');
+  b.className = 'gmBtn'; b.type = 'button'; b.dataset.gm = id; b.textContent = GM[id].name;
+  b.addEventListener('click', () => selectGm(id));
+  $('gmRow').appendChild(b);
+}
+$('botN').value = botN; $('botNV').textContent = botN;
+$('botN').addEventListener('input', () => { botN = clamp(Math.floor(+$('botN').value || 0), 0, 5); $('botNV').textContent = botN; try { localStorage.setItem('fps-bots', String(botN)); } catch (e) {} });
 // ---------- Online test: everyone who has this page open in the same map sees each other move ----------
 // Position travels as "presence" (who I am right now), which anyone here may set. Nothing is shot at yet: this only measures how smooth it is.
 // ================= P2P rooms: the online transport when the page is NOT running inside Claude =================
@@ -4628,7 +5499,7 @@ function netCount() {
   let n = 0; try { for (const p of r.peers()) if (!p.sameTab) n++; } catch (e) {}
   const st = r.statusText ? r.statusText() : '';
   if (r.status === 'failed' || r.status === 'connecting') { netInfo(st); return; }
-  netInfo((st ? st + ' · ' : '') + (n ? 'فاتحين اللعبة الحين غيرك: ' + n : 'بدون بوتات. ما فيه أحد غيرك فاتح اللعبة الحين'));
+  netInfo((st ? st + ' · ' : '') + (n ? 'فاتحين اللعبة الحين غيرك: ' + n : 'ما فيه أحد غيرك فاتح اللعبة الحين'));
 }
 function netWire(r) {
   netLobby = r; netRoom = r;
@@ -4685,7 +5556,7 @@ function netDied() {                                   // I am the authority on 
 }
 function netReset() {
   netHits = []; netDeath = null; netKiller = null; netKills = 0; netSeenHit.clear(); netSeenDeath.clear(); netSeenShot.clear(); netNades = []; netSeenNade.clear();
-  netMode = (document.querySelector('.nMode.sel') || {}).dataset ? document.querySelector('.nMode.sel').dataset.q : 't';
+  netMode = isFFA() ? 'f' : 't';
   netTeam = 'b'; netBalT = 1.2; netRows = [];
   if (netOn) { netPickRoom(); if (netRoom && netRoom.connect) netRoom.connect(); }
   else for (const r of [netLobby, netRoom]) { if (r && r.disconnect) r.disconnect(); }     // direct mode: stop relaying when online is off
@@ -4713,21 +5584,23 @@ function netTick(dt) {
     netT = 0.066;
     try {
       netRoom.presence({ g: { m: currentMap, q: netMode, t: netTeam, x: +player.x.toFixed(2), z: +player.z.toFixed(2), y: +player.y.toFixed(2), w: +player.yaw.toFixed(2), p: +player.pitch.toFixed(2),
-        a: player.alive ? 1 : 0, c: stance === 'stand' ? 0 : 1, s: netShots, n: netMyName(), h: netHits, d: netDeath, k: netKills, dd: tdm.myDeaths, gr: netNades, l: Math.round(player.hp), wp: cw().id, cl: myClass, r: player.reloading > 0 ? 1 : 0 } }).catch(() => {});
+        a: player.alive ? 1 : 0, c: stance === 'stand' ? 0 : 1, s: netShots, n: netMyName(), h: netHits, d: netDeath, k: netKills, dd: tdm.myDeaths, gr: netNades, l: Math.round(player.hp), wp: cw().id, cl: myClass, r: player.reloading > 0 ? 1 : 0, ...gsOut() } }).catch(() => {});
     } catch (e) {}
   }
   let peers = [];
   try { peers = netRoom.peers(); } catch (e) {}
   if (!netMe) for (const p of peers) if (p.sameTab) { netMe = p.peer; break; }
   const here = new Set(), rows = [{ n: netMyName(), k: netKills, d: tdm.myDeaths, t: netTeam, me: true }];
+  gsScan();
   let mine = netKills, theirs = 0, nb = netTeam === 'b' ? 1 : 0, nr = 1 - nb, topB = netTeam === 'b' ? netMe : '', topR = netTeam === 'r' ? netMe : '', bestK = netKills;
   for (const p of peers) {
     if (p.sameTab || p.kind !== 'viewer') continue;
     const g = p.presence && p.presence.g;
-    if (!g || g.m !== currentMap || g.q !== netMode || typeof g.x !== 'number' || typeof g.z !== 'number' || !isFinite(g.x) || !isFinite(g.z)) continue;
+    if (!g || g.m !== currentMap || g.q !== netMode || g.gm !== GS.id || typeof g.x !== 'number' || typeof g.z !== 'number' || !isFinite(g.x) || !isFinite(g.z)) continue;
     const gx = clamp(g.x, -ARENA, ARENA), gz = clamp(g.z, -ARENA, ARENA), name = cleanName(g.n);
     const gt = g.t === 'r' ? 'r' : 'b', ally = netMode === 't' && gt === netTeam, gk = clamp(Math.floor(+g.k || 0), 0, 999);
     rows.push({ n: name, k: gk, d: clamp(Math.floor(+g.dd || 0), 0, 999), t: gt });
+    gsPeer(p.peer, g, gt, name, gk);
     if (ally) mine += gk; else theirs += gk;
     bestK = Math.max(bestK, gk);
     if (gt === 'b') { nb++; if (p.peer > topB) topB = p.peer; } else { nr++; if (p.peer > topR) topR = p.peer; }
@@ -4750,8 +5623,9 @@ function netTick(dt) {
       const seen = netSeenDeath.get(p.peer);
       if (seen !== undefined && g.d[0] > seen) {
         fxDeath(gx, gz);
-        if (g.d[1] === netMe) { netKills++; tdm.blue++; tdm.myKills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', name, 'blue'); }
-        else { const kp = peers.find(q => q.peer === g.d[1]); feedAdd(kp && kp.presence && kp.presence.g ? cleanName(kp.presence.g.n) : 'لاعب', name, ally ? 'red' : 'blue'); }
+        gsRemoteDeath(g, gt, name, gx, gz);
+        if (g.d[1] === netMe) { netKills++; tdm.myKills++; killMark(); popPoints(100, 'kill'); feedAdd('أنت', name, 'blue'); ggKill(); }
+        else feedAdd(gsKillerName(g.d[1], peers), name, ally ? 'red' : 'blue');
       }
       netSeenDeath.set(p.peer, g.d[0]);
     } else if (!netSeenDeath.has(p.peer)) netSeenDeath.set(p.peer, 0);
@@ -4786,7 +5660,7 @@ function netTick(dt) {
       netPeers.set(p.peer, o);
       enemies.push(o); rebuildTargets();
     }
-    o.name = name; o.nhp = +g.l || 0;
+    o.name = name; o.nhp = +g.l || 0; o.gat = gt;
     o.tx = gx; o.tz = gz;
     o.ty = clamp(+g.y || 0, 0, 8); o.tw = (+g.w || 0) + Math.PI; o.crouch = !!g.c; o.aimP = clamp(+g.p || 0, -1.2, 1.2); o.reload = !!g.r;
     // their shots: flash, tracer and a bang that fades with distance
@@ -4804,18 +5678,19 @@ function netTick(dt) {
     netSeenShot.set(p.peer, sh);
   }
   for (const id of [...netPeers.keys()]) if (!here.has(id)) netDrop(id);
+  gsRows(rows);
   netRows = rows;
   if (netMode === 't') {
-    tdm.blue = mine; tdm.red = theirs;
     // keep the sides even: if mine is two or more bigger, the last name on it crosses over
     netBalT -= dt;
     if (netBalT <= 0) {
       netBalT = 1;
       const myN = netTeam === 'b' ? nb : nr, otherN = netTeam === 'b' ? nr : nb, top = netTeam === 'b' ? topB : topR;
-      if (netMe && (myN - otherN >= 2 || (myN - otherN === 1 && otherN === 0 && myN >= 2)) && top === netMe) { netTeam = netTeam === 'b' ? 'r' : 'b'; netT = 0; toast(netTeam === 'b' ? 'انتقلت للفريق الأزرق' : 'انتقلت للفريق الأحمر'); }
+      if (netMe && (myN - otherN >= 2 || (myN - otherN === 1 && otherN === 0 && myN >= 2)) && top === netMe) { netTeam = netTeam === 'b' ? 'r' : 'b'; netT = 0; gsReskin(); toast(netTeam === 'b' ? 'انتقلت للفريق الأزرق' : 'انتقلت للفريق الأحمر'); }
     }
-    if (mine >= NET_LIMIT.t || theirs >= NET_LIMIT.t) { endTdm(); return; }
-  } else if (bestK >= NET_LIMIT.f) { endTdm(); return; }
+  }
+  gsElect(dt);
+  if (tdm.over) return;
   const k = Math.min(1, dt * 12);
   for (const o of netPeers.values()) {
     const P = o.group.position;
@@ -4833,22 +5708,6 @@ function netTick(dt) {
   const show = player.alive && held('score');          // while you wait to respawn the table sits on the death card instead
   if (show) { netBoardT -= dt; if (netBoardT <= 0 || board.style.display !== 'block') { netBoardT = 0.5; netBoardFill(board); } }
   board.style.display = show ? 'block' : 'none';
-}
-function startTdm() {
-  tdm.blue = 0; tdm.red = 0; tdm.t = TDM_TIME; tdm.over = false; tdm.respawn = 0;
-  tdm.feed.length = 0; tdm.queue.length = 0; tdm.myKills = 0; tdm.myDeaths = 0;
-  hc.feed = null;
-  const names = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
-  netOn = $('netTgl').checked; netReset();
-  if (!netOn) {
-    for (let i = 0; i < TEAM_SIZE - 1; i++) spawnTeamBot('blue', names[i]);
-    for (let i = 0; i < TEAM_SIZE; i++) spawnTeamBot('red', names[TEAM_SIZE - 1 + i]);
-  }
-  const [x, z] = teamSpawn('blue');
-  player.x = x; player.z = z; faceOpen();
-  giveClassLoadout();
-  rebuildTargets();
-  toast(netOn ? (netMode === 't' ? '🌐 أونلاين فرق: أول فريق يوصل ' + NET_LIMIT.t + ' قتلة' : '🌐 الكل ضد الكل: أول واحد يوصل ' + NET_LIMIT.f + ' قتلة') : '⚔️ ابدأ! أول فريق يوصل ' + TDM_LIMIT + ' قتلة');
 }
 const losRay = new THREE.Raycaster();
 const shotRay = new THREE.Raycaster();
@@ -5934,6 +6793,7 @@ function buyPaP(st) {
 function interact() {
   if (!running || !player.alive || down) return;
   if (co.live) { const mt = coNearDown(); if (mt) { if (!reviving) reviving = { peer: mt.peer, t: 0 }; return; } }
+  if (mode === 'tdm') { sndUse(); return; }
   if (nearBox() && (box.state === 'idle' || box.state === 'offer')) { useBox(); return; }
   if (base.on) { const D = nearDoor(); if (D) { buyDoor(D); return; } }
   const st = nearStation();
@@ -6009,6 +6869,7 @@ function updateBox(dt) {
 }
 function updateBoxUI() {
   let msg = '', btn = '';
+  if (mode === 'tdm' && GS.snd) btn = gsPrompt();
   if (co.live && player.alive && !down) { const mt = coNearDown(); if (mt) btn = reviving ? 'جاري التقويم… ' + Math.round(reviving.t / (player.perks.revive ? CO_REVIVE / 2 : CO_REVIVE) * 100) + '%' : 'قوّم ' + mt.name + ' ❤️'; }
   if (box && box.group.visible) {
     const dist = Math.hypot(player.x - box.x, player.z - box.z);
@@ -6307,6 +7168,7 @@ function applyDamage(bot, dmg, head, low) {
   if (bot.dead) return;
   if (mode === 'tdm') {
     if (bot.net) { netHit(bot, dmg); return; }
+    if (bot.mir) { mirHit(bot, dmg); return; }
     bot.hp -= dmg; bot.hitT = 0.08;
     if (bot.hp <= 0) tdmKill(bot, 'blue', 'أنت');
     return;
@@ -6356,6 +7218,7 @@ resetBlood();
 
 function tryFire() {
   if (!running || !player.alive || player.reloading > 0 || swapT > 0.2 || knifeT > 0 || throwT > 0.15 || mantle || repairing || reviving) return;
+  if (mode === 'tdm' && (GS.act || (GS.snd && GS.snd.ph !== 'live'))) return;
   const w = cw(), def = w.def;
   const now = performance.now();
   if (now - player.lastShot < def.rate * (player.perks.dtap ? 0.72 : 1)) return;
@@ -6474,6 +7337,7 @@ function tryFire() {
 let shakeT = 0, hbT = 0;
 function damagePlayer(d, melee) {
   if (!player.alive) return;
+  if (mode === 'tdm' && GS.snd && GS.snd.ph !== 'live') return;
   if (mode !== 'tdm' && (safeT > 0 || (down && (down.wait || down.t < 1)))) return;
   sinceHit = 0;
   if (melee) shakeT = 0.3;
@@ -6981,9 +7845,7 @@ function hud() {
   setT('pts', player.points);
   setT('boost', player.boost > 0 ? '⚡ ضرر مضاعف ' + Math.ceil(player.boost) + 'ث' : '');
   if (mode === 'tdm') {
-    setT('tdmScore', netOn && netMode === 'f' ? 'قتلات ' + tdm.blue + ' · موتات ' + tdm.red : '🔵 ' + tdm.blue + ' — ' + tdm.red + ' 🔴');
-    const left = Math.max(0, Math.ceil(tdm.t));
-    setT('tdmTime', Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'));
+    gsHud();
     const key = tdm.feed.map(f => f.txt).join('|');
     if (hc.feed !== key) {
       hc.feed = key;
@@ -7045,6 +7907,7 @@ function drawRadar() {
     const col = mode === 'tdm' ? (b.team === 'blue' ? '#60a5fa' : '#ff4d4d') : b.type === 'boss' ? '#b91c1c' : '#ff4d4d';
     radarDot(b.group.position.x, b.group.position.z, col, b.type === 'boss' ? 12 : 7);
   }
+  if (mode === 'tdm') gsRadar();
   for (const o of coPeers.values()) if (o.st) radarDot(o.group.position.x, o.group.position.z, o.st > 1 ? '#fbbf24' : '#60a5fa', o.st > 1 ? 11 : 8);
   rctx.fillStyle = '#fff';
   rctx.beginPath();
@@ -7080,15 +7943,15 @@ const lastMap = { z: 'arena', m: 'port' };
 function setSection(sec) {
   document.querySelectorAll('.mTab').forEach(t => { const on = t.dataset.sec === sec; t.classList.toggle('sel', on); t.setAttribute('aria-selected', on); });
   document.querySelectorAll('.mapBtn').forEach(b => { b.hidden = b.dataset.sec !== sec; });
-  $('grainOpt').hidden = sec !== 'z'; $('netOpt').hidden = false; $('netBox').hidden = !$('netTgl').checked; $('netModes').hidden = sec !== 'm'; $('netTitle').textContent = sec === 'm' ? '🌐 لعب أونلاين (تجريبي)' : '🌐 العب الزومبي مع أصحابك (تجريبي)';
-  $('tagline').textContent = sec === 'z' ? 'كم جولة تصمد قبل ما يوصلونك؟' : 'فريقك ضد فريقهم، والفوز لأول ' + TDM_LIMIT + ' قتلة';
+  $('grainOpt').hidden = sec !== 'z'; $('netOpt').hidden = false; $('netBox').hidden = !$('netTgl').checked; $('netModes').hidden = true; $('gmWrap').hidden = sec !== 'm'; $('netTitle').textContent = sec === 'm' ? '🌐 لعب أونلاين (تجريبي)' : '🌐 العب الزومبي مع أصحابك (تجريبي)';
+  $('tagline').textContent = sec === 'z' ? 'كم جولة تصمد قبل ما يوصلونك؟' : GM[gmId].tag;
 }
 function selectMap(id) {
   selectedMap = id;
   const sec = isTdmMap(id) ? 'm' : 'z';
   lastMap[sec] = id; setSection(sec);
   document.querySelectorAll('.mapBtn').forEach(b => b.classList.toggle('sel', b.dataset.map === id));
-  E.clsWrap.style.display = isTdmMap(id) ? 'flex' : 'none';
+  E.clsWrap.style.display = isTdmMap(id) && gmId !== 'gg' ? 'flex' : 'none';
   if (isTdmMap(id)) setTimeout(() => { try { E.clsWrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }, 30);
   showBest();
   try { localStorage.setItem('fps-map', id); } catch (e) {}
@@ -7122,6 +7985,7 @@ let menuCam = false;
 const camSpot = { x: 0, y: 2, z: 9, tx: 0, ty: 1.2, tz: 0 };
 function setMenu(on) { document.body.classList.toggle('inmenu', on); }
 function clearActors() {
+  gsClear();
   for (const b of enemies) scene.remove(b.group);
   for (const d of dying) scene.remove(d.group);
   for (const p of pickups) scene.remove(p.root);
@@ -7318,6 +8182,7 @@ $('netTgl').addEventListener('change', () => {
 });
 document.querySelectorAll('.nMode').forEach(bn => bn.addEventListener('click', () => document.querySelectorAll('.nMode').forEach(x => x.classList.toggle('sel', x === bn))));
 selectMap(selectedMap);
+selectGm(gmId);
 mode = isTdmMap(selectedMap) ? 'tdm' : 'waves';
 buildMap(selectedMap);
 if (mode !== 'tdm') initBox();
