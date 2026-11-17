@@ -3379,12 +3379,12 @@ function jump() {
     if (L) { startMantle(L); return; }
   }
   stance = 'stand'; slideT = 0;
-  player.vy = 6.2; player.grounded = false;
+  player.vy = 6.2; player.grounded = false; airJump = true;
   tone(300, 0.06, 'triangle', 0.03, 120);
 }
 // hands on the ledge while you pull yourself up
 const mantleHands = new THREE.Group();
-let bobT = 0, moving = false;
+let bobT = 0, moving = false, airJump = false;   // airJump: this airtime started with a jump (only then may we auto-grab a ledge)
 
 // first-person gun: its look changes with the weapon in hand
 const gunMat = new THREE.MeshPhongMaterial({ color: 0x222222, shininess: 35, specular: 0x444444 });
@@ -8991,7 +8991,7 @@ function updatePlayer(dt) {
         const ax = (cx - player.x) / dt, az = (cz - player.z) / dt;
         if (slideT > 0 && Math.hypot(ax, az) < spd * 0.35) slideT = 0;
         pvx = ax; pvz = az;
-        if (!player.grounded && !diving && f > 0.3 && player.vy < 4) {   // caught a ledge in mid-air
+        if (!player.grounded && airJump && !diving && f > 0.3 && player.vy < 4) {   // caught a ledge in mid-air (only after a real jump: walking off a car must not auto-vault out of a window)
           const L = findLedge(fwx, fwz, 1.45);
           if (L) startMantle(L);
         }
@@ -9012,9 +9012,9 @@ function updatePlayer(dt) {
             SFX.land(); click(0, 320, 0.26, 0.22, 0.6);
             for (let i = 0; i < 8; i++) emit(player.x + jit(0.8), floor + 0.1, player.z + jit(0.8), jit(2), 0.6 + rnd(), jit(2), 0.6, 0.22, 2, 0.6, 0.56, 0.5, 0.32, 0, -0.2, 2);
           }
-          player.y = floor; player.vy = 0; player.grounded = true;
+          player.y = floor; player.vy = 0; player.grounded = true; airJump = false;
         } else player.grounded = false;
-      } else { player.y = floor; player.vy = 0; player.grounded = true; }
+      } else { player.y = floor; player.vy = 0; player.grounded = true; airJump = false; }
     }
   }
   // eye height follows what the body is doing; speed widens the view
