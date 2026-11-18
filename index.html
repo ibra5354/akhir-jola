@@ -179,6 +179,7 @@
   #tdmScore { display:none; }
   #tdmObj { font-size:12.5px; color:#fde68a; font-weight:800; margin-top:3px; white-space:nowrap; }
   #gmRow { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 8px; }
+  .gmBtn.off { opacity:.32; }
   .gmBtn { flex:1 1 30%; border:1px solid rgba(141,151,170,.22); border-radius:10px; padding:8px 6px; background:rgba(20,28,46,.72); color:var(--steel); font:inherit; font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap; }
   .gmBtn.sel { background:#b91c1c; border-color:#ef4444; color:#fff; }
   #botRow { display:flex; align-items:center; gap:10px; margin:0 0 10px; font-size:14px; font-weight:700; color:var(--steel); }
@@ -653,6 +654,7 @@
       <button class="mapBtn camp" data-map="camp" data-sec="z" type="button"><span class="mName">🌀 الحملة</span><span class="mKind n">جديد</span><small>من المجمّع إلى الحي القديم: خلّصوا المهام، اشحنوا الناقل وكمّلوا القصة بنقاطكم وأسلحتكم</small></button>
       <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind n">جديد</span><small>بيتين بدورين ودرج وحوش خلفي، وشارع بينهم فيه باص</small></button>
       <button class="mapBtn" data-map="souq" data-sec="m" type="button"><span class="mName">السوق</span><span class="mKind n">جديد</span><small>ميدان ونافورة وحارات دكاكين، وسطحين تطلع لهم بالدرج</small></button>
+      <button class="mapBtn" data-map="bigsouq" data-sec="m" type="button"><span class="mName">السوق الكبير</span><span class="mKind n">سيرش</span><small>وقت الغروب: سوق مسقوف، وساحة برج الساعة، وسطوح تنط بينها. لسيرش بس</small></button>
       <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
     </div>
     <p id="best"></p>
@@ -1137,6 +1139,10 @@ function setSky(c, forceNight) {
     sun.color.setHex(0xfff0d2); sun.intensity = 0.95;
     scene.fog.near = 40; scene.fog.far = 165;
   }
+  const dusk = !night && c === 0xf0a868;
+  if (dusk) { hemi.color.setHex(0xffc8a0); hemi.groundColor.setHex(0x3e2c20); hemi.intensity = 0.66; sun.color.setHex(0xffa65c); sun.intensity = 1.12; scene.fog.near = 32; scene.fog.far = 130; }
+  sun.position.set(dusk ? -56 : 30, dusk ? 21 : 45, dusk ? -14 : 15);
+  sunSprite.position.copy(sun.position).normalize().multiplyScalar(190);
   sunSprite.visible = !night; moonSprite.visible = night;
   document.body.classList.toggle('zmode', night && mode !== 'tdm');
 }
@@ -3533,6 +3539,185 @@ function buildStation() {
   const bm = B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
   const wm = W.mesh(STN.win); if (wm) track(wm, true);
 }
+// ================= Map: the big souq at sunset (Search & Destroy only, 5v5) =================
+// Defenders come out of the north gate, attackers out of the south gate. Three ways north:
+//   west: the covered market (long, roofed, close quarters) into the gold market (site أ)
+//   mid:  the clock-tower square, with two side alleys: the perfumers' alley to أ, and an alley under a roof bridge to ب
+//   east: the spice market, open to the sky, with roofs you can run along, a beam across the lane, and a drop into the khan (site ب)
+// The defenders' street behind the middle block joins the two sites, and is shorter than any way round for the attackers.
+// Neither the covered market nor the gold market has a roof you can stand on.
+const BS_SUN = 0xf0a868;
+SKIES[BS_SUN] = ['#33426f', '#df8657', '#f3bd86'];
+const BS_SPAWNS = [[-6, 27], [0, 27.6], [6, 27], [-3.5, 30], [3.5, 30], [-8, 30.6], [8, 30.6],
+                   [-6, -26.4], [0, -27], [6, -26.4], [-3.5, -29.2], [3.5, -29.2], [-8, -29.6], [8, -29.6]];
+// a block you can stand on: no stairs of its own, a low parapet you can see over, shops along the faces you name
+function bsRoof(x0, x1, z0, z1, h, col, seed, faces) {
+  boxMM(x0, x1, z0, z1, 0, h, col);
+  inst('box', (x0 + x1) / 2, h + 0.03, (z0 + z1) / 2, x1 - x0 - 0.1, 0.06, z1 - z0 - 0.1, 0, shade(col, 0.74));
+  for (let x = x0 + 0.5; x < x1 - 0.2; x += 1.6) { inst('box', x, h + 0.2, z0 + 0.08, 0.5, 0.34, 0.16, 0, col); inst('box', x, h + 0.2, z1 - 0.08, 0.5, 0.34, 0.16, 0, col); }
+  for (let z = z0 + 0.5; z < z1 - 0.2; z += 1.6) { inst('box', x0 + 0.08, h + 0.2, z, 0.16, 0.34, 0.5, 0, col); inst('box', x1 - 0.08, h + 0.2, z, 0.16, 0.34, 0.5, 0, col); }
+  if (faces.includes('n')) shopFront(x0 + 0.4, x1 - 0.4, z0, -1, seed);
+  if (faces.includes('s')) shopFront(x0 + 0.4, x1 - 0.4, z1, 1, seed + 2);
+  if (faces.includes('w')) shopFrontZ(x0, z0 + 0.4, z1 - 0.4, -1, seed + 1);
+  if (faces.includes('e')) shopFrontZ(x1, z0 + 0.4, z1 - 0.4, 1, seed + 3);
+}
+// stairs that climb from (x, z) along +-x or +-z to height h
+function bsStairs(x, z, dx, dz, w, h) {
+  const steps = Math.ceil(h / 0.31), run = 0.5, rise = h / steps;
+  for (let i = 0; i < steps; i++) {
+    const a = i * run, b = (i + 1) * run, top = +(rise * (i + 1)).toFixed(3);
+    let x0, x1, z0, z1;
+    if (dx) { const p = x + dx * a, q = x + dx * b; x0 = Math.min(p, q); x1 = Math.max(p, q); z0 = z - w / 2; z1 = z + w / 2; }
+    else { const p = z + dz * a, q = z + dz * b; x0 = x - w / 2; x1 = x + w / 2; z0 = Math.min(p, q); z1 = Math.max(p, q); }
+    boxMM(x0, x1, z0, z1, 0, top, 0xb89a6c, true); BS.B.box(i % 2 ? 0xb89a6c : 0xae9064, x1 - x0, top, z1 - z0, (x0 + x1) / 2, top / 2, (z0 + z1) / 2);
+    obstacles[obstacles.length - 1].step = true;
+  }
+}
+// a solid kiosk in the middle of a lane: breaks the long sight lines; nobody stands on it
+function bsKiosk(x, z, w, d, c, seed) {
+  const n = obstacles.length;
+  boxMM(x - w / 2, x + w / 2, z - d / 2, z + d / 2, 0, 2.4, 0x8a6d3b, true); delete obstacles[n].top; BS.B.box(0x8a6d3b, w, 2.4, d, x, 1.2, z);
+  inst('box', x, 2.5, z, w + 0.5, 0.12, d + 0.5, 0, c);
+  inst('box', x, 1.15, z - d / 2 - 0.02, w - 0.5, 1.3, 0.04, 0, 0x2a2118); inst('box', x, 1.15, z + d / 2 + 0.02, w - 0.5, 1.3, 0.04, 0, 0x2a2118);
+  for (let i = 0; i < 3; i++) inst('box', x - w / 2 + 0.45 + i * (w - 0.9) / 2, 0.95, z + d / 2 + 0.3, 0.5, 0.3, 0.4, 0.2 * i, [0xc0392b, 0xe0a030, 0x6a9a3a, 0xd9d2c0][(i + seed) % 4]);
+}
+// a hanging lantern that's already lit at sunset
+const BS = { B: null, G: null };
+function bsLantern(x, y, z, c, halo) {
+  BS.B.box(0x2a2420, 0.03, 0.7, 0.03, x, y + 0.55, z); BS.B.box(0x3a2a1a, 0.34, 0.06, 0.34, x, y + 0.2, z);
+  BS.G.box(c || 0xffc070, 0.24, 0.34, 0.24, x, y, z);
+  if (halo) { const s = new THREE.Sprite(softMat(c || 0xffb050, 0.55, true)); s.position.set(x, y, z); s.scale.set(1.5, 1.5, 1); track(s, true); }
+}
+function bsGate(z, ops, H) {        // the wall that hides a spawn, with arches over the openings
+  let cur = -10;
+  for (const [a, b] of ops) {
+    const n = obstacles.length; boxMM(cur, a, z - 0.45, z + 0.45, 0, H, 0xb89a6c, true); delete obstacles[n].top; BS.B.box(0xb89a6c, a - cur, H, 0.9, (cur + a) / 2, H / 2, z);
+    boxMM(a, b, z - 0.45, z + 0.45, 3.1, H, 0xb89a6c, true); BS.B.box(0xb89a6c, b - a, H - 3.1, 0.9, (a + b) / 2, (H + 3.1) / 2, z);
+    inst('box', (a + b) / 2, H + 0.15, z, b - a + 0.8, 0.3, 1.1, 0, 0x8a6d3b);
+    for (let k = 0; k < 7; k++) inst('box', a + 0.3 + k * (b - a - 0.6) / 6, 2.9 - (k % 2) * 0.1, z, 0.28, 0.32, 0.03, 0, AWN[k % 5]);
+    cur = b;
+  }
+  const n = obstacles.length; boxMM(cur, 10, z - 0.45, z + 0.45, 0, H, 0xb89a6c, true); delete obstacles[n].top; BS.B.box(0xb89a6c, 10 - cur, H, 0.9, (cur + 10) / 2, H / 2, z);
+}
+function buildBigSouq() {
+  ARENA = 34; radarRange = 26;
+  BS.B = VB(); BS.G = VB();
+  setSky(BS_SUN);
+  makeGround(0xc4ab80, 'concrete');
+  perimeter(0xc7a877);
+  backdrop(0xa98b5c, false);
+  const SD = 0xd8c49a, SC = 0xc7a877, SR = 0xe0cfa8;
+  // ---- the paving ----
+  for (const [x, z, w, d] of [[0, 2.5, 23, 21], [-23, 5, 8, 26], [0, 21, 66, 5.4]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshLambertMaterial({ color: 0xd4c19b, map: getTex('brick', w / 2, d / 2) }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.02, z); track(m, true); m.receiveShadow = true;
+  }
+  // ---- the north: defenders' gate, the blocks either side of it, the defenders' street ----
+  souqBlock(-33.4, -10, -33.4, -24, 5.2, SD, 0);
+  souqBlock(10, 33.4, -33.4, -24, 5.2, SD, 1);
+  bsGate(-24, [[-7, -3], [3, 7]], 4.2);
+  stnSign([{ t: 'البوابة الشمالية', f: 'bold 64px ' + FONT, c: '#f8e3a6', y: 0.52 }], 3.4, 0.6, 0, 3.7, -23.5, 0);
+  souqBlock(-12, 12, -19, -8, 6.0, SR, 2);                         // the big block in the middle: nobody gets through or over it
+  for (const x of [-8, 0, 8]) bsLantern(x, 3.1, -19.6);
+  cover('crates', -9, -21.4, 1.4, 1.1, 1.4, 0); cover('barrel', 8.5, -21.6, 1.2, 1.0, 1.2, 0);
+  // ---- site أ: the gold market (no roofs to stand on) ----
+  const gold = [0xe0b021, 0xf2c94c, 0xd4a017];
+  stall(-28, -20.5, true, 1); stall(-16.5, -21.2, true, 3);
+  stall(-29.5, -12.5, false, 0); stall(-15.2, -11.6, false, 2);
+  bsKiosk(-22, -12.2, 3.2, 1.8, gold[0], 1);                       // the jeweller's booth, cover for the planter
+  cover('crates', -25.6, -17.5, 1.4, 1.2, 1.4, 0); cover('crates', -18.2, -16.2, 1.2, 1.0, 1.2, 0);
+  for (let i = 0; i < 6; i++) inst('box', -22 + (i % 3 - 1) * 1.1, 2.45, -12.2 + (i < 3 ? -0.95 : 0.95), 0.5, 0.18, 0.05, 0, gold[i % 3]);
+  for (let k = 0; k < 9; k++) BS.B.box(k % 2 ? 0xf1e3c2 : 0xb3261e, 20.6, 0.04, 1.1, -22.7, 5.6 - (k % 2) * 0.25, -23 + k * 1.75);   // a cloth canopy, high up
+  for (const [x, z] of [[-31.5, -22.5], [-13.5, -22.5], [-31.5, -9.5], [-13.8, -9.5]]) BS.B.box(0x5a4129, 0.18, 5.8, 0.18, x, 2.9, z);
+  for (const [x, z] of [[-26, -18], [-18, -18], [-26, -13], [-17.5, -14.5]]) bsLantern(x, 3.6, z, 0xffd27a);
+  stnSign([{ t: 'سوق الذهب', f: 'bold 72px ' + FONT, c: '#fde68a', glow: '#b45309', y: 0.52 }], 3.2, 0.7, -22, 4.4, -23.9, 0);
+  // ---- the covered market (west lane) ----
+  souqBlock(-33.4, -27, -8, 18, 5.2, SD, 3);
+  souqBlock(-19, -12, -1, 18, 4.6, SC, 4);
+  souqBlock(-19, -16, -8, -1, 4.6, SC, 5);
+  souqBlock(-13, -11, -8, -4, 4.6, SD, 6);
+  for (let z = -7.6; z < 17.5; z += 3.6) { boxMM(-27, -19, z, z + 2.8, 4.2, 4.45, 0x8a6d3b, true); BS.B.box(0x8a6d3b, 8, 0.25, 2.8, -23, 4.325, z + 1.4); }          // the roof, with slots of light
+  for (let z = -7.2; z < 18; z += 3.6) inst('box', -23, 4.1, z - 0.2, 8.2, 0.16, 0.2, 0, 0x5a4129);
+  bsKiosk(-24.6, 11, 2.2, 2.2, AWN[0], 0); bsKiosk(-21.4, 3, 2.2, 2.2, AWN[1], 1); bsKiosk(-24.6, -4.2, 2.2, 2.2, AWN[3], 2);
+  cover('barrel', -20.2, 14.2, 1.1, 1.0, 1.1, 0); cover('crates', -26, 6.6, 1.2, 1.0, 1.2, 0); cover('crates', -20.1, -1.6, 1.2, 1.1, 1.2, 0);
+  for (let z = -6; z < 18; z += 4) bsLantern(z % 8 ? -21 : -25, 3.3, z, 0, true);
+  stnSign([{ t: 'السوق المسقوف', f: 'bold 64px ' + FONT, c: '#f8e3a6', y: 0.52 }], 3.4, 0.6, -23, 3.6, 17.9, 0);
+  // ---- the clock-tower square (mid) ----
+  {
+    const n = obstacles.length; boxMM(-1.8, 1.8, -1.2, 2.4, 0, 11, 0xd9c49a); delete obstacles[n].top;
+    for (const y of [3.2, 7.2, 10.6]) inst('box', 0, y, 0.6, 4.0, 0.28, 4.0, 0, 0xb89a6c);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(2.9, 3.0, 4), lam(0x8c3b26)); cap.position.set(0, 12.5, 0.6); cap.rotation.y = Math.PI / 4; track(cap, true); cap.castShadow = true;
+    const fin = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), phong(0xe0b021, 80)); fin.position.set(0, 14.2, 0.6); track(fin, true);
+    const face = lam(0xf3ead2), rim = lam(0x3a2a1a), dial = new THREE.CircleGeometry(1.15, 24);
+    for (const [ox, oz, ry] of [[0, -1.22, Math.PI], [0, 2.42, 0], [-1.82, 0.6, -Math.PI / 2], [1.82, 0.6, Math.PI / 2]]) {
+      const m = new THREE.Mesh(dial, face); m.position.set(ox, 9.0, oz); m.rotation.y = ry; track(m, true);
+      const g = new THREE.Group(); g.position.set(ox * 1.012, 9.0, 0.6 + (oz - 0.6) * 1.012); g.rotation.y = ry; track(g, true);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.25, 24), rim); g.add(ring);
+      const hh = new THREE.Mesh(bg(0.09, 0.6, 0.02), rim); hh.position.set(0.18, 0.2, 0.01); hh.rotation.z = -0.9; g.add(hh);    // ten to six, near enough
+      const mh = new THREE.Mesh(bg(0.06, 0.9, 0.02), rim); mh.position.set(-0.12, -0.42, 0.01); mh.rotation.z = -0.3; g.add(mh);
+    }
+  }
+  { // the fountain
+    addBox(0, 8.4, 3.4, 0.8, 3.4, 0x8a7f70, true);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(1.95, 2.05, 0.8, 8), lam(0xcdb892)); b.position.set(0, 0.4, 8.4); track(b, true); b.castShadow = true;
+    const w = new THREE.Mesh(new THREE.CircleGeometry(1.7, 8), new THREE.MeshLambertMaterial({ color: 0x4a8fb0 })); w.rotation.x = -Math.PI / 2; w.position.set(0, 0.72, 8.4); track(w, true);
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 1.6, 8), lam(0xcdb892)); p.position.set(0, 1.4, 8.4); track(p, true);
+  }
+  stall(-7, -5, true, 0); stall(7.2, -5.2, true, 2); stall(-7.6, 4.6, false, 1); stall(7.8, 5.4, false, 3);
+  palm(-9.5, 10.5); palm(9.6, -1.8);
+  cover('crates', -4.2, -3.4, 1.2, 1.0, 1.2, 0); cover('sand', 4.8, 1.8, 2.2, 1.0, 1.0, 0);
+  for (let k = -9; k <= 9; k++) inst('box', k * 1.2, 4.6 - Math.abs(Math.sin(k * 0.35)) * 0.8, -6.5, 0.32, 0.36, 0.03, 0, AWN[(k + 9) % 5]);      // bunting
+  for (let k = -9; k <= 9; k++) inst('box', k * 1.2, 4.2 - Math.abs(Math.sin(k * 0.35)) * 0.6, 11, 0.32, 0.36, 0.03, 0, AWN[(k + 11) % 5]);
+  // the two low roofs on the south side of the square: up from a crate
+  bsRoof(-12, -4, 13, 18, 2.6, SR, 1, 'ns');
+  bsRoof(4, 12, 13, 18, 2.6, SR, 3, 'ns');
+  cover('crates', -6.6, 12.25, 1.3, 1.2, 1.3, 0); cover('crates', 6.4, 12.25, 1.3, 1.2, 1.3, 0);
+  for (const [x, z] of [[-10, 12.6], [-5.2, 12.6], [5.2, 12.6], [10, 12.6]]) bsLantern(x, 2.3, z);
+  // ---- the east side: alley under the roof bridge, the roofs, the spice market ----
+  souqBlock(11, 13, -8, -4, 4.6, SD, 7);
+  bsRoof(12, 19, -1, 18, 3.4, SC, 2, 'ws');
+  bsRoof(16, 19, -8, -1, 3.4, SC, 4, 'w');
+  ob(13, 16, -8, -1, 3.0, 3.4, 0x8a6d3b, true); BS.B.box(0x8a6d3b, 3, 0.4, 7, 14.5, 3.2, -4.5);   // the bridge over the alley
+  BS.B.box(0xb89a6c, 3.0, 1.2, 0.3, 14.5, 2.4, -1.05); BS.B.box(0xb89a6c, 3.0, 1.2, 0.3, 14.5, 2.4, -7.95);
+  cover('crates', 11.3, 6, 1.2, 1.3, 1.4, 0);                           // up onto the roof from the square
+  bsStairs(19.6, 17.4, 0, -1, 1.2, 3.4);                                // and from the spice market
+  bsRoof(27, 33.4, -8, 18, 3.4, SD, 5, 'ws');
+  ob(19, 27, 5.7, 6.3, 3.15, 3.4, 0x5a4129, true); BS.B.box(0x5a4129, 8, 0.25, 0.6, 23, 3.275, 6);   // a beam across the lane, roof to roof
+  cover('crates', 26.3, 12.4, 1.3, 1.3, 1.3, 0);
+  for (const [x, z, k] of [[22, 13, 'sand'], [24.5, 4.5, 'barrel'], [21, -2.5, 'crates'], [25, -5.8, 'sand']]) cover(k, x, z, k === 'sand' ? 2.2 : 1.3, 1.0, k === 'sand' ? 1.0 : 1.3, 0);
+  for (let i = 0; i < 10; i++) if (i % 2 || -6 + i * 2.4 < 11) inst('barrel', 20.3 + (i % 2) * 6.4, 0.35, -6 + i * 2.4, 0.8, 0.7, 0.8, 0, [0xb5541e, 0xd9a514, 0x8f2d1d, 0x6a7a2a][i % 4]);   // baskets of spice
+  for (let k = 0; k < 6; k++) { BS.B.box(AWN[k % 5], 8.2, 0.03, 1.4, 23, 4.6, -6 + k * 4.2); BS.G.box(shade(AWN[k % 5], 1.25), 8.2, 0.01, 1.4, 23, 4.575, -6 + k * 4.2); }   // cloth strung over the lane, the sun shining through it
+  for (const z of [-4, 4, 12]) bsLantern(26.2, 2.8, z, 0xffb050);
+  stnSign([{ t: 'سوق البهارات', f: 'bold 64px ' + FONT, c: '#f8e3a6', y: 0.52 }], 3.4, 0.6, 23, 3.6, 18.2, 0);
+  // ---- site ب: the merchants' khan, a courtyard with an arcade you can stand on ----
+  ob(12, 33.4, -11, -8, 3.0, 3.4, SC, true); BS.B.box(SC, 21.4, 0.4, 3, 22.7, 3.2, -9.5); BS.B.box(shade(SC, 0.8), 21.4, 0.06, 2.9, 22.7, 3.43, -9.5);
+  for (let x = 13.2; x < 33; x += 3.25) { const n = obstacles.length; boxMM(x - 0.25, x + 0.25, -11, -10.5, 0, 3.0, 0xd8c49a, true); delete obstacles[n].top; BS.B.box(0xd8c49a, 0.5, 3.0, 0.5, x, 1.5, -10.75); inst('box', x, 2.85, -10.75, 0.7, 0.3, 0.7, 0, 0xb89a6c); }
+  for (let x = 13.2; x < 33; x += 3.25) inst('box', x + 1.62, 2.75, -10.75, 2.6, 0.2, 0.3, 0, 0xb89a6c);
+  addBox(25.5, -19.5, 2.2, 0.9, 2.2, 0x8a7f70, true);                       // the well
+  { const w = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.15, 0.9, 10), lam(0xbfa77d)); w.position.set(25.5, 0.45, -19.5); track(w, true); w.castShadow = true;
+    for (const s of [-1, 1]) decor(25.5 + s * 0.9, 1.4, -19.5, 0.12, 1.8, 0.12, 0x5a4129);
+    decor(25.5, 2.3, -19.5, 2.0, 0.14, 0.14, 0x5a4129); }
+  cover('sand', 16.5, -15, 2.2, 1.0, 1.0, 0); cover('sand', 28.5, -20.8, 1.0, 1.0, 2.2, 0);
+  cover('crates', 27.6, -11.5, 1.3, 1.2, 1.0, 0);                       // up onto the arcade from the courtyard
+  cover('crates', 17.2, -21.5, 1.4, 1.1, 1.4, 0);
+  carX(29, -16.5, 0x7a5a36);
+  for (const [x, z] of [[16, -22.8], [28, -22.8], [22, -12]]) bsLantern(x, 3.4, z);
+  stnSign([{ t: 'خان التجار', f: 'bold 72px ' + FONT, c: '#fde68a', glow: '#b45309', y: 0.52 }], 3.2, 0.7, 22, 4.0, -23.9, 0);
+  // ---- the south: the street in front of the attackers' gate ----
+  souqBlock(-33.4, -10, 24.45, 33.4, 5.2, SD, 8);
+  souqBlock(10, 33.4, 24.45, 33.4, 5.2, SD, 9);
+  bsGate(24, [[-9, -5], [5, 9]], 4.2);
+  stnSign([{ t: 'البوابة الجنوبية', f: 'bold 64px ' + FONT, c: '#f8e3a6', y: 0.52 }], 3.4, 0.6, 0, 3.7, 23.5, Math.PI);
+  cover('crates', -6.5, 20.6, 1.4, 1.2, 1.4, 0); cover('crates', 6.5, 20.6, 1.4, 1.2, 1.4, 0);
+  carX(-14.5, 21, 0xb3261e); carX(15, 20.8, 0x1f6f8b);
+  cover('barrel', -30.5, 20.5, 1.2, 1.0, 1.2, 0); cover('sand', 30.5, 21.2, 1.0, 1.0, 2.2, 0);
+  for (const x of [-24, -9, 9, 24]) bsLantern(x, 3.2, 18.6);
+  // ---- the spawns themselves ----
+  for (const s of [-1, 1]) { palm(-9.2, s * 32.6); palm(9.2, s * 32.6); }
+  // the two bags: lit things in one draw call, glowing things in another
+  const bm = BS.B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
+  const gm = BS.G.mesh(BS.gmat || (BS.gmat = new THREE.MeshBasicMaterial({ vertexColors: true }))); if (gm) track(gm, true);
+}
 const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x: 25, y: 9.5, z: 25.5, tx: 3, ty: 0.5, tz: 1 }, start: [-17, 20.5, 0], boxSpots: BASE_BOX }, town: { build: buildTown }, station: { build: buildStation, start: [0, 24, 0] }, tdm: { build: buildTown, tdm: true },
   port: { build: buildPort, tdm: true, cam: { x: -11.5, y: 7.5, z: 12.5, tx: 1, ty: 0.6, tz: -1 },
           spawns: [[-11.6, 12.2], [11.6, 12.2], [-6.4, 12.3], [6.4, 12.3], [-12.4, 7], [12.4, 7.2], [-12.4, 0], [12.4, 0],
@@ -3540,6 +3725,8 @@ const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x:
 MAPS.souq = { build: buildSouq, tdm: true, cam: { x: -17, y: 10, z: 22, tx: 0, ty: 1, tz: 0 }, spawns: SOUQ_SPAWNS, sideBias: 14,
               flags: [[-6, 9.6], [0, 0], [6, -9.6]], sites: [[-16, -8], [16.5, -8.6]] };
 MAPS.port.flags = [[-1.2, 9.6], [0, 0], [1.2, -9.6]]; MAPS.port.sites = [[-11.4, -5.6], [11.3, -6.6]];
+MAPS.bigsouq = { build: buildBigSouq, tdm: true, only: 'snd', cam: { x: -24, y: 13, z: 29, tx: 0, ty: 2, tz: 0 }, spawns: BS_SPAWNS, sideBias: 14,
+                 sites: [[-22, -19.5], [21, -19]], lanes: [[[-23, 6], [-4.5, 5]], [[4.5, 5], [23, 6]]] };   // attackers split over two ways to the site they go for
 
 // ================= The test town for team games: two houses with two floors, stairs, a garage, a balcony and back yards =================
 // obstacles may now float: { bot } is where they start. You walk under anything that starts above your head.
@@ -6592,7 +6779,12 @@ function modeGoal(b) {                          // where this bot wants to stand
     if (S.bomb) { if (atk) goalAt(b, S.bomb.x, S.bomb.z, 5); else { b.gx = S.bomb.x; b.gz = S.bomb.z; b.gr = 1.1; b.hard = true; } }
     else if (atk) {
       let first = true; for (const o of enemies) if (!o.net && !o.dead && o.at === S.atk && o.id < b.id) { first = false; break; }
-      const s = sites[S.plan];
+      const s = sites[S.plan], LN = MAPS[currentMap].lanes;
+      if (LN) {
+        if (b.viaR !== S.round) { b.viaR = S.round; const o = LN[S.plan]; b.via = o[(b.id + S.round) % o.length]; }
+        if (b.via && Math.hypot(b.via[0] - P.x, b.via[1] - P.z) < 4.5) b.via = null;
+        if (b.via) { goalAt(b, b.via[0], b.via[1], 2.5); return; }
+      }
       if (first) { b.gx = s[0]; b.gz = s[1]; b.gr = 1.0; b.hard = true; } else goalAt(b, s[0], s[1], 4.5);
     } else { const s = sites[b.id % sites.length]; goalAt(b, s[0], s[1], 5); }
   }
@@ -7014,9 +7206,13 @@ function hpGoal(b) {
   b.gy = Z.y; b.gr = 0.9; b.hard = Math.hypot(Z.x - P.x, Z.z - P.z) < 10 || b.id % 3 === 0;
 }
 
-function selectGm(id) {
+let gmBefore = null;
+function selectGm(id, user) {
   if (!GM[id]) id = 'tdm';
+  const lock = typeof selectedMap !== 'undefined' && MAPS[selectedMap] && MAPS[selectedMap].only;
+  if (lock && id !== lock) { if (user) toast('🗺️ ' + mapName(selectedMap) + ': ' + GM[lock].name + ' بس'); id = lock; }
   gmId = id;
+  document.querySelectorAll('.gmBtn').forEach(b => b.classList.toggle('off', !!lock && b.dataset.gm !== lock));
   try { localStorage.setItem('fps-gm', id); } catch (e) {}
   document.querySelectorAll('.gmBtn').forEach(b => b.classList.toggle('sel', b.dataset.gm === id));
   if ($('gmWrap') && !$('gmWrap').hidden) $('tagline').textContent = GM[id].tag;
@@ -7025,7 +7221,7 @@ function selectGm(id) {
 for (const id of ['tdm', 'dom', 'hp', 'kc', 'snd', 'gg', 'ffa']) {
   const b = document.createElement('button');
   b.className = 'gmBtn'; b.type = 'button'; b.dataset.gm = id; b.textContent = GM[id].name;
-  b.addEventListener('click', () => selectGm(id));
+  b.addEventListener('click', () => selectGm(id, true));
   $('gmRow').appendChild(b);
 }
 $('botN').value = botN; $('botNV').textContent = botN;
@@ -10030,8 +10226,12 @@ function setSection(sec) {
   $('grainOpt').hidden = sec !== 'z'; $('netOpt').hidden = false; $('netBox').hidden = !$('netTgl').checked; $('netModes').hidden = true; $('gmWrap').hidden = sec !== 'm'; $('netTitle').textContent = sec === 'm' ? '🌐 لعب أونلاين (تجريبي)' : '🌐 العب الزومبي مع أصحابك (تجريبي)';
   $('tagline').textContent = sec === 'z' ? 'كم جولة تصمد قبل ما يوصلونك؟' : GM[gmId].tag;
 }
+function mapName(id) { const b = document.querySelector('.mapBtn[data-map="' + id + '"] .mName'); return b ? b.textContent : id; }
 function selectMap(id) {
+  const was = MAPS[selectedMap] && MAPS[selectedMap].only, lock = MAPS[id] && MAPS[id].only;
   selectedMap = id;
+  if (lock) { if (!was) gmBefore = gmId; selectGm(lock); }
+  else if (was) selectGm(gmBefore && gmBefore !== was ? gmBefore : 'tdm');
   const sec = isTdmMap(id) ? 'm' : 'z';
   lastMap[sec] = id; setSection(sec);
   document.querySelectorAll('.mapBtn').forEach(b => b.classList.toggle('sel', b.dataset.map === id));
@@ -12103,7 +12303,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.3';
+const GAME_VERSION = '4.4';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
