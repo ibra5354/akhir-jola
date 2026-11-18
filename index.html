@@ -3361,7 +3361,179 @@ function buildSouq() {
 }
 const SOUQ_SPAWNS = [[-6, 17.2], [0, 17.6], [6, 17.2], [-4, 20.4], [4, 20.4], [-8, 20.6], [8, 20.6],
                      [-6, -17.2], [0, -17.6], [6, -17.2], [-4, -20.4], [4, -20.4], [-8, -20.6], [8, -20.6]];
-const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x: 25, y: 9.5, z: 25.5, tx: 3, ty: 0.5, tz: 1 }, start: [-17, 20.5, 0], boxSpots: BASE_BOX }, town: { build: buildTown }, tdm: { build: buildTown, tdm: true },
+// ================= Map: the old railway station (campaign, stage 3) =================
+// A terminus at night. You come in from the square in the south, through the booking hall, out onto two platforms
+// with a dead train between them. The tracks run north into a tunnel that was walled up; the goods yard is east.
+// The hall and the platform lights wait for the generator; the train's windows come alive while it charges.
+KIND[0x857a68] = 'brick'; KIND[0x6e6a64] = 'concrete'; KIND[0x5b6068] = 'metal'; KIND[0x77736b] = 'concrete';
+TINT[0x857a68] = 0xa08a72;
+const STN = { win: null, head: null, headG: null, lights: [], on: false, off: null };
+// one carriage on rails along z, drawn into the bag B (windows into W, in colour wc); its collider is a plain box
+function stnCar(B, W, wc, x, z0, z1, col, loco) {
+  const L = z1 - z0, cz = (z0 + z1) / 2, w = 3.0, top = 3.55;
+  boxMM(x - w / 2, x + w / 2, z0, z1, 0, top, 0x5b6068, true);
+  B.box(col, w, top - 0.6, L, x, (top + 0.6) / 2, cz);
+  B.box(shade(col, 0.5), w + 0.02, 0.36, L + 0.01, x, 0.8, cz);                 // grime along the bottom
+  B.box(shade(col, 0.66), w + 0.03, 0.24, L + 0.02, x, 1.4, cz);                 // a band
+  B.box(0xd9d0bd, w + 0.03, 0.07, L + 0.02, x, 1.2, cz);                         // and a pinstripe
+  B.box(shade(col, 0.8), w - 0.5, 0.24, L - 0.3, x, top + 0.12, cz);             // the roof
+  B.box(0x1c1f23, w - 0.5, 0.5, L - 0.6, x, 0.34, cz);                           // underframe
+  for (const wz of [z0 + 1.4, z1 - 1.4]) {                                       // two bogies
+    B.box(0x15171a, w - 0.6, 0.18, 1.9, x, 0.52, wz);
+    for (const s of [-1, 1]) for (const dz of [-0.55, 0.55]) B.cyl(0x2b2e32, 0.34, 0.34, 0.12, x + s * 1.1, 0.36, wz + dz, 12, 0, 0, Math.PI / 2);
+  }
+  B.box(0x2a2d31, 0.5, 0.3, 0.34, x, 0.95, z0 - 0.15); B.box(0x2a2d31, 0.5, 0.3, 0.34, x, 0.95, z1 + 0.15);   // couplers
+  const doors = loco ? [] : [cz - L / 4, cz + L / 4];
+  for (const s of [-1, 1]) {
+    const sx = x + s * (w / 2 + 0.012), n = Math.floor((L - 1.2) / 1.5);
+    for (let i = 0; i < n; i++) {
+      const wz = z0 + 0.6 + (L - 1.2) * (i + 0.5) / n;
+      if (doors.some(d => Math.abs(d - wz) < 0.95) || (loco && wz > z1 - 2.4)) continue;
+      W.box(wc, 0.03, 0.7, 0.95, sx, 2.32, wz);
+    }
+    for (const d of doors) B.box(shade(col, 0.52), 0.04, 2.05, 1.15, x + s * (w / 2 + 0.024), 1.62, d);
+    if (loco) W.box(wc, 0.03, 0.8, 1.2, sx, 2.45, z1 - 1.3);                   // the cab's side windows
+    // rust here and there
+    for (let i = 0; i < 3; i++) B.box(0x6b3b22, 0.02, 0.3 + rnd() * 0.5, 0.4 + rnd() * 0.8, x + s * (w / 2 + 0.018), 1.0 + rnd() * 1.8, z0 + 1 + rnd() * (L - 2));
+  }
+  if (loco) {                                                                    // the cab end faces the hall
+    B.box(shade(col, 0.9), w - 0.12, 1.1, 0.5, x, 1.0, z1 + 0.22);               // nose
+    B.box(0xe0b021, w - 0.1, 0.12, 0.52, x, 1.62, z1 + 0.22);                    // yellow warning band
+    W.box(wc, w - 0.7, 0.75, 0.03, x, 2.55, z1 + 0.012);                         // windscreen
+    B.box(0x2a2d31, 0.4, 0.3, 0.7, x, top + 0.4, z1 - 2.2);                      // horn and exhaust on the roof
+    B.box(0x2a2d31, 0.7, 0.14, 1.6, x, top + 0.31, z0 + 2.5);
+  }
+}
+// a light that only works with the power on
+function stnLight(x, y, z, col, r, bulb) {
+  const m = new THREE.Mesh(bg(bulb[0], bulb[1], bulb[2]), STN.off); m.position.set(x, y, z); track(m, true);
+  const pool = new THREE.Mesh(poolGeo, softMat(col, 0.3, false));
+  pool.position.set(x, 0.06, z); pool.scale.set(r * 1.7, 1, r * 1.7); pool.renderOrder = 2; pool.visible = false; track(pool, true);
+  STN.lights.push({ m, on: glowMat(col), pool, G: { x, y: y - 0.4, z, r, c: hexRGB(col, 0.95) } });
+}
+function stnPower(on) {
+  if (STN.on === on) return;
+  STN.on = on;
+  for (const L of STN.lights) {
+    L.m.material = on ? L.on : STN.off; L.pool.visible = on;
+    const i = glows.indexOf(L.G); if (on && i < 0) glows.push(L.G); else if (!on && i >= 0) glows.splice(i, 1);
+  }
+  if (on && running) { clank(0, 160, 0.22); tone(55, 1.4, 'sawtooth', 0.05, 45); click(0.1, 900, 0.2, 0.08, 2); }
+}
+function stnSign(lines, w, h, x, y, z, ry) {
+  const mat = decoSign(lines, { aspect: w / h, h: 128, bg0: '#14181d', bg1: '#06080a', edge: '#b88a2c' });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(x, y, z); m.rotation.y = ry || 0; track(m, true);
+}
+function buildStation() {
+  ARENA = 28; radarRange = 24;
+  STN.lights = []; STN.on = false;
+  STN.off = STN.off || new THREE.MeshLambertMaterial({ color: 0x3a3c40 });
+  setSky(0xe0c498);
+  makeGround(0x55585e, 'asphalt');
+  perimeter(0x6e6a64, { n: [-12, 0, 18], s: [-17, 17], w: [-14, 6], e: [-14, -1, 15] });
+  for (const B of barriers) {                          // who comes through which window
+    if (B.z < -ARENA + 1 && Math.abs(B.x) < 2) B.pref = 'runner';                                  // the tunnel
+    else if ((B.x > ARENA - 1 && B.z < 6) || (B.z < -ARENA + 1 && B.x > 10)) B.pref = 'armor';    // the goods yard
+  }
+  backdrop(0x1c222b, false);
+  const B = VB(), W = VB(), DK = 0x24282d, HC = 0x857a68, TR = 0x5e5446, H = 6;
+  STN.win = new THREE.MeshBasicMaterial({ vertexColors: true, color: 0x0a0d10 });
+  STN.head = new THREE.MeshBasicMaterial({ color: 0x1a1d20 });
+  // ---- the tracks: ballast, sleepers, two rails, a buffer stop at the hall end ----
+  decor(0, 0.025, -14.2, 5.6, 0.05, 41.4, 0x4a443d);
+  for (const s of [-1, 1]) decor(s * 0.72, 0.13, -14.4, 0.1, 0.14, 40.8, 0x8e949a);
+  for (let z = -34.4; z <= 5.4; z += 0.85) inst('box', 0, 0.07, z, 2.5, 0.08, 0.26, 0, 0x3b2c20);
+  boxMM(-1.35, 1.35, 5.6, 6.3, 0, 1.15, 0x5b6068);
+  for (const s of [-1, 1]) decor(s * 0.75, 0.95, 5.55, 0.42, 0.42, 0.12, 0xb91c1c);
+  decor(0, 0.95, 5.54, 0.5, 0.42, 0.1, 0xe5e5e5);
+  glow(0, 1.3, 5.95, 0.18, 0.14, 0.18, 0xff3b30);
+  // ---- the dead train: a locomotive and two coaches ----
+  stnCar(B, W, 0xffffff, 0, -24.4, -15.4, 0x3d5866, false);
+  stnCar(B, W, 0xffffff, 0, -14.8, -5.8, 0x46616e, false);
+  stnCar(B, W, 0xffffff, 0, -5.2, 4.6, 0x8c2f22, true);
+  for (const s of [-1, 1]) { const h = new THREE.Mesh(bg(0.34, 0.24, 0.06), STN.head); h.position.set(s * 0.95, 1.15, 5.08); track(h, true); }
+  STN.headG = { x: 0, y: 1.4, z: 6.4, r: 9, c: [1.0, 0.92, 0.7] };
+  // ---- two platforms with a canopy each ----
+  for (const s of [-1, 1]) {
+    const cx = s * 7;
+    decor(cx, 0.04, -8, 8, 0.08, 28, 0x77736b);
+    decor(s * 3.25, 0.085, -8, 0.32, 0.02, 28, 0xe0b021);           // mind the gap
+    decor(s * 3.02, 0.05, -8, 0.06, 0.1, 28, 0x5a5650);
+    for (const z of [-19, -13, -7, -1]) { boxMM(cx - 0.17, cx + 0.17, z - 0.17, z + 0.17, 0, 4.5, 0x5b6068, true); inst('box', cx, 2.25, z, 0.3, 4.5, 0.3, 0, 0x3a3f46); }
+    decor(cx, 4.6, -8.5, 8.6, 0.14, 27, 0x2e3238);
+    decor(cx, 4.44, -8.5, 0.24, 0.2, 27, 0x23262b);
+    for (const z of [-16, -4]) stnLight(cx, 4.36, z, 0xffe2b0, 7.5, [1.4, 0.06, 0.22]);
+    addBox(s * 9.4, -10, 0.6, 0.5, 2.2, 0x6b4f3a); addBox(s * 9.4, -16.5, 0.6, 0.5, 2.2, 0x6b4f3a);   // benches
+    stnSign([{ t: s < 0 ? 'رصيف ١' : 'رصيف ٢', f: 'bold 76px ' + FONT, c: '#f5d58a', y: 0.52 }], 1.6, 0.55, cx, 3.6, -0.6, 0);
+  }
+  // ---- the booking hall ----
+  wallXO(-14, 14, 9, [{ a: -10, b: -5, y0: 0, y1: 3.8 }, { a: -2.2, b: 2.2, y0: 0, y1: 3.8 }, { a: 5, b: 10, y0: 0, y1: 3.8 }], HC, H);
+  wallXO(-14, 14, 19, [{ a: -3, b: 3, y0: 0, y1: 4.2 }], HC, H);
+  wallZ(-14, 9, 19, 0, H, HC);
+  wallZO(14, 9, 19, [{ a: 12.5, b: 15.5, y0: 0, y1: 3.4 }], HC, H);
+  decor(0, H + 0.1, 14, 28.6, 0.2, 10.6, 0x3b352d);
+  for (const z of [8.7, 19.3]) decor(0, H + 0.3, z, 29, 0.32, 0.34, TR);
+  decor(0, H + 0.95, 19.3, 9.5, 1.6, 0.5, HC); decor(0, H + 1.8, 19.3, 10, 0.18, 0.6, TR);
+  stnSign([{ t: 'محطة القطار', f: 'bold 84px ' + FONT, c: '#f8e3a6', glow: '#f59e0b', y: 0.54 }], 6, 1.2, 0, 5.1, 19.58, 0);
+  stnSign([{ t: 'الرحلات', f: 'bold 52px ' + FONT, c: '#f8e3a6', y: 0.3 }, { t: 'كل الرحلات ملغاة', f: 'bold 48px ' + FONT, c: '#f59e0b', glow: '#b45309', y: 0.72 }], 3.6, 1.3, 0, 4.85, 9.27, 0);
+  for (const [x, z] of [[-6, 12.4], [6, 12.4], [-6, 16.2], [6, 16.2]]) addBox(x, z, 0.8, H, 0.8, 0x6e6a64);
+  addBox(-9, 13.2, 2.4, 0.5, 0.6, 0x6b4f3a); addBox(9, 13.2, 2.4, 0.5, 0.6, 0x6b4f3a);
+  boxMM(8.4, 12.9, 15.5, 16.3, 0, 1.15, 0x6b4f3a);                                   // the ticket counter
+  decor(10.65, 1.9, 15.9, 4.5, 1.4, 0.05, 0x2a3640);
+  stnSign([{ t: 'التذاكر', f: 'bold 70px ' + FONT, c: '#f8e3a6', y: 0.52 }], 1.6, 0.5, 10.65, 2.95, 15.86, Math.PI);
+  for (const [x, z] of [[-7, 14], [0, 14], [7, 14]]) { decor(x, H - 0.35, z, 0.04, 0.7, 0.04, DK); stnLight(x, H - 0.75, z, 0xffd9a0, 9, [0.5, 0.18, 0.5]); }
+  // buy stations: the drinks along the walls of the hall, the guns on the walls round the station
+  perkMachine(-10, 18.3, -1, 'jug'); perkMachine(-7.4, 18.3, -1, 'speed');
+  perkMachine(7.4, 18.3, -1, 'dtap'); perkMachine(10, 18.3, -1, 'stam');
+  perkMachine(-12.2, 9.7, 1, 'revive');
+  papMachine(12, 9.75, 1);
+  weaponStation(-13.62, 16.6, 1, 'shotgun', 1200, 'x');
+  weaponStation(13.62, 11, -1, 'ar', 1400, 'x');
+  // ---- the square in front ----
+  lamp(-7, 23.5); lamp(7, 23.5);
+  for (const s of [-1, 1]) addBox(s * 4.5, 22, 1.4, 0.8, 1.4, 0x6e6a64);
+  carX(-15, 23.5, 0xd4a017); carX(15.5, 25, 0x6b6f75);
+  fireBarrel(-20, 21.5);
+  shieldStation(-5.2, 19.4, 1);
+  weaponStation(-9, 19.38, 1, 'hunting', 750);
+  weaponStation(9, 19.38, 1, 'fsmg', 1000);
+  // ---- the tunnel the tracks run into, bricked up long ago ----
+  for (const s of [-1, 1]) boxMM(s * 4.6 - 0.7, s * 4.6 + 0.7, -28.9, -27.3, 0, 7.2, 0x6e6a64);
+  decor(0, 6.2, -28.1, 10.6, 2.0, 1.4, 0x6e6a64); decor(0, 7.35, -28.1, 11.2, 0.3, 1.7, 0x55524d);
+  decor(0, 3.1, -31.6, 7.8, 6.2, 6, 0x07080a);
+  stnSign([{ t: 'النفق · ممنوع الدخول', f: 'bold 56px ' + FONT, c: '#fca5a5', y: 0.52 }], 3.2, 0.6, 0, 4.6, -27.24, 0);
+  // ---- the goods yard ----
+  wallZO(13, -22, 5, [{ a: -15.5, b: -12.5, y0: 0, y1: 9 }, { a: -5.5, b: -2.5, y0: 0, y1: 9 }], 0x5b6068, 1.15);
+  cover('cont', 18, -17, 6, 2.6, 2.5, 1);
+  cover('cont2', 25, -7, 2.5, 5.2, 6, 3);
+  cover('crates', 17.5, -8, 3, 2, 1.5, 0);
+  cover('crates', 20, -1.5, 1.5, 1.2, 1.5, 0);
+  cover('barrel', 24.5, -19.5, 1.6, 1.1, 1.6, 0);
+  boxMM(20.5, 26.5, 1, 4.6, 0, 3.2, 0x5b6068);                                          // the yard office
+  decor(23.5, 3.3, 2.8, 6.4, 0.16, 4.0, 0x2e3238);
+  stnLight(20.44, 2.6, 4.0, 0xffe2b0, 5, [0.06, 0.5, 0.9]);
+  weaponStation(20.37, 2.6, -1, 'dmr', 1500, 'x');
+  lamp(17, -11); lamp(16.5, 3);
+  fireBarrel(21.5, -21.5);
+  // ---- the west yard: the control tower and an old coach left on a siding ----
+  boxMM(-25.5, -19.5, -26, -20, 0, 7.6, 0x6e6a64);
+  decor(-22.5, 7.75, -23, 6.7, 0.3, 6.7, 0x3b352d);
+  decor(-22.5, 4.2, -23, 6.12, 0.2, 6.12, TR);
+  decor(-19.47, 1.2, -23, 0.06, 2.4, 1.3, 0x2a2420);
+  for (const z of [-24.6, -21.4]) stnLight(-19.42, 5.8, z, 0xbfe3ff, 4, [0.04, 1.0, 1.1]);
+  weaponStation(-22.5, -19.87, 1, 'apistol', 900);
+  for (const s of [-1, 1]) decor(-20 + s * 0.72, 0.13, -5, 0.1, 0.14, 18, 0x6f747a);
+  for (let z = -13.6; z <= 3.6; z += 0.85) inst('box', -20, 0.07, z, 2.5, 0.08, 0.26, 0, 0x33271d);
+  stnCar(B, B, 0x111417, -20, -10, -0.5, 0x5a4636, false);
+  cover('crates', -15, -15, 2, 1.2, 2, 0);
+  cover('sand', -24.5, 4, 2.4, 1, 1, 0);
+  lamp(-14.5, -4); lamp(-16, -18);
+  fireBarrel(-24.5, -7);
+  // everything in the two bags is one draw call each
+  const bm = B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
+  const wm = W.mesh(STN.win); if (wm) track(wm, true);
+}
+const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x: 25, y: 9.5, z: 25.5, tx: 3, ty: 0.5, tz: 1 }, start: [-17, 20.5, 0], boxSpots: BASE_BOX }, town: { build: buildTown }, station: { build: buildStation, start: [0, 24, 0] }, tdm: { build: buildTown, tdm: true },
   port: { build: buildPort, tdm: true, cam: { x: -11.5, y: 7.5, z: 12.5, tx: 1, ty: 0.6, tz: -1 },
           spawns: [[-11.6, 12.2], [11.6, 12.2], [-6.4, 12.3], [6.4, 12.3], [-12.4, 7], [12.4, 7.2], [-12.4, 0], [12.4, 0],
                    [-11.6, -12.2], [11.6, -12.2], [-6.4, -12.3], [6.4, -12.3], [-12.4, -7.2], [12.4, -7]] } };
@@ -5700,6 +5872,7 @@ const BOT_TYPES = {
   normal: { body: lam(0x505a47), head: lam(0x88a078), scale: 1.0, hp: 1.0, speed: 1.0, dmg: 1.0 },
   runner: { body: lam(0x6e4030), head: lam(0x9aa57a), scale: 0.92, hp: 0.6, speed: 1.35, dmg: 0.8 },
   tank:   { body: lam(0x3d3554), head: lam(0x74896d), scale: 1.3, hp: 2.4, speed: 0.7, dmg: 1.4 },
+  armor:  { body: lam(0x3a3f47), head: lam(0x6f7f68), scale: 1.22, hp: 3.0, speed: 0.64, dmg: 1.5 },
   boss:   { body: lam(0x3b0d0d), head: lam(0x6b1b1b), scale: 1.8, hp: 1, speed: 0.75, dmg: 1.8 }
 };
 const botBodyGeo = bg(0.8, 1.0, 0.45);
@@ -7500,6 +7673,17 @@ function hasLOS(x1, y1, z1, x2, y2, z2) {
 
 const hornGeo = new THREE.ConeGeometry(0.08, 0.32, 6);
 const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2020 });
+const armMat = phong(0x434b55, 70), armDark = lam(0x1f2328), armStripe = lam(0xc2410c), armVisor = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
+const armHelmGeo = new THREE.SphereGeometry(0.3, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.56);
+function addArmorParts(group) {
+  const p = (geo, mat, x, y, z, rz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rz) m.rotation.z = rz; group.add(m); return m; };
+  p(armHelmGeo, armMat, 0, 1.67, 0).scale.set(1, 0.95, 1.06);
+  p(bg(0.34, 0.05, 0.03), armVisor, 0, 1.65, 0.27);
+  p(bg(0.62, 0.5, 0.09), armMat, 0, 1.17, 0.2); p(bg(0.62, 0.54, 0.09), armDark, 0, 1.17, -0.2);
+  p(bg(0.28, 0.13, 0.4), armMat, -0.46, 1.42, 0, 0.35); p(bg(0.28, 0.13, 0.4), armMat, 0.46, 1.42, 0, -0.35);
+  p(bg(0.5, 0.12, 0.34), armDark, 0, 0.86, 0);
+  p(bg(0.63, 0.06, 0.1), armStripe, 0, 1.3, 0.205);
+}
 function addBossParts(group) {
   const horn = lam(0xe5e5e5), pad = lam(0x1f2937);
   const h1 = new THREE.Mesh(hornGeo, horn); h1.position.set(-0.15, 1.92, 0); h1.rotation.z = 0.45;
@@ -7517,6 +7701,19 @@ function spawnBot(forceType, mir) {
   if (wave >= 2 && r < 0.2) type = 'runner';
   else if (wave >= 3 && r < 0.35) type = 'tank';
   if (forceType) type = forceType;
+  let bar = null, back0 = 0, side0 = 0;
+  const ref = mir ? null : coSpawnRef();
+  if (mir) bar = mir.bar;
+  else if (barriers.length) {
+    const near = (base.on ? barriers.filter(q => base.open[q.zone]) : barriers.slice()).sort((p, q) => Math.hypot(p.x - ref.x, p.z - ref.z) - Math.hypot(q.x - ref.x, q.z - ref.z));
+    bar = near[Math.floor(Math.pow(Math.random(), 1.6) * Math.min(4, near.length))] || null;
+    back0 = 9 + Math.random() * 9; side0 = jit(12);
+    if (!forceType && bar && bar.pref) {                    // the station: runners out of the tunnel, armour out of the goods yard
+      if (bar.pref === 'runner' && type === 'normal' && wave >= 2 && Math.random() < 0.5) type = 'runner';
+      else if (bar.pref === 'armor' && wave >= 3 && (type === 'tank' || (type === 'normal' && Math.random() < 0.22))) type = 'armor';
+    }
+  }
+  if (type === 'armor' && !CP.armT) { CP.armT = 1; toast('🛡️ زومبي مدرّع! الدرع يصد الرصاص… صوّب على الراس'); }
   const T = BOT_TYPES[type];
   const a = Math.random() * Math.PI * 2, rad = 13 + Math.random() * 12;
   const group = new THREE.Group();
@@ -7527,17 +7724,12 @@ function spawnBot(forceType, mir) {
   group.rotation.order = 'YXZ';                    // so leaning and falling follow the way it faces
   const { body, head, legL, legR, armL, armR, face } = botRig(group, look, true);
   if (type === 'boss') addBossParts(group);
+  if (type === 'armor') addArmorParts(group);
   group.scale.setScalar(tall);
-  // pick one of the windows closest to you and start out in the dark beyond it
-  let bar = null;
-  const ref = mir ? null : coSpawnRef();
-  if (mir) { bar = mir.bar; group.position.set(mir.x, mir.y, mir.z); }
-  else if (barriers.length) {
-    const near = (base.on ? barriers.filter(q => base.open[q.zone]) : barriers.slice()).sort((p, q) => Math.hypot(p.x - ref.x, p.z - ref.z) - Math.hypot(q.x - ref.x, q.z - ref.z));
-    bar = near[Math.floor(Math.pow(Math.random(), 1.6) * Math.min(4, near.length))];
-    const back = 9 + Math.random() * 9, side = jit(12);
-    group.position.set(bar.x - bar.nx * back - bar.nz * side, 0, bar.z - bar.nz * back + bar.nx * side);
-  } else {
+  // start out in the dark beyond the window picked above
+  if (mir) group.position.set(mir.x, mir.y, mir.z);
+  else if (bar) group.position.set(bar.x - bar.nx * back0 - bar.nz * side0, 0, bar.z - bar.nz * back0 + bar.nx * side0);
+  else {
     collide(clamp(ref.x + Math.cos(a) * rad, -ARENA + 3, ARENA - 3), clamp(ref.z + Math.sin(a) * rad, -ARENA + 3, ARENA - 3), type === 'boss' ? 0.9 : 0.6);
     group.position.set(_cx, -1.9 * T.scale, _cz);          // no windows on this map: claws its way up out of the ground
   }
@@ -7673,12 +7865,12 @@ function killBot(bot, head, quiet) {
     dropAt('health', x + 1.6, z, 30);
     tone(90, 0.8, 'sawtooth', 0.12, -40);
   } else if (!quiet) {
-    addPoints(bot.knifed ? 130 : bot.type === 'tank' ? 150 : head ? 100 : 60, bot.knifed || head ? 'head' : 'kill');
+    addPoints(bot.knifed ? 130 : bot.type === 'armor' ? 200 : bot.type === 'tank' ? 150 : head ? 100 : 60, bot.knifed || head ? 'head' : 'kill');
     killMark(head);
     if (powerDrops < 4 && Math.random() < 0.05) {
       powerDrops++;
       dropAt(pickPower(true), x, z, 25);
-    } else if (bot.type === 'tank' || Math.random() < 0.55) {   // regular drop: tanks always, others ~55%
+    } else if (bot.type === 'tank' || bot.type === 'armor' || Math.random() < 0.55) {   // regular drop: tanks always, others ~55%
       const r = Math.random();
       dropAt(r < 0.35 ? 'health' : r < 0.72 ? 'ammo' : r < 0.87 ? 'shield' : 'boost', x, z, 25);
     }
@@ -7898,7 +8090,7 @@ function updateBots(dt) {
     g.rotation.y = Math.atan2(dx, dz);
     if (b.charge && !lure && updateBoss(b, dt, dx, dz, d)) continue;
     const ox = g.position.x, oz = g.position.z;
-    const reach = b.type === 'boss' ? 2.3 : b.type === 'tank' ? 1.7 : 1.35;
+    const reach = b.type === 'boss' ? 2.3 : b.type === 'tank' || b.type === 'armor' ? 1.7 : 1.35;
     if (d > reach * 0.7) {
       let ux = dx / d, uz = dz / d;
       const nav = navStep(b, dt, ox, oz, tgX, tgZ);
@@ -7961,7 +8153,7 @@ function updateBots(dt) {
 // Same room and presence channel as team play. One device is the host: it runs the zombies, the waves and the windows
 // and publishes them about 15 times a second; everyone else draws what it says and sends back the damage they deal.
 // Each player stays the authority on their own body: where they are, their shots, their health, going down.
-const CO_BLEED = 30, CO_REVIVE = 3, ZT = ['normal', 'runner', 'tank', 'boss'];
+const CO_BLEED = 30, CO_REVIVE = 3, ZT = ['normal', 'runner', 'tank', 'boss', 'armor'];
 const co = { live: false, role: '', age: 0, t: 0, noHost: 0, hits: [], hitSeq: 0, pend: new Map(), ev: [], evSeq: 0, at: [], atSeq: 0,
              seenHit: new Map(), seenEv: new Map(), seenShot: new Map(), seenAt: -1, hostId: '', dead: new Map(), barHold: [],
              out: false, over: false, synced: false, navI: 0, hudT: 0 };
@@ -8478,7 +8670,8 @@ function boxSignsDraw() {
 // ---------- Mystery box ----------
 const BOX_SPOTS = {
   arena: [[0, 14], [-18, -12], [20, 12], [-6, -28], [24, -14], [-26, 16], [8, -4], [-12, 26]],
-  town: [[-3.5, -18], [-3.5, 18], [0, -24], [-16, -6], [18, 8], [-20, 18], [20, -16], [-1, 7]]
+  town: [[-3.5, -18], [-3.5, 18], [0, -24], [-16, -6], [18, 8], [-20, 18], [20, -16], [-1, 7]],
+  station: [[0, 14.6], [-7, -10], [7, -15.5], [-16.5, 2], [17, -4.5], [11, 24]]
 };
 let box = null;
 const boxBeamMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.3 });
@@ -9058,6 +9251,7 @@ function applyDamage(bot, dmg, head, low) {
     return;
   }
   let d = dmg * (player.boost > 0 ? 2 : 1) * (player.perks.dtap ? 1.15 : 1);
+  if (bot.type === 'armor' && !head) { d *= 0.55; if (Math.random() < 0.5) click(0, 3600 + rnd() * 900, 0.07, 0.03, 9); }   // the plates turn it
   if (player.instakill > 0) d = bot.type === 'boss' ? d * 2 : bot.hp + 1;   // bosses resist insta-kill
   if (coClient()) coHit(bot, d, head ? 1 : 0);
   bot.hp -= d;
@@ -9290,7 +9484,7 @@ function goDown(wait) {
   if (!coClient() && !wait) for (const b of enemies) {
     if (b.ph || b.rise > 0) { b.cool = Math.max(b.cool || 0, 2.5); continue; }
     const g = b.group.position, dx = g.x - player.x, dz = g.z - player.z, d = Math.hypot(dx, dz) || 1;
-    const out = 5.65 + (b.type === 'boss' ? 2.3 : b.type === 'tank' ? 1.7 : 1.35);      // same walk back for everyone, whatever their reach
+    const out = 5.65 + (b.type === 'boss' ? 2.3 : b.type === 'tank' || b.type === 'armor' ? 1.7 : 1.35);      // same walk back for everyone, whatever their reach
     if (d > out) continue;
     const far = (out - d) / 6;
     for (let i = 0; i < 6; i++) { collide(g.x + dx / d * far, g.z + dz / d * far, 0.5); g.x = clamp(_cx, -ARENA + 2, ARENA - 2); g.z = clamp(_cz, -ARENA + 2, ARENA - 2); }
@@ -10973,7 +11167,12 @@ const CP_ST = [
   { map: 'town', name: 'الحي القديم', arrive: [19.5, 2, Math.PI / 2], steps: [
     { k: 'get', n: 3, obj: 'دوّروا على البطاريات في البيوت', say: 't0' },
     { k: 'hold', id: 'pad', obj: 'اشحنوا الناقل في الشارع', go: 'دافعوا عن الناقل', T: 75, R: 4.6, charge: true, say: 't1', sayGo: 't1go' }
-  ], done: 'tend', last: true }
+  ], done: 'tend' },
+  { map: 'station', name: 'محطة القطار', arrive: [0, 24, 0], padN: 'القطار', padI: '🚆', horn: true, steps: [
+    { k: 'get', n: 1, ic: '⚡', obj: 'شغّلوا المولد في الصالة', say: 's0' },
+    { k: 'hold', id: 'sig', obj: 'فعّلوا الإشارة من برج التحكم', go: 'اثبتوا عند البرج', T: 14, R: 4.4, say: 's1' },
+    { k: 'hold', id: 'pad', obj: 'وصّلوا الكهرباء للقطار من الرصيف', go: 'دافعوا عن القطار', T: 90, R: 5.2, charge: true, say: 's2', sayGo: 's2go' }
+  ], done: 'send', last: true }
 ];
 // what the voice on the radio says. Each line can take a recording later: put its file in `a`.
 const CP_LINES = {
@@ -10986,15 +11185,24 @@ const CP_LINES = {
   t0:   { t: 'هذا الحي القديم، وكل شي فيه خربان. دوروا على ٣ بطاريات في البيوت، وانتبهوا، الليل هنا غير.' },
   t1:   { t: 'جبتوها؟ ركّبوها في الناقل اللي في الشارع وابدوا الشحن.' },
   t1go: { t: 'هالمرة الشحن أطول… اثبتوا ولا تخلون أحد يقرب!' },
-  tend: { t: 'وصلت الإشارة للمحطة… بس الطريق مقطوع الحين. اصمدوا، بنرجع لكم.' }
+  tend: { t: 'وصلت الإشارة للمحطة! الناقل بيوديكم هناك… القطار هو طريقنا الوحيد للطلعة.' },
+  s0:   { t: 'هذي المحطة القديمة… الكهرباء مقطوعة عن المكان كله. شغّلوا المولد اللي في الصالة.' },
+  s1:   { t: 'الأنوار رجعت! الحين اطلعوا على برج التحكم وفعّلوا الإشارة، عشان نقدر نشغّل القطار.' },
+  s2:   { t: 'الإشارة وصلت! وصّلوا الكهرباء للقطار من الرصيف… بس انتبهوا، هالمرة بيجونكم من كل صوب.' },
+  s2go: { t: 'اثبتوا! فيه شي يركض من النفق… وفيه شي ثقيل جاي من ساحة الشحن!' },
+  send: { t: 'القطار اشتغل! صوت المحرك يسمعونه من بعيد… اثبتوا جنبه، هذي مو النهاية.' }
 };
-const CP = { on: false, stage: 0, step: 0, got: 0, run: 0, prog: 0, built: -1, doneT: 0, quiet: 0, seen: '', props: null, end: false, half: false, out: 0, rq: [], rd: null, wp: null, hudKey: '' };
+const CP = { on: false, stage: 0, step: 0, got: 0, run: 0, prog: 0, built: -1, doneT: 0, quiet: 0, seen: '', props: null, end: false, half: false, out: 0, rq: [], rd: null, wp: null, hudKey: '', armT: 0 };
 const cpAuth = () => !co.live || co.role === 'host';
 const cpStep = () => { const S = CP_ST[CP.stage]; return S && S.steps[CP.step]; };
 const mapOf = id => id === 'camp' ? CP_ST[0].map : id;
+const padN = () => CP_ST[CP.stage].padN || 'الناقل', padI = () => CP_ST[CP.stage].padI || '🌀';
+const cpIc = st => st.k === 'power' ? '⚡' : st.k === 'get' ? (st.ic || '🔋') : st.id === 'ant' || st.id === 'sig' ? '📡' : padI();
+const stnOn = () => CP_ST[CP.stage].map === 'station' && (!!(CP.got & 1) || CP.step > 0);
+const cpAt = (st, P) => st.id === 'ant' ? P.ant : st.id === 'sig' ? P.sig : P.padAt;
 const cpBits = n => { let c = 0; while (n) { c += n & 1; n >>= 1; } return c; };
 function cpReset(on) {
-  Object.assign(CP, { on, stage: 0, step: 0, got: 0, run: 0, prog: 0, built: -1, doneT: 0, quiet: 0, seen: '', end: false, half: false, out: 0, rq: [], rd: null, hudKey: '' });
+  Object.assign(CP, { on, stage: 0, step: 0, got: 0, run: 0, prog: 0, built: -1, doneT: 0, quiet: 0, seen: '', end: false, half: false, out: 0, rq: [], rd: null, hudKey: '', armT: 0 });
   cpRadioHide(true); $('cpBig').style.opacity = 0;
 }
 // ---------- the props a stage needs, built with the map ----------
@@ -11045,6 +11253,37 @@ function cpDress(id) {
       const st = { type: 'cp', cp: 'bat', n, x: bx, z: bz, fx: bx, fz: bz, rad: 1.6 };
       stations.push(st); P.bats.push({ g, G, st, n, lit, x: bx, z: bz, y: top + 0.6 });
     });
+  } else if (id === 'station') {
+    const dk = 0x24282d, sl = 0x4a5058, yl = 0xd9a514;
+    // the generator against the west wall of the hall
+    const gx = -13.05, gz = 13, G = VB();
+    solid(-13.75, -12.35, 12.2, 13.8, 1.6);
+    G.box(dk, 1.5, 0.18, 1.7, gx, 0.09, gz); G.box(sl, 1.4, 1.25, 1.6, gx, 0.8, gz); G.box(yl, 1.42, 0.08, 1.62, gx, 1.38, gz);
+    for (let i = 0; i < 6; i++) G.box(dk, 0.04, 0.86, 0.06, gx + 0.71, 0.82, gz - 0.62 + i * 0.2);
+    G.cyl(dk, 0.08, 0.08, 1.5, gx - 0.35, 2.1, gz - 0.5, 10); G.cyl(dk, 0.11, 0.11, 0.14, gx - 0.35, 2.85, gz - 0.5, 10);
+    G.box(dk, 0.1, 0.5, 0.42, gx + 0.74, 1.0, gz + 0.48); G.box(0xc1121f, 0.08, 0.08, 0.34, gx + 0.84, 1.12, gz + 0.48);
+    G.box(0x111214, 0.06, 0.5, 2.6, gx + 0.72, 0.04, gz + 1.9);                       // its cable up the wall
+    const gm = G.mesh(SP_VM); gm.castShadow = true; track(gm);
+    P.genL = own(0x3a1010); const gl = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), P.genL); gl.position.set(gx + 0.76, 1.45, gz + 0.48); track(gl, true);
+    P.gen = { x: gx + 0.9, z: gz };
+    stations.push({ type: 'cp', cp: 'gen', x: gx, z: gz, fx: gx + 1.3, fz: gz, rad: 1.7 });
+    // the signal: a dish on the control tower roof and a console by its door
+    const T = VB(), tx = -21, tz = -21.5, cx = -18.75, cz = -21.3;
+    T.cyl(dk, 0.07, 0.07, 1.8, tx, 8.6, tz, 8); T.cyl(0x8d959a, 0.85, 0.12, 0.28, tx, 9.35, tz, 16, 1.05, 0.7, 0); T.box(dk, 0.05, 0.05, 0.8, tx + 0.3, 9.6, tz + 0.25, 0.9, 0.7);
+    solid(cx - 0.45, cx + 0.3, cz - 0.45, cz + 0.45, 1.2);
+    T.box(dk, 0.7, 1.15, 0.9, cx - 0.08, 0.58, cz); T.box(0x3c4248, 0.8, 0.12, 0.98, cx - 0.08, 1.2, cz);
+    T.box(yl, 0.03, 0.08, 0.92, cx + 0.28, 0.95, cz);
+    const tm = T.mesh(SP_VM); tm.castShadow = true; track(tm);
+    P.sigScr = own(0x101418); const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.32), P.sigScr); sc.position.set(cx + 0.285, 0.8, cz); sc.rotation.y = Math.PI / 2; track(sc, true);
+    P.sigL = own(0x3a1010); const sb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), P.sigL); sb.position.set(tx, 9.95, tz); track(sb, true);
+    P.sigG = { x: cx + 0.6, y: 1.6, z: cz, r: 5, c: [0.15, 0.55, 0.25] };
+    P.sig = { x: cx + 1.5, z: cz - 0.4 };
+    stations.push({ type: 'cp', cp: 'sig', x: cx, z: cz, fx: cx + 0.95, fz: cz, rad: 1.7 });
+    // the train takes its power from a coupling on platform 2, beside the cab
+    P.pad = telePad(7, 2.6);
+    const C = VB();
+    C.box(0x111214, 3.9, 0.07, 0.12, 3.6, 0.06, 2.6); C.box(dk, 0.3, 0.6, 0.5, 1.62, 1.0, 2.6); C.box(yl, 0.31, 0.06, 0.51, 1.62, 1.2, 2.6);
+    const cm = C.mesh(SP_VM); track(cm);
   }
   if (P.pad) {
     P.padAt = { x: P.pad.x, z: P.pad.z };
@@ -11086,6 +11325,7 @@ function cpEnter() {
   cpSay(S.done);
   addPoints(500); toast('🏁 خلصتوا ' + S.name + ' · +500');
   bell(72, 0, 0.08, 2); bell(79, 0.18, 0.08, 2); bell(84, 0.36, 0.09, 3);
+  if (S.horn) { tone(196, 1.6, 'sawtooth', 0.06, -6); tone(247, 1.6, 'sawtooth', 0.05, -6); tone(294, 1.6, 'square', 0.03, -6); lowHit(0, 0.7); shakeT = 0.5; }
   if (S.last) {
     CP.end = true;
     const el = $('cpBig'); el.innerHTML = '<small>انتهت القصة</small>يتبع…'; el.style.opacity = 1;
@@ -11138,7 +11378,7 @@ function cpTick(dt) {
     if (st.k === 'power' && base.on && base.power) cpAdvance();
     else if (st.k === 'get' && cpBits(CP.got) >= st.n) cpAdvance();
     else if (st.k === 'hold' && CP.run) {
-      const at = st.id === 'ant' ? P.ant : P.padAt;
+      const at = cpAt(st, P);
       CP.out = at ? cpInside(at, st.R) : 0;
       if (cpAuth()) {
         if (CP.out) CP.prog = Math.min(st.T, CP.prog + dt);
@@ -11174,6 +11414,27 @@ function cpLooks(dt) {
     const want = fixed || fixing, i = glows.indexOf(P.antG);
     if (want && i < 0) glows.push(P.antG); else if (!want && i >= 0) glows.splice(i, 1);
   }
+  // the station: the generator's lamp and everything on its circuit, the signal, the train
+  if (P.genL) {
+    const on = stnOn();
+    P.genL.color.setHex(on ? 0x4ade80 : Math.sin(t * 4) > 0 ? 0xff2a2a : 0x3a1010);
+    stnPower(on);
+  }
+  if (P.sigL) {
+    const on = stnOn(), fixed = !st || st.id === 'pad', fixing = st && st.id === 'sig' && CP.run;
+    P.sigL.color.setHex(fixed ? (Math.sin(t * 3) > 0 ? 0x4ade80 : 0x0f2a14) : fixing ? (Math.sin(t * 12) > 0 ? 0xffb020 : 0x3a2a08) : on ? (Math.sin(t * 2) > 0.6 ? 0xff2a2a : 0x3a1010) : 0x1a0c0c);
+    P.sigScr.color.setHex(fixed ? 0x22c55e : fixing ? 0xf59e0b : on ? 0x7f1d1d : 0x101418);
+    const want = fixed || fixing, i = glows.indexOf(P.sigG);
+    if (want && i < 0) glows.push(P.sigG); else if (!want && i >= 0) glows.splice(i, 1);
+  }
+  if (P.pad && STN.win && currentMap === 'station') {
+    const done = !st, charging = st && st.id === 'pad' && CP.run, k = charging ? CP.prog / st.T : 0;
+    STN.win.color.setHex(done ? 0xffe9b8 : charging ? (Math.sin(t * 5) > 0 ? 0x7fe9ff : 0x2b6f80) : stnOn() ? 0x2a2418 : 0x0a0d10);
+    if (charging) STN.win.color.multiplyScalar(0.45 + 0.55 * k);
+    STN.head.color.setHex(done ? 0xfff6d8 : charging && Math.sin(t * 6) > 0.4 ? 0x9ff3ff : 0x1a1d20);
+    const i = glows.indexOf(STN.headG);
+    if (done && i < 0) glows.push(STN.headG); else if (!done && i >= 0) glows.splice(i, 1);
+  }
   // the batteries
   for (const b of P.bats) {
     const have = !!(CP.got >> b.n & 1) || !st || st.k !== 'get';
@@ -11184,7 +11445,7 @@ function cpLooks(dt) {
     if (!have) b.lit.material.color.setHex(Math.sin(t * 4 + b.n) > 0 ? 0x4ade80 : 0x14532d);
   }
   // the ring to stand in
-  const hold = st && st.k === 'hold', at = hold && (st.id === 'ant' ? P.ant : P.padAt);
+  const hold = st && st.k === 'hold', at = hold && cpAt(st, P);
   P.zone.visible = !!at;
   if (at) {
     P.zone.position.x = at.x; P.zone.position.z = at.z; P.zone.scale.set(st.R, st.R, 1);
@@ -11201,10 +11462,17 @@ function cpPrompt(s) {
     if (st && st.id === 'ant') return CP.run ? ['جاري التصليح… ' + Math.floor(CP.prog / st.T * 100) + '%'] : ['صلّح الهوائي 📡', 'اثبتوا جنبه ' + st.T + ' ثانية'];
     return CP.stage > 0 || CP.step > 1 ? ['📡 الهوائي شغّال'] : ['📡 الهوائي خربان'];
   }
+  if (s.cp === 'gen') return (!st || st.k !== 'get' || (CP.got & 1)) ? ['⚡ المولد شغّال'] : ['شغّل المولد ⚡', 'يرجّع الكهرباء للمحطة'];
+  if (s.cp === 'sig') {
+    if (!stnOn()) return ['📡 البرج طافي', 'يحتاج المولد ⚡'];
+    if (st && st.id === 'sig') return CP.run ? ['جاري التفعيل… ' + Math.floor(CP.prog / st.T * 100) + '%'] : ['فعّل الإشارة 📡', 'اثبتوا جنب البرج ' + st.T + ' ثانية'];
+    return ['📡 الإشارة شغّالة'];
+  }
   if (s.cp === 'pad') {
-    if (!st) return ['🌀 الناقل جاهز'];
-    if (st.id === 'pad') return CP.run ? ['جاري الشحن… ' + Math.floor(CP.prog / st.T * 100) + '%'] : ['ابدأ شحن الناقل 🌀', 'دافعوا عنه ' + st.T + ' ثانية'];
-    return ['🌀 الناقل طافي', st.k === 'get' ? 'يبي ثلاث بطاريات' : 'صلّحوا الهوائي أول'];
+    const N = padN(), I = padI();
+    if (!st) return [I + ' ' + N + ' جاهز'];
+    if (st.id === 'pad') return CP.run ? ['جاري الشحن… ' + Math.floor(CP.prog / st.T * 100) + '%'] : ['ابدأ شحن ' + N + ' ' + I, 'دافعوا عنه ' + st.T + ' ثانية'];
+    return [I + ' ' + N + ' طافي', st.k === 'get' ? (st.ic ? 'شغّلوا المولد أول' : 'يبي ثلاث بطاريات') : st.id === 'sig' ? 'فعّلوا الإشارة أول' : 'صلّحوا الهوائي أول'];
   }
   return [''];
 }
@@ -11217,11 +11485,20 @@ function cpUse(s) {
     tone(520 + n * 120, 0.16, 'square', 0.05); click(0, 2600, 0.2, 0.05, 3);
     return;
   }
-  const want = s.cp === 'ant' ? 'ant' : 'pad';
+  if (s.cp === 'gen') {
+    if (!st || st.k !== 'get' || (CP.got & 1)) return;
+    CP.got |= 1; co.t = 0;
+    toast('⚡ شغّلت المولد!');
+    clank(0, 200, 0.25); tone(70, 1.2, 'sawtooth', 0.06, 60); click(0.15, 2600, 0.2, 0.05, 3);
+    return;
+  }
+  const want = s.cp === 'ant' ? 'ant' : s.cp === 'sig' ? 'sig' : 'pad';
   if (!st) return;
   if (st.id !== want) {
     if (want === 'ant' && !base.power) return deny('⚡ شغّل الكهرباء أول');
-    return deny(want === 'pad' ? (st.k === 'get' ? '🔋 الناقل يبي ثلاث بطاريات' : '📡 صلّحوا الهوائي أول') : '📡 الهوائي شغّال');
+    if (want === 'sig' && !stnOn()) return deny('⚡ شغّل المولد أول');
+    if (want === 'pad') return deny(st.k === 'get' ? (st.ic ? '⚡ شغّلوا المولد أول' : '🔋 الناقل يبي ثلاث بطاريات') : st.id === 'sig' ? '📡 فعّلوا الإشارة أول' : '📡 صلّحوا الهوائي أول');
+    return deny(want === 'ant' ? '📡 الهوائي شغّال' : '📡 الإشارة شغّالة');
   }
   if (CP.run) return;
   CP.run = 1; co.t = 0;
@@ -11271,10 +11548,10 @@ function cpHud(dt) {
   if (ob.style.display === 'none') ob.style.display = '';
   const S = CP_ST[CP.stage], st = cpStep(), P = CP.props || {};
   let title = '', bar = -1, warn = false;
-  if (!st) title = S.last ? '🏁 انتهت القصة · كمّلوا الجولات' : '🌀 الناقل جاهز… ' + Math.max(1, Math.ceil(3.2 - CP.doneT));
-  else if (st.k === 'get') title = '🔋 ' + st.obj + ' (' + cpBits(CP.got) + '/' + st.n + ')';
-  else if (st.k === 'hold' && CP.run) { bar = CP.prog / st.T; warn = !CP.out; title = warn ? '⚠️ وقف! ارجعوا داخل الدائرة' : (st.id === 'ant' ? '📡 ' : '🌀 ') + st.go + ' · ' + Math.floor(bar * 100) + '%'; }
-  else title = (st.k === 'power' ? '⚡ ' : st.id === 'ant' ? '📡 ' : '🌀 ') + st.obj;
+  if (!st) title = S.last ? '🏁 انتهت القصة · كمّلوا الجولات' : padI() + ' ' + padN() + ' جاهز… ' + Math.max(1, Math.ceil(3.2 - CP.doneT));
+  else if (st.k === 'get') title = cpIc(st) + ' ' + st.obj + (st.n > 1 ? ' (' + cpBits(CP.got) + '/' + st.n + ')' : '');
+  else if (st.k === 'hold' && CP.run) { bar = CP.prog / st.T; warn = !CP.out; title = warn ? '⚠️ وقف! ارجعوا داخل الدائرة' : cpIc(st) + ' ' + st.go + ' · ' + Math.floor(bar * 100) + '%'; }
+  else title = cpIc(st) + ' ' + st.obj;
   const k = title + '|' + (bar < 0 ? -1 : Math.round(bar * 200)) + '|' + warn;
   if (k !== CP.hudKey) {
     CP.hudKey = k;
@@ -11288,7 +11565,9 @@ function cpHud(dt) {
   let tgt = null, ic = '';
   if (st && st.k === 'power') { const s = stations.find(q => q.type === 'power'); if (s) { tgt = { x: s.x, y: 3, z: s.z }; ic = '⚡'; } }
   else if (st && st.id === 'ant' && P.ant) { tgt = { x: P.ant.x, y: 3.2, z: P.ant.z }; ic = '📡'; }
-  else if (st && st.id === 'pad' && P.padAt) { tgt = { x: P.padAt.x, y: 3.6, z: P.padAt.z }; ic = '🌀'; }
+  else if (st && st.id === 'sig' && P.sig) { tgt = { x: P.sig.x - 1.5, y: 3.2, z: P.sig.z + 0.4 }; ic = '📡'; }
+  else if (st && st.id === 'pad' && P.padAt) { tgt = { x: P.padAt.x, y: 3.6, z: P.padAt.z }; ic = padI(); }
+  else if (st && st.k === 'get' && P.gen) { tgt = { x: P.gen.x, y: 2.8, z: P.gen.z }; ic = '⚡'; }
   else if (st && st.k === 'get') {
     let bd = 1e9; for (const b of P.bats) if (b.g.visible) { const d = Math.hypot(b.x - player.x, b.z - player.z); if (d < bd) { bd = d; tgt = { x: b.x, y: b.y + 1.4, z: b.z }; } }
     ic = '🔋';
@@ -11693,7 +11972,7 @@ menuCam = true; pickMenuCam();
 const LD_TIPS = {
   z: ['الصندوق يتنقل بعد كم سحبة. شوف اللوحات اللي جنب أماكنه، اللمبة المولعة هي مكانه الحين', 'ما فيه رادار في الزومبي. اسمع الأصوات وانتبه لظهرك',
       'اشتر «شفاء سريع» بدري، لو طحت تقدر تقوم', 'رمّم الشبابيك تاخذ نقاط وتأخر الزومبي', 'الطلقة في الراس تعطيك نقاط أكثر'],
-  camp: ['النقاط والأسلحة والمشروبات تنتقل معك للخريطة الجاية', 'وقت الشحن اثبتوا داخل الدائرة، لو طلعتوا كلكم يوقف', 'لو متوا كلكم ترجع الحملة من أولها', 'العلامة اللي فوق الشاشة تدلك وين تروح'],
+  camp: ['الحملة ثلاث محطات: المجمّع، الحي القديم، ومحطة القطار', 'المدرّع ما يتأثر كثير برصاص الجسم. صوّب على راسه', 'النقاط والأسلحة والمشروبات تنتقل معك للخريطة الجاية', 'وقت الشحن اثبتوا داخل الدائرة، لو طلعتوا كلكم يوقف', 'لو متوا كلكم ترجع الحملة من أولها', 'العلامة اللي فوق الشاشة تدلك وين تروح'],
   base: ['الكهرباء مقطوعة. لقها في غرفة المولدات عشان تشتغل المشروبات', 'فيه ثلاث راديوهات مخفية. لقها كلها وشوف وش يصير', 'الفخاخ تضرك مثل ما تضر الزومبي'],
   m: ['خلك مع فريقك، اللي يمشي لحاله يموت أول', 'لا تقعد بمكان واحد بعد ما تقتل، الكل عرف مكانك', 'السطوح في السوق تعطيك نظرة على الميدان كله'],
   gg: ['كل قتلة تعطيك السلاح اللي بعده، وإذا انقتلت ترجع للمسدس', 'آخر سلاح هو مدفع الرعد، قتلة فيه وتفوز'],
@@ -11824,7 +12103,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.2';
+const GAME_VERSION = '4.3';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
