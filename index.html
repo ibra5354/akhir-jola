@@ -479,6 +479,34 @@
     body.lby #lookBar { left:calc((100vw - min(470px, 54vw)) / 2); bottom:10px; }
     body.lby #startScr { background:linear-gradient(270deg, rgba(5,7,13,.93) 0, rgba(5,7,13,.82) min(470px, 54vw), rgba(5,7,13,0) calc(min(470px, 54vw) + 100px)); }
   }
+  /* campaign */
+  #cpObj { position:absolute; top:max(12px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%); direction:rtl; text-align:center; pointer-events:none; z-index:2;
+    padding:6px 16px 7px; border-radius:12px; background:rgba(5,10,16,.7); border:1px solid rgba(56,232,255,.38); box-shadow:0 6px 18px rgba(0,0,0,.4); min-width:230px; max-width:min(520px, 62vw); }
+  #cpObj small { display:block; font-size:11px; color:#7fdcff; letter-spacing:.4px; font-weight:700; }
+  #cpObj b { display:block; font-size:15.5px; font-weight:800; color:#eefaff; text-shadow:0 1px 3px #000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #cpObjBar { height:5px; border-radius:3px; background:rgba(255,255,255,.12); margin-top:5px; overflow:hidden; }
+  #cpObjFill { height:100%; width:0; background:linear-gradient(90deg, #38e8ff, #c8f4ff); box-shadow:0 0 8px #38e8ff; transition:width .2s linear; }
+  #cpObj.warn { border-color:rgba(255,77,77,.7); animation:cpWarn .6s ease-in-out infinite alternate; }
+  #cpObj.warn b { color:#fecaca; } #cpObj.warn #cpObjFill { background:#ef4444; box-shadow:0 0 8px #ef4444; }
+  @keyframes cpWarn { from { box-shadow:0 0 0 rgba(255,60,60,0); } to { box-shadow:0 0 18px rgba(255,60,60,.55); } }
+  #cpRadio { position:absolute; top:calc(max(12px, env(safe-area-inset-top)) + 62px); left:50%; width:min(540px, 84vw); transform:translate(-50%, -10px); opacity:0; transition:opacity .3s, transform .3s;
+    display:flex; gap:11px; align-items:flex-start; direction:rtl; pointer-events:none; z-index:2; padding:9px 14px 10px; border-radius:12px;
+    background:linear-gradient(180deg, rgba(14,22,14,.93), rgba(6,10,6,.93)); border:1px solid rgba(134,239,172,.38); box-shadow:0 10px 28px rgba(0,0,0,.5); }
+  #cpRadio.on { opacity:1; transform:translate(-50%, 0); }
+  #cpRadio .ic { flex:none; width:34px; height:34px; border-radius:9px; display:grid; place-items:center; font-size:19px; background:rgba(134,239,172,.12); border:1px solid rgba(134,239,172,.3); }
+  #cpRadio.on .ic { animation:cpBlip 1.1s ease-in-out infinite; }
+  @keyframes cpBlip { 50% { box-shadow:0 0 12px rgba(134,239,172,.6); } }
+  #cpRadio small { display:block; font-size:11px; color:#86efac; letter-spacing:.4px; font-weight:700; margin-bottom:1px; }
+  #cpRadioTx { margin:0; font-size:15.5px; line-height:1.6; color:#f0fdf4; font-weight:700; text-shadow:0 1px 2px #000; text-align:right; min-height:1.6em; }
+  #cpBig { position:absolute; top:30%; left:50%; transform:translateX(-50%); font-family:'Lalezar','Tajawal',serif; font-size:60px; color:#7fdcff; text-shadow:0 0 22px rgba(56,232,255,.6), 0 3px 0 #02202a;
+    opacity:0; transition:opacity 1s; pointer-events:none; text-align:center; white-space:nowrap; direction:rtl; }
+  #cpBig small { display:block; font-size:20px; letter-spacing:4px; color:#cfeefa; }
+  @media (max-height: 520px) { #cpObj { max-width:46vw; min-width:0; padding:5px 12px 6px; } #cpObj b { font-size:13.5px; }
+    #cpRadio { top:calc(max(8px, env(safe-area-inset-top)) + 50px); width:min(460px, 54vw); padding:7px 11px 8px; } #cpRadio .ic { width:28px; height:28px; font-size:16px; }
+    #cpRadioTx { font-size:13px; line-height:1.5; } #cpBig { font-size:44px; } }
+  @media (orientation: portrait) and (max-width: 700px) { #cpObj { top:calc(max(12px, env(safe-area-inset-top)) + 74px); max-width:92vw; width:92vw; box-sizing:border-box; }
+    #cpRadio { top:calc(max(12px, env(safe-area-inset-top)) + 136px); left:auto; right:10px; width:calc(100vw - 72px); transform:translate(0, -10px); }
+    #cpRadio.on { transform:translate(0, 0); } #cpRadioTx { font-size:14px; } #cpBig { font-size:40px; } }
   /* version tag and sponsors */
   #verTag { position:absolute; top:max(12px, env(safe-area-inset-top)); left:max(14px, env(safe-area-inset-left)); z-index:3; display:flex; align-items:baseline; gap:7px; direction:rtl;
     padding:6px 12px 5px; border-radius:11px; background:linear-gradient(180deg, rgba(20,22,30,.82), rgba(8,9,14,.82)); border:1px solid rgba(242,212,155,.35);
@@ -567,6 +595,9 @@
   <div id="netBoard"></div>
   <div id="toast"></div>
   <div id="roundBig"></div>
+  <div id="cpObj" style="display:none"><small id="cpObjS"></small><b id="cpObjB"></b><div id="cpObjBar"><div id="cpObjFill"></div></div></div>
+  <div id="cpRadio"><div class="ic">📻</div><div><small>لاسلكي · صوت مجهول</small><p id="cpRadioTx"></p></div></div>
+  <div id="cpBig"></div>
   <div id="boxMsg"></div>
   <div id="prompt"></div>
   <div id="topCenter">
@@ -619,6 +650,7 @@
       <button class="mapBtn sel" data-map="arena" data-sec="z" type="button"><span class="mName">الساحة</span><small>ليل مفتوح بين السواتر والحاويات</small></button>
       <button class="mapBtn" data-map="town" data-sec="z" type="button"><span class="mName">الحي القديم</span><small>بيتين بدور واحد وشارع وباص، وقتال قريب</small></button>
       <button class="mapBtn" data-map="base" data-sec="z" type="button"><span class="mName">المجمّع</span><span class="mKind n">جديد</span><small>قاعدة عسكرية ومختبر سري: أبواب بالنقاط، كهرباء، فخاخ، ناقل وسر مدفون</small></button>
+      <button class="mapBtn camp" data-map="camp" data-sec="z" type="button"><span class="mName">🌀 الحملة</span><span class="mKind n">جديد</span><small>من المجمّع إلى الحي القديم: خلّصوا المهام، اشحنوا الناقل وكمّلوا القصة بنقاطكم وأسلحتكم</small></button>
       <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind n">جديد</span><small>بيتين بدورين ودرج وحوش خلفي، وشارع بينهم فيه باص</small></button>
       <button class="mapBtn" data-map="souq" data-sec="m" type="button"><span class="mName">السوق</span><span class="mKind n">جديد</span><small>ميدان ونافورة وحارات دكاكين، وسطحين تطلع لهم بالدرج</small></button>
       <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
@@ -3607,9 +3639,10 @@ MAPS.port.hills = [
   { n: 'وسط الميناء', x: 0, z: 0, w: 8, d: 8, y: 0 }, { n: 'الرصيف الشمالي', x: -1.2, z: 9.6, w: 8, d: 6, y: 0 }, { n: 'الرصيف الجنوبي', x: 1.2, z: -9.6, w: 8, d: 6, y: 0 },
   { n: 'الحاويات الغربية', x: -11.4, z: -5.6, w: 6, d: 6, y: 0 }, { n: 'الحاويات الشرقية', x: 11.3, z: -6.6, w: 6, d: 6, y: 0 }
 ];
+MAPS.camp = { camp: true, start: [-17, 20.5, 0] };
 const isTdmMap = id => !!(MAPS[id] && MAPS[id].tdm);
 let builtMode = 'waves';
-function buildMap(id) { clearMap(); MAPS[id].build(); flushInst(); currentMap = id; builtMode = mode; raining = night && id === 'town'; rainMesh.visible = raining; if (raining) { scene.fog.near = 5; scene.fog.far = 50; } }
+function buildMap(id) { clearMap(); MAPS[id].build(); if (CP.on) cpDress(id); flushInst(); currentMap = id; builtMode = mode; raining = night && id === 'town'; rainMesh.visible = raining; if (raining) { scene.fog.near = 5; scene.fog.far = 50; } }
 
 // ---------- Player ----------
 // ---------- Weapons ----------
@@ -5369,7 +5402,7 @@ function quitToMenu() {
   if (!running) return;
   running = false; pauseOpen = false;
   if (mode === 'tdm') tdm.over = true; else saveBest();
-  zClear();
+  zClear(); CP.on = false;
   mouseFire = fireHeld = false; aimHeld = false;
   if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
   try { stopAmbience(); } catch (e) {}
@@ -8223,10 +8256,16 @@ function coTick(dt) {
                 zh: co.hits, ev: co.ev, lu: l ? [+l.x.toFixed(1), +l.z.toFixed(1)] : 0, bl: down && down.wait ? Math.ceil(CO_BLEED - down.t) : 0 };
     if (co.role === 'host') { g.ho = 1; g.hs = coEncode(); }
     if (base.on) g.bs = baseState();
+    if (CP.on) g.cp = cpOut();
     try { netPres(netRoom, { g }).catch(() => {}); } catch (e) {}
   }
   const here = new Set();
   let hostP = '', hostG = null;
+  if (CP.on) for (const p of peers) {                         // the story first, from everyone: someone may already be on the next map
+    if (p.sameTab || p.kind !== 'viewer') continue;
+    const g = p.presence && p.presence.g;
+    if (g && g.q === 'z' && g.cp) cpMerge(g.cp, g.ho === 1);
+  }
   for (const p of peers) {
     if (p.sameTab || p.kind !== 'viewer') continue;
     const g = p.presence && p.presence.g;
@@ -8236,7 +8275,7 @@ function coTick(dt) {
     here.add(p.peer);
     const gx = clamp(g.x, -ARENA, ARENA), gz = clamp(g.z, -ARENA, ARENA);
     o.name = cleanName(g.n);
-    if (o.fresh) { o.fresh = false; o.group.position.set(gx, 0, gz); o.tx = gx; o.tz = gz; o.lt = now; toast('🌐 ' + o.name + ' دخل معك'); }
+    if (o.fresh) { o.fresh = false; o.group.position.set(gx, 0, gz); o.tx = gx; o.tz = gz; o.lt = now; if (!(CP.on && CP.quiet > 0)) toast('🌐 ' + o.name + ' دخل معك'); }
     if (gx !== o.tx || gz !== o.tz) {
       const e = Math.max(0.05, (now - o.lt) / 1000);
       o.vx = clamp((gx - o.tx) / e, -8, 8); o.vz = clamp((gz - o.tz) / e, -8, 8); o.lt = now;
@@ -8261,7 +8300,7 @@ function coTick(dt) {
     if (co.role === 'host') coReadHits(p.peer, g);
     if (g.ho === 1 && g.hs && typeof g.hs === 'object' && (!hostP || p.peer < hostP)) { hostP = p.peer; hostG = g; }
   }
-  for (const id of [...coPeers.keys()]) if (!here.has(id)) { const o = coPeers.get(id); if (!o.fresh) toast('🌐 ' + o.name + ' طلع'); scene.remove(o.group); coPeers.delete(id); co.seenHit.delete(id); co.seenEv.delete(id); co.seenShot.delete(id); }
+  for (const id of [...coPeers.keys()]) if (!here.has(id)) { const o = coPeers.get(id); if (!o.fresh && !(CP.on && CP.quiet > 0)) toast('🌐 ' + o.name + ' طلع'); scene.remove(o.group); coPeers.delete(id); co.seenHit.delete(id); co.seenEv.delete(id); co.seenShot.delete(id); }
   // who runs the zombies
   if (co.role === 'wait') { if (hostP) coBecomeClient(); else if (co.age > 1.2) coBecomeHost(true); }
   else if (co.role === 'host') {
@@ -8279,7 +8318,7 @@ function coTick(dt) {
     for (const o of coPeers.values()) if (coUp(o.st)) up = true;
     if (!up) { co.over = true; co.t = 0; zDie(); }
   }
-  if (!coPeers.size && !zDeath && co.age > 2) {                // left alone
+  if (!coPeers.size && !zDeath && co.age > 2 && !(CP.on && CP.quiet > 0)) {                // left alone
     if (co.out) { co.out = false; zDie(); } else if (down && down.wait) zDie();
   }
   if (reviving) {
@@ -8635,6 +8674,7 @@ function interact() {
   if (base.on) { const D = nearDoor(); if (D) { buyDoor(D); return; } }
   const st = nearStation();
   if (!st) { const B = nearBarrier(); if (B) { repairing = B; repT = 0.25; } return; }
+  if (st.cp) { cpUse(st); return; }
   if (st.base) { baseUse(st); return; }
   if (st.needPower && base.on && !base.power) { toast('⚡ ما فيه كهرباء. شغّلها من غرفة المولدات'); tone(150, 0.08, 'square', 0.05); return; }
   if (st.type === 'shield') { buyShield(st); return; }
@@ -8726,7 +8766,8 @@ function updateBoxUI() {
   if (!btn && base.on && player.alive && !down) { const D = nearDoor(); if (D) { btn = 'افتح ' + doorName(D) + ' ' + D.cost + ' 💰'; } }
   if (!btn && player.alive && !down) {
     const st = nearStation();
-    if (st && st.base) { const r = basePrompt(st); btn = r[0]; desc = r[1] || ''; note = r[2] || ''; }
+    if (st && st.cp) { const r = cpPrompt(st); btn = r[0]; desc = r[1] || ''; }
+    else if (st && st.base) { const r = basePrompt(st); btn = r[0]; desc = r[1] || ''; note = r[2] || ''; }
     else if (st && st.needPower && base.on && !base.power) { btn = 'يحتاج كهرباء ⚡'; note = '⚡ ما فيه كهرباء'; }
     else if (st && st.type === 'pap') {
       const w = cw();
@@ -9318,7 +9359,7 @@ function zEnd() {
   running = false; sndPitch = 1;
   sndMuffle(0, 1.5); gameOverMusic();
   E.endTitle.textContent = 'انتهت اللعبة';
-  E.endTxt.innerHTML = statTiles([[wave, 'الجولة'], [kills, 'زومبي قتلتهم'], [bests[currentMap], 'أفضل جولة لك']]);
+  E.endTxt.innerHTML = statTiles(CP.on ? [[wave, 'الجولة'], [CP_ST[CP.stage].name, 'وصلتوا'], [kills, 'زومبي قتلتهم'], [bests.camp, 'أفضل جولة لك']] : [[wave, 'الجولة'], [kills, 'زومبي قتلتهم'], [bests[currentMap], 'أفضل جولة لك']]);
   E.endScr.style.display = 'flex'; setMenu(true);
   if (locked()) { try { document.exitPointerLock(); } catch (e) {} }
   updateLockHint();
@@ -9766,16 +9807,17 @@ function drawRadar() {
 // ---------- Map choice and best score (per map) ----------
 let selectedMap = 'arena';
 try { const m = localStorage.getItem('fps-map'); if (MAPS[m]) selectedMap = m; } catch (e) {}
-const bests = { arena: 0, town: 0, base: 0, tdm: 0 };
+const bests = { arena: 0, town: 0, base: 0, tdm: 0, camp: 0 };
 try {
   for (const k in bests) bests[k] = +localStorage.getItem('fps-best-' + k) || 0;
   const old = +localStorage.getItem('fps-best-wave') || 0;
   if (old > bests.arena) bests.arena = old;
 } catch (e) {}
 function saveBest() {
-  if (wave > bests[currentMap]) {
-    bests[currentMap] = wave;
-    try { localStorage.setItem('fps-best-' + currentMap, String(wave)); } catch (e) {}
+  const k = CP.on ? 'camp' : currentMap;
+  if (wave > bests[k]) {
+    bests[k] = wave;
+    try { localStorage.setItem('fps-best-' + k, String(wave)); } catch (e) {}
   }
 }
 function showBest() {
@@ -10917,6 +10959,353 @@ function spTick(L, t, dt) {
     if (L.swing) L.swing.rotation.z = 0.5 + Math.sin(t * 1.3) * 0.08;
   }
 }
+// ================= Campaign: الحملة =================
+// A run through several maps. Each stage has jobs to do; the last one is always to charge the teleporter and hold it
+// while the dead pour in. When it fills, everyone is carried to the next map with their points, guns, perks and round.
+// State only ever moves forward (stage, then step), so in co-op everyone takes the furthest state they hear, the same
+// way the compound's doors and power already work. Only the host counts the charge up.
+const CP_ST = [
+  { map: 'base', name: 'المجمّع', steps: [
+    { k: 'power', obj: 'شغّلوا الكهرباء من غرفة المولدات', say: 'b0' },
+    { k: 'hold', id: 'ant', obj: 'صلّحوا الهوائي في ساحة التدريب', go: 'اثبتوا جنب الهوائي', T: 12, R: 4.2, say: 'b1' },
+    { k: 'hold', id: 'pad', obj: 'اشحنوا الناقل في المختبر', go: 'دافعوا عن الناقل', T: 60, R: 4.6, charge: true, say: 'b2', sayGo: 'b2go' }
+  ], done: 'b3' },
+  { map: 'town', name: 'الحي القديم', arrive: [19.5, 2, Math.PI / 2], steps: [
+    { k: 'get', n: 3, obj: 'دوّروا على البطاريات في البيوت', say: 't0' },
+    { k: 'hold', id: 'pad', obj: 'اشحنوا الناقل في الشارع', go: 'دافعوا عن الناقل', T: 75, R: 4.6, charge: true, say: 't1', sayGo: 't1go' }
+  ], done: 'tend', last: true }
+];
+// what the voice on the radio says. Each line can take a recording later: put its file in `a`.
+const CP_LINES = {
+  b0:   { t: 'يا اللي تسمعني… أنا في الجهة الثانية من المدينة. شغّلوا الكهرباء وطلعوا على الهوائي، وإلا ما أقدر أوصلكم.' },
+  b1:   { t: 'زين! الكهرباء رجعت. الحين الهوائي اللي في ساحة التدريب، صلّحوه عشان أسمعكم زين.' },
+  b2:   { t: 'وصلتني إشارتكم! اشحنوا الناقل الحين، بس لا تتأخرون. الصوت بيجذبهم كلهم.' },
+  b2go: { t: 'ثبّتوا مكانكم! باقي شوي… لا تخلونهم يوصلون الجهاز!' },
+  half: { t: 'نص الطريق… كمّلوا، لا توقفون!' },
+  b3:   { t: 'الناقل جاهز! اثبتوا… بنطلعكم من هنا.' },
+  t0:   { t: 'هذا الحي القديم، وكل شي فيه خربان. دوروا على ٣ بطاريات في البيوت، وانتبهوا، الليل هنا غير.' },
+  t1:   { t: 'جبتوها؟ ركّبوها في الناقل اللي في الشارع وابدوا الشحن.' },
+  t1go: { t: 'هالمرة الشحن أطول… اثبتوا ولا تخلون أحد يقرب!' },
+  tend: { t: 'وصلت الإشارة للمحطة… بس الطريق مقطوع الحين. اصمدوا، بنرجع لكم.' }
+};
+const CP = { on: false, stage: 0, step: 0, got: 0, run: 0, prog: 0, built: -1, doneT: 0, quiet: 0, seen: '', props: null, end: false, half: false, out: 0, rq: [], rd: null, wp: null, hudKey: '' };
+const cpAuth = () => !co.live || co.role === 'host';
+const cpStep = () => { const S = CP_ST[CP.stage]; return S && S.steps[CP.step]; };
+const mapOf = id => id === 'camp' ? CP_ST[0].map : id;
+const cpBits = n => { let c = 0; while (n) { c += n & 1; n >>= 1; } return c; };
+function cpReset(on) {
+  Object.assign(CP, { on, stage: 0, step: 0, got: 0, run: 0, prog: 0, built: -1, doneT: 0, quiet: 0, seen: '', end: false, half: false, out: 0, rq: [], rd: null, hudKey: '' });
+  cpRadioHide(true); $('cpBig').style.opacity = 0;
+}
+// ---------- the props a stage needs, built with the map ----------
+function cpDress(id) {
+  const P = CP.props = { bats: [] };
+  const own = c => new THREE.MeshBasicMaterial({ color: c });
+  if (id === 'base') {
+    // the lab pad becomes the way out; its old hop back to the guard room is gone for this run
+    if (base.tele) { P.pad = base.tele.a; base.tele = null; }
+    for (let i = stations.length - 1; i >= 0; i--) if (stations[i].type === 'tele') stations.splice(i, 1);
+    // a lattice mast in the training yard, with a console at its foot
+    const x = 13, z = -5, B = VB(), steel = 0x5b636b, dark = 0x2c3036;
+    solid(x - 0.95, x + 0.95, z - 0.95, z + 0.95, 7.4);
+    B.box(0x8d959a, 2.0, 0.35, 2.0, x, 0.17, z);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) B.box(steel, 0.09, 7.0, 0.09, x + sx * 0.55, 3.6, z + sz * 0.55, sz * 0.07, 0, -sx * 0.07);
+    for (let y = 0.9; y < 7; y += 0.95) {
+      const w = 1.25 - y * 0.075;
+      B.box(steel, w, 0.05, 0.05, x, y, z - w / 2); B.box(steel, w, 0.05, 0.05, x, y, z + w / 2); B.box(steel, 0.05, 0.05, w, x - w / 2, y, z); B.box(steel, 0.05, 0.05, w, x + w / 2, y, z);
+      B.box(steel, 0.035, 1.2, 0.035, x, y + 0.45, z - w / 2, 0, 0, 0.7); B.box(steel, 0.035, 1.2, 0.035, x - w / 2, y + 0.45, z, 0.7, 0, 0);
+    }
+    B.box(dark, 1.0, 0.08, 1.0, x, 7.1, z); B.box(steel, 0.06, 1.6, 0.06, x, 7.9, z);
+    B.cyl(0xc9ced3, 0.62, 0.2, 0.22, x + 0.45, 6.3, z + 0.45, 18, 0.9, 0.78, 0); B.box(dark, 0.12, 0.12, 0.6, x + 0.3, 6.3, z + 0.3, 0, 0.78);
+    B.box(0x9aa1ab, 0.5, 0.1, 0.1, x - 0.5, 5.4, z, 0, 0, 0.3); B.box(0x9aa1ab, 0.06, 0.8, 0.06, x - 0.75, 5.8, z);
+    // console
+    B.box(dark, 0.9, 1.15, 0.5, x, 0.58, z + 1.55); B.box(0x3c4248, 0.95, 0.12, 0.6, x, 1.18, z + 1.6, -0.35);
+    B.box(0xd9a514, 0.92, 0.08, 0.04, x, 0.95, z + 1.81); B.box(0x16181b, 0.6, 0.32, 0.03, x, 1.2, z + 1.84, -0.35);
+    B.box(0x121314, 0.1, 0.06, 1.0, x + 0.2, 0.04, z + 0.9);
+    const m = B.mesh(SP_VM); m.castShadow = true; track(m);
+    P.antScr = own(0x101418); const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.54, 0.26), P.antScr); scr.position.set(x, 1.21, z + 1.86); scr.rotation.x = -0.35; track(scr, true);
+    P.antTop = own(0x3a1010); const tip = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), P.antTop); tip.position.set(x, 8.75, z); track(tip, true);
+    P.antG = { x, y: 1.6, z: z + 2.2, r: 5, c: [0.15, 0.55, 0.25] };
+    P.ant = { x, z: z + 1.7 };
+    stations.push({ type: 'cp', cp: 'ant', x, z: z + 1.6, fx: x, fz: z + 2.4, rad: 1.7 });
+  } else if (id === 'town') {
+    P.pad = telePad(19.5, 2);
+    const icon = new THREE.Sprite(emojiIcon('🌀', 0x38e8ff)); icon.scale.set(0.8, 0.8, 1); icon.position.set(19.5, 3.1, 2); track(icon);
+    // three car batteries in the houses
+    [[-5.2, -18.6, 0.95], [5.2, 18.6, 0.95], [-5.4, 13.9, 0.0]].forEach(([bx, bz, top], n) => {
+      const g = new THREE.Group(), B = VB();
+      if (top) { B.box(0x6b4f3a, 1.2, 0.08, 0.7, 0, top - 0.04, 0); for (const sx of [-1, 1]) for (const sz of [-1, 1]) B.box(0x4a3628, 0.06, top - 0.08, 0.06, sx * 0.54, (top - 0.08) / 2, sz * 0.29); }
+      B.box(0x1d1f22, 0.38, 0.26, 0.22, 0, top + 0.13, 0); B.box(0x2b2e33, 0.4, 0.03, 0.24, 0, top + 0.27, 0);
+      B.box(0xc1121f, 0.05, 0.05, 0.05, -0.12, top + 0.3, 0); B.box(0x111111, 0.05, 0.05, 0.05, 0.12, top + 0.3, 0);
+      B.box(0xd9a514, 0.39, 0.05, 0.005, 0, top + 0.17, 0.112);
+      const bm = B.mesh(SP_VM); g.add(bm);
+      const lit = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.01), own(0x4ade80)); lit.position.set(0, top + 0.09, 0.113); g.add(lit);
+      g.position.set(bx, 0, bz); track(g);
+      const G = { x: bx, y: top + 0.6, z: bz, r: 3, c: [0.1, 0.5, 0.2] }; glows.push(G);
+      const st = { type: 'cp', cp: 'bat', n, x: bx, z: bz, fx: bx, fz: bz, rad: 1.6 };
+      stations.push(st); P.bats.push({ g, G, st, n, lit, x: bx, z: bz, y: top + 0.6 });
+    });
+  }
+  if (P.pad) {
+    P.padAt = { x: P.pad.x, z: P.pad.z };
+    stations.push({ type: 'cp', cp: 'pad', x: P.pad.x, z: P.pad.z, fx: P.pad.x, fz: P.pad.z, rad: 1.6 });
+  }
+  // the ring you have to stay inside while something charges
+  P.zone = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 56), new THREE.MeshBasicMaterial({ color: 0x38e8ff, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide }));
+  P.zone.rotation.x = -Math.PI / 2; P.zone.position.y = 0.05; P.zone.visible = false; P.zone.renderOrder = 2; track(P.zone, true);
+}
+// ---------- moving between maps ----------
+function cpTravel() {
+  const S = CP_ST[CP.stage]; if (!S) return;
+  CP.built = CP.stage; CP.quiet = 5; CP.doneT = 0; CP.half = false;
+  CP.rq.length = 0; cpRadioHide(true);                        // what was said on the old map stays there
+  for (const b of enemies) scene.remove(b.group);
+  for (const d of dying) scene.remove(d.group);
+  for (const p of pickups) scene.remove(p.root);
+  enemies = []; targets = []; dying = []; pickups.length = 0;
+  for (const n of nades) scene.remove(n.mesh); nades.length = 0;
+  repairing = null; reviving = null; zQueue = 0;
+  buildMap(S.map);
+  if (base.on) baseReset();
+  resetBarriers(); initBox(); if (box) box.group.visible = true;
+  const A = S.arrive || MAPS[S.map].start || [0, 0, 0];
+  collide(A[0], A[1], 0.5);
+  Object.assign(player, { x: _cx, z: _cz, y: 0, vy: 0, yaw: A[2] || 0, pitch: 0 }); pvx = pvz = 0; safeT = Math.max(safeT, 3);
+  if (cpAuth()) nextWaveIn = 10;
+  for (let i = 0; i < 2; i++) { const [x, z] = randomSpot(); spawnPickup('health', x, z); }
+  { const [x, z] = randomSpot(); spawnPickup('ammo', x, z); }
+  rebuildTargets();
+  $('tpFlash').style.opacity = 1; setTimeout(() => { $('tpFlash').style.opacity = 0; }, 500);
+  lowHit(0, 0.9); whoosh(0, 1.1, 0.3, 3200, 160, false); tone(1200, 0.6, 'sine', 0.08, -900); shakeT = 0.4;
+}
+// ---------- a step starts: say it, show it ----------
+function cpEnter() {
+  const S = CP_ST[CP.stage], st = cpStep();
+  if (st) { if (st.say) cpSay(st.say); return; }
+  // the stage is done
+  cpSay(S.done);
+  addPoints(500); toast('🏁 خلصتوا ' + S.name + ' · +500');
+  bell(72, 0, 0.08, 2); bell(79, 0.18, 0.08, 2); bell(84, 0.36, 0.09, 3);
+  if (S.last) {
+    CP.end = true;
+    const el = $('cpBig'); el.innerHTML = '<small>انتهت القصة</small>يتبع…'; el.style.opacity = 1;
+    setTimeout(() => { el.style.opacity = 0; }, 6000);
+  }
+}
+function cpAdvance() {
+  const st = cpStep();
+  CP.step++; CP.run = 0; CP.prog = 0; CP.doneT = 0; CP.half = false;
+  if (st && st.charge && !cpStep()) cpBurst();
+  co.t = 0;
+}
+function cpBurst() {                                   // the teleporter fills: everything near it is thrown off the map
+  const P = CP.props && CP.props.padAt;
+  if (cpAuth()) {
+    for (const b of enemies.slice()) if (!b.dead) killBot(b, false, true);
+    zQueue = 0; nextWaveIn = CP_ST[CP.stage].last ? 8 : 99;
+  }
+  if (P) for (let i = 0; i < 40; i++) { const a = i / 40 * 6.28; emit(P.x + Math.cos(a) * 0.6, 0.3 + rnd() * 2, P.z + Math.sin(a) * 0.6, Math.cos(a) * 9, 1 + rnd() * 2, Math.sin(a) * 9, 0.45, 0.35, 0, 0.5, 0.95, 1, 1, 1, 0, 2); }
+  $('tpFlash').style.opacity = 0.8; setTimeout(() => { $('tpFlash').style.opacity = 0; }, 260);
+  lowHit(0, 1); whoosh(0, 1.2, 0.35, 200, 3600, true); shakeT = 0.6;
+}
+// ---------- co-op: what I tell the others, and what I take from them ----------
+const cpOut = () => [CP.stage, CP.step, CP.got, CP.run, +CP.prog.toFixed(1)];
+function cpMerge(a, host) {
+  if (!CP.on || !Array.isArray(a) || !a.slice(0, 5).every(v => typeof v === 'number' && isFinite(v))) return;
+  const sg = clamp(Math.floor(a[0]), 0, CP_ST.length - 1), sp = clamp(Math.floor(a[1]), 0, 9);
+  if (sg > CP.stage || (sg === CP.stage && sp > CP.step)) {
+    if (sg > CP.stage) CP.quiet = 5;
+    Object.assign(CP, { stage: sg, step: sp, got: a[2] | 0, run: a[3] ? 1 : 0, prog: Math.max(0, +a[4] || 0), doneT: 0, half: false });
+  } else if (sg === CP.stage && sp === CP.step) {
+    CP.got |= a[2] | 0; if (a[3]) CP.run = 1;
+    if (host && !cpAuth()) CP.prog = Math.max(0, +a[4] || 0);
+  }
+}
+// ---------- every frame of a campaign game ----------
+function cpInside(at, R) {
+  let n = 0;
+  if (player.alive && !down && Math.hypot(player.x - at.x, player.z - at.z) < R) n++;
+  if (co.live) for (const o of coPeers.values()) if (coUp(o.st) && Math.hypot(o.tx - at.x, o.tz - at.z) < R) n++;
+  return n;
+}
+function cpTick(dt) {
+  if (CP.quiet > 0) CP.quiet -= dt;
+  if (CP.built !== CP.stage) { cpTravel(); }
+  const S = CP_ST[CP.stage], st = cpStep(), P = CP.props || {};
+  const key = CP.stage + '.' + CP.step;
+  if (key !== CP.seen) { CP.seen = key; cpEnter(); }
+  if (st) {
+    if (st.k === 'power' && base.on && base.power) cpAdvance();
+    else if (st.k === 'get' && cpBits(CP.got) >= st.n) cpAdvance();
+    else if (st.k === 'hold' && CP.run) {
+      const at = st.id === 'ant' ? P.ant : P.padAt;
+      CP.out = at ? cpInside(at, st.R) : 0;
+      if (cpAuth()) {
+        if (CP.out) CP.prog = Math.min(st.T, CP.prog + dt);
+        if (st.charge) zQueue = Math.max(zQueue, 4);                 // the noise keeps them coming
+        if (CP.prog >= st.T) cpAdvance();
+      }
+      if (st.charge && !CP.half && CP.prog >= st.T / 2) { CP.half = true; cpSay('half'); }
+    }
+  } else if (!S.last) {
+    CP.doneT += dt;
+    $('tpFlash').style.opacity = clamp((CP.doneT - 1.4) / 1.8, 0, 0.95).toFixed(2);
+    if (cpAuth() && CP.doneT >= 3.2) { Object.assign(CP, { stage: CP.stage + 1, step: 0, got: 0, run: 0, prog: 0, doneT: 0 }); co.t = 0; }
+  }
+  cpLooks(dt);
+}
+function cpLooks(dt) {
+  const P = CP.props; if (!P) return;
+  const st = cpStep(), S = CP_ST[CP.stage], t = performance.now() / 1000;
+  // the pad
+  if (P.pad) {
+    const mine = st && st.id === 'pad', done = !st;
+    const k = done ? 1 : mine ? (CP.run ? 3 : 1) : 0;
+    teleLook(P.pad, k);
+    if (k === 3 && rnd() < 0.6) for (let i = 0; i < 2; i++) { const a = rnd() * 6.28; emit(P.pad.x + Math.cos(a) * 1.1, 0.2 + rnd() * 2.2, P.pad.z + Math.sin(a) * 1.1, -Math.sin(a) * 3, 1.5, Math.cos(a) * 3, 0.3, 0.12, 0, 0.5, 0.95, 1, 1, 1, 0, 0); }
+    if (k === 1 && rnd() < 0.25) emit(P.pad.x + jit(1.8), 0.15, P.pad.z + jit(1.8), 0, 0.8 + rnd(), 0, 0.9, 0.07, 0, 0.3, 0.9, 1, 0.8, 1, 0, 0);
+    if (k === 3) P.pad.rm.color.setHSL(0.52, 1, 0.6 + 0.3 * Math.sin(t * 9));
+  }
+  // the mast
+  if (P.antTop) {
+    const fixed = CP.stage > 0 || CP.step > 1, fixing = st && st.id === 'ant' && CP.run;
+    P.antTop.color.setHex(fixed ? (Math.sin(t * 3) > 0 ? 0x4ade80 : 0x0f2a14) : fixing ? (Math.sin(t * 12) > 0 ? 0xffb020 : 0x3a2a08) : base.power ? (Math.sin(t * 2) > 0.6 ? 0xff2a2a : 0x3a1010) : 0x1a0c0c);
+    P.antScr.color.setHex(fixed ? 0x22c55e : fixing ? 0xf59e0b : base.power ? 0x7f1d1d : 0x101418);
+    const want = fixed || fixing, i = glows.indexOf(P.antG);
+    if (want && i < 0) glows.push(P.antG); else if (!want && i >= 0) glows.splice(i, 1);
+  }
+  // the batteries
+  for (const b of P.bats) {
+    const have = !!(CP.got >> b.n & 1) || !st || st.k !== 'get';
+    if (b.g.visible === have) {
+      b.g.visible = !have; b.st.gone = have;
+      const i = glows.indexOf(b.G); if (have && i >= 0) glows.splice(i, 1); else if (!have && i < 0) glows.push(b.G);
+    }
+    if (!have) b.lit.material.color.setHex(Math.sin(t * 4 + b.n) > 0 ? 0x4ade80 : 0x14532d);
+  }
+  // the ring to stand in
+  const hold = st && st.k === 'hold', at = hold && (st.id === 'ant' ? P.ant : P.padAt);
+  P.zone.visible = !!at;
+  if (at) {
+    P.zone.position.x = at.x; P.zone.position.z = at.z; P.zone.scale.set(st.R, st.R, 1);
+    P.zone.material.opacity = CP.run ? (CP.out ? 0.55 + 0.25 * Math.sin(t * 6) : 0.85) : 0.28;
+    P.zone.material.color.setHex(CP.run && !CP.out ? 0xff4d4d : 0x38e8ff);
+  }
+}
+// ---------- the stations ----------
+function cpPrompt(s) {
+  const st = cpStep();
+  if (s.cp === 'bat') return ['خذ البطارية 🔋', 'الناقل يبي ثلاث'];
+  if (s.cp === 'ant') {
+    if (!base.power) return ['📡 الهوائي طافي', 'يحتاج كهرباء ⚡'];
+    if (st && st.id === 'ant') return CP.run ? ['جاري التصليح… ' + Math.floor(CP.prog / st.T * 100) + '%'] : ['صلّح الهوائي 📡', 'اثبتوا جنبه ' + st.T + ' ثانية'];
+    return CP.stage > 0 || CP.step > 1 ? ['📡 الهوائي شغّال'] : ['📡 الهوائي خربان'];
+  }
+  if (s.cp === 'pad') {
+    if (!st) return ['🌀 الناقل جاهز'];
+    if (st.id === 'pad') return CP.run ? ['جاري الشحن… ' + Math.floor(CP.prog / st.T * 100) + '%'] : ['ابدأ شحن الناقل 🌀', 'دافعوا عنه ' + st.T + ' ثانية'];
+    return ['🌀 الناقل طافي', st.k === 'get' ? 'يبي ثلاث بطاريات' : 'صلّحوا الهوائي أول'];
+  }
+  return [''];
+}
+function cpUse(s) {
+  const st = cpStep(), deny = m => { toast(m); tone(150, 0.08, 'square', 0.05); };
+  if (s.cp === 'bat') {
+    if (!st || st.k !== 'get' || (CP.got >> s.n & 1)) return;
+    CP.got |= 1 << s.n; co.t = 0;
+    const n = cpBits(CP.got); toast('🔋 ' + n + ' من 3');
+    tone(520 + n * 120, 0.16, 'square', 0.05); click(0, 2600, 0.2, 0.05, 3);
+    return;
+  }
+  const want = s.cp === 'ant' ? 'ant' : 'pad';
+  if (!st) return;
+  if (st.id !== want) {
+    if (want === 'ant' && !base.power) return deny('⚡ شغّل الكهرباء أول');
+    return deny(want === 'pad' ? (st.k === 'get' ? '🔋 الناقل يبي ثلاث بطاريات' : '📡 صلّحوا الهوائي أول') : '📡 الهوائي شغّال');
+  }
+  if (CP.run) return;
+  CP.run = 1; co.t = 0;
+  if (st.sayGo) cpSay(st.sayGo);
+  whoosh(0, 1.4, 0.3, 200, 3200, true); tone(180, 1.4, 'sine', 0.07, 900);
+}
+// ---------- the radio ----------
+function cpSay(k) {
+  const L = CP_LINES[k]; if (!L) return;
+  if (CP.rd && CP.rd.k === k) return;
+  CP.rq.push(k); if (CP.rq.length > 3) CP.rq.shift();
+}
+function cpRadioHide(now) { const el = $('cpRadio'); el.classList.remove('on'); if (now) CP.rd = null; }
+function cpRadioTick(dt) {
+  const el = $('cpRadio');
+  let R = CP.rd;
+  if (!R && CP.rq.length) {
+    const k = CP.rq.shift(), L = CP_LINES[k];
+    R = CP.rd = { k, t: 0, n: 0, txt: L.t, hold: Math.max(4.5, L.t.length * 0.07) };
+    $('cpRadioTx').textContent = ''; el.classList.add('on');
+    click(0, 1800, 0.25, 0.18, 1); click(0.05, 3200, 0.12, 0.08, 4); tone(1250, 0.07, 'sine', 0.05, 0); tone(1250, 0.07, 'sine', 0.05, 0);
+    if (L.a) { try { const au = new Audio(L.a); au.volume = 0.9; au.play().catch(() => {}); } catch (e) {} }
+  }
+  if (!R) return;
+  R.t += dt;
+  const n = Math.min(R.txt.length, Math.floor(R.t * 30));
+  if (n !== R.n) {
+    if (Math.floor(n / 3) !== Math.floor(R.n / 3) && n < R.txt.length) click(0, 2200 + rnd() * 1800, 0.05, 0.02, 6);
+    R.n = n; $('cpRadioTx').textContent = R.txt.slice(0, n);
+  }
+  if (n >= R.txt.length) {
+    R.hold -= dt;
+    if (R.hold <= 0) { el.classList.remove('on'); CP.rd = null; tone(900, 0.06, 'sine', 0.04, -200); click(0, 1600, 0.12, 0.1, 1); }
+  }
+}
+// ---------- what is on screen ----------
+function cpHud(dt) {
+  const show = CP.on && running && !menuCam && !zDeath;
+  const ob = $('cpObj'), wp = CP.wp;
+  if (!show) {
+    if (ob.style.display !== 'none') ob.style.display = 'none';
+    if (wp) wp.visible = false;
+    if (!CP.on || !running) { if (CP.rd || CP.rq.length) { CP.rq.length = 0; cpRadioHide(true); } }
+    return;
+  }
+  cpRadioTick(dt);
+  if (ob.style.display === 'none') ob.style.display = '';
+  const S = CP_ST[CP.stage], st = cpStep(), P = CP.props || {};
+  let title = '', bar = -1, warn = false;
+  if (!st) title = S.last ? '🏁 انتهت القصة · كمّلوا الجولات' : '🌀 الناقل جاهز… ' + Math.max(1, Math.ceil(3.2 - CP.doneT));
+  else if (st.k === 'get') title = '🔋 ' + st.obj + ' (' + cpBits(CP.got) + '/' + st.n + ')';
+  else if (st.k === 'hold' && CP.run) { bar = CP.prog / st.T; warn = !CP.out; title = warn ? '⚠️ وقف! ارجعوا داخل الدائرة' : (st.id === 'ant' ? '📡 ' : '🌀 ') + st.go + ' · ' + Math.floor(bar * 100) + '%'; }
+  else title = (st.k === 'power' ? '⚡ ' : st.id === 'ant' ? '📡 ' : '🌀 ') + st.obj;
+  const k = title + '|' + (bar < 0 ? -1 : Math.round(bar * 200)) + '|' + warn;
+  if (k !== CP.hudKey) {
+    CP.hudKey = k;
+    $('cpObjS').textContent = 'الحملة · ' + S.name + ' (' + (CP.stage + 1) + '/' + CP_ST.length + ')';
+    $('cpObjB').textContent = title;
+    $('cpObjBar').style.display = bar < 0 ? 'none' : '';
+    $('cpObjFill').style.width = (Math.max(0, bar) * 100).toFixed(1) + '%';
+    ob.classList.toggle('warn', warn);
+  }
+  // a marker over where to go, seen through walls
+  let tgt = null, ic = '';
+  if (st && st.k === 'power') { const s = stations.find(q => q.type === 'power'); if (s) { tgt = { x: s.x, y: 3, z: s.z }; ic = '⚡'; } }
+  else if (st && st.id === 'ant' && P.ant) { tgt = { x: P.ant.x, y: 3.2, z: P.ant.z }; ic = '📡'; }
+  else if (st && st.id === 'pad' && P.padAt) { tgt = { x: P.padAt.x, y: 3.6, z: P.padAt.z }; ic = '🌀'; }
+  else if (st && st.k === 'get') {
+    let bd = 1e9; for (const b of P.bats) if (b.g.visible) { const d = Math.hypot(b.x - player.x, b.z - player.z); if (d < bd) { bd = d; tgt = { x: b.x, y: b.y + 1.4, z: b.z }; } }
+    ic = '🔋';
+  }
+  if (!wp && tgt) {
+    CP.wp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }));
+    CP.wp.renderOrder = 999; scene.add(CP.wp);
+  }
+  const W = CP.wp; if (!W) return;
+  const d = tgt ? Math.hypot(tgt.x - player.x, tgt.z - player.z) : 0;
+  W.visible = !!tgt && d > (st && st.k === 'hold' ? st.R : 2.2);
+  if (!W.visible) return;
+  if (W.ic !== ic) { W.ic = ic; W.material.map = emojiIcon(ic, 0x38e8ff).map; W.material.needsUpdate = true; }
+  W.position.set(tgt.x, tgt.y + Math.sin(performance.now() / 300) * 0.12, tgt.z);
+  const s = clamp(d * 0.045, 0.55, 2.4); W.scale.set(s, s, 1);
+  W.material.opacity = clamp((d - 2) / 6, 0.35, 0.95);
+}
 const LBY = { on: false, sec: '', sc: null, cam: new THREE.PerspectiveCamera(40, 1, 0.1, 200), scenes: {}, chars: new Map(), t: 0, look: 'desert', fx: [], vw: 0, vh: 0, lights: {} };
 try { const l = localStorage.getItem('fps-look'); if (LOOKS.some(x => x.id === l)) LBY.look = l; } catch (e) {}
 const LBY_SLOTS = [[0, 0], [-1.35, 0.35], [1.35, 0.35], [-2.65, 0.8], [2.65, 0.8], [-3.9, 1.3], [3.9, 1.3]];
@@ -11110,7 +11499,8 @@ function pickMenuCam() {
   }
 }
 function previewMap(id) {
-  if (LBY.on) return;                               // the lobby is on stage: the map gets built when you start
+  if (LBY.on) return;
+  id = mapOf(id);                               // the lobby is on stage: the map gets built when you start
   const m = isTdmMap(id) ? 'tdm' : 'waves';
   if (currentMap !== id || builtMode !== m) {
     clearActors();
@@ -11295,7 +11685,7 @@ document.querySelectorAll('.nMode').forEach(bn => bn.addEventListener('click', (
 selectMap(selectedMap);
 selectGm(gmId);
 mode = isTdmMap(selectedMap) ? 'tdm' : 'waves';
-buildMap(selectedMap);
+buildMap(mapOf(selectedMap));
 if (mode !== 'tdm') initBox();
 menuCam = true; pickMenuCam();
 
@@ -11303,6 +11693,7 @@ menuCam = true; pickMenuCam();
 const LD_TIPS = {
   z: ['الصندوق يتنقل بعد كم سحبة. شوف اللوحات اللي جنب أماكنه، اللمبة المولعة هي مكانه الحين', 'ما فيه رادار في الزومبي. اسمع الأصوات وانتبه لظهرك',
       'اشتر «شفاء سريع» بدري، لو طحت تقدر تقوم', 'رمّم الشبابيك تاخذ نقاط وتأخر الزومبي', 'الطلقة في الراس تعطيك نقاط أكثر'],
+  camp: ['النقاط والأسلحة والمشروبات تنتقل معك للخريطة الجاية', 'وقت الشحن اثبتوا داخل الدائرة، لو طلعتوا كلكم يوقف', 'لو متوا كلكم ترجع الحملة من أولها', 'العلامة اللي فوق الشاشة تدلك وين تروح'],
   base: ['الكهرباء مقطوعة. لقها في غرفة المولدات عشان تشتغل المشروبات', 'فيه ثلاث راديوهات مخفية. لقها كلها وشوف وش يصير', 'الفخاخ تضرك مثل ما تضر الزومبي'],
   m: ['خلك مع فريقك، اللي يمشي لحاله يموت أول', 'لا تقعد بمكان واحد بعد ما تقتل، الكل عرف مكانك', 'السطوح في السوق تعطيك نظرة على الميدان كله'],
   gg: ['كل قتلة تعطيك السلاح اللي بعده، وإذا انقتلت ترجع للمسدس', 'آخر سلاح هو مدفع الرعد، قتلة فيه وتفوز'],
@@ -11335,10 +11726,10 @@ function beginPlay(fromLobby) {
   setMenu(true); menuCam = false;
   LD.shots = ldShots(); LD.on = true; LD.t = 0; LD.fromLobby = fromLobby;
   const tdmM = isTdmMap(selectedMap), G = tdmM && GM[gmId];
-  $('ldKind').textContent = tdmM ? '⚔️ لعب جماعي · ' + G.name + ($('netTgl').checked ? ' · أونلاين' : '') : '🧟 زومبي' + ($('netTgl').checked ? ' · أونلاين' : '');
+  $('ldKind').textContent = tdmM ? '⚔️ لعب جماعي · ' + G.name + ($('netTgl').checked ? ' · أونلاين' : '') : (selectedMap === 'camp' ? '🌀 الحملة' : '🧟 زومبي') + ($('netTgl').checked ? ' · أونلاين' : '');
   const mb = document.querySelector('.mapBtn[data-map="' + selectedMap + '"] .mName');
   $('ldMap').textContent = mb ? mb.textContent : '';
-  const pool = (tdmM ? (LD_TIPS[gmId] || []).concat(LD_TIPS.m) : (selectedMap === 'base' ? LD_TIPS.base.concat(LD_TIPS.z) : LD_TIPS.z));
+  const pool = (tdmM ? (LD_TIPS[gmId] || []).concat(LD_TIPS.m) : (selectedMap === 'camp' ? LD_TIPS.camp : selectedMap === 'base' ? LD_TIPS.base.concat(LD_TIPS.z) : LD_TIPS.z));
   $('ldTip').textContent = '💡 ' + pool[Math.floor(Math.random() * pool.length)];
   $('ldFill').style.width = '0%'; $('ldPct').textContent = '';
   $('loadScr').style.display = 'block'; $('ldFade').style.opacity = 1;
@@ -11371,8 +11762,11 @@ addEventListener('pointerdown', () => { try { initAudio(); } catch (e) {} }, { o
 // ---------- Game flow ----------
 function resetGame() {
   mode = isTdmMap(selectedMap) ? 'tdm' : 'waves';
-  if (currentMap !== selectedMap || builtMode !== mode) buildMap(selectedMap);
+  cpReset(selectedMap === 'camp');
+  const mapId = mapOf(selectedMap);
+  if (currentMap !== mapId || builtMode !== mode || CP.on) buildMap(mapId);
   if (base.on) baseReset();
+  if (CP.on) CP.built = 0;
   for (const b of enemies) scene.remove(b.group);
   for (const d of dying) scene.remove(d.group);
   for (const p of pickups) scene.remove(p.root);
@@ -11385,7 +11779,7 @@ function resetGame() {
   wave = 0; kills = 0; nextWaveIn = 3.5; spawnTimer = 12; zQueue = 0; groanT = 3; hbT = 0; shakeT = 0;
   Object.assign(player, { y: 0, vy: 0, grounded: true, x: 0, z: 0, yaw: 0, pitch: 0, hp: 100, reloading: 0, lastShot: 0, boost: 0, alive: true,
                           points: 300, weapons: [mkWeapon('pistol')], cur: 0, instakill: 0, double: 0, shield: 0, perks: {}, papPistol: false });
-  { const S = MAPS[selectedMap].start; if (S && mode !== 'tdm') { player.x = S[0]; player.z = S[1]; player.yaw = S[2]; } }
+  { const S = MAPS[mapId].start; if (S && mode !== 'tdm') { player.x = S[0]; player.z = S[1]; player.yaw = S[2]; } }
   powerDrops = 0;
   applyGunModel(cw().def);
   menuCam = false; setMenu(false); gun.visible = true; hc.scoped = undefined;
@@ -11418,7 +11812,7 @@ function resetGame() {
   E.endScr.style.display = 'none';
   E.endTitle.textContent = 'انتهت اللعبة';
   running = true;
-  if (base.on) toast('🔦 الكهرباء مقطوعة. افتح الأبواب ودوّر على غرفة المولدات');
+  if (base.on && !CP.on) toast('🔦 الكهرباء مقطوعة. افتح الأبواب ودوّر على غرفة المولدات');
 }
 
 $('startBtn').addEventListener('click', () => startPress());
@@ -11430,7 +11824,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.1';
+const GAME_VERSION = '4.2';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
@@ -11501,6 +11895,7 @@ function loop(now) {
         updateSpawner(dt);
         updateWave(dt);
         if (base.on) baseTick(dt);
+        if (CP.on) cpTick(dt);
       }
       updateDmgMarks(dt);
       if ((radarTick++ & 1) === 0) drawRadar();
@@ -11522,7 +11917,7 @@ function loop(now) {
   if (LD.on) { try { loadTick(rdt); } catch (e) { LD.on = false; $('loadScr').style.display = 'none'; resetGame(); } }
   else if (menuCam && !running && !LBY.on) updateMenuCam();
   try { lbTick(rdt); } catch (e) { if (loopErrors++ < 5) console.error('lobby error:', e); }
-  try { padTick(rdt); gsmTick(rdt); lbyTick(rdt); decoTick(rdt); if (running) { tkTick(rdt); boltTick(rdt); attHud(); } } catch (e) { if (loopErrors++ < 5) console.error('weapons error:', e); }
+  try { padTick(rdt); gsmTick(rdt); lbyTick(rdt); decoTick(rdt); cpHud(rdt); if (running) { tkTick(rdt); boltTick(rdt); attHud(); } } catch (e) { if (loopErrors++ < 5) console.error('weapons error:', e); }
   if (base.on) baseCull();
   try { netTick(dt); } catch (e) {}
   try { coTick(dt); } catch (e) { if (loopErrors++ < 5) console.error('co-op error:', e); }
