@@ -4025,6 +4025,7 @@ Object.assign(WEAPONS, {
   apistol: { name: 'مسدس آلي',       rate: 65,   mag: 18,  reserve: 108, body: 9,  head: 26,  reload: 1.3, spread: 0.03,  pellets: 1, col: 0x2a2d33, fc: 0x93c5fd, bl: 0.32, gl: 0.12, th: 0.95, tracer: 0xffe08a },
   xbow:    { name: 'قوس نشاب',       rate: 900,  mag: 1,   reserve: 14,  body: 120, head: 250, reload: 1.5, spread: 0,    pellets: 1, rl: 'shell', col: 0x4a3420, fc: 0xe11d48, bl: 0.5, gl: 0.3, th: 1.0, tracer: 0xbfc5cc, hip: 0.02, silent: true, bolt: true }
 });
+WEAPONS.knife = { name: 'السكين 🔪', rate: 380, mag: 1, reserve: 0, body: 0, head: 0, reload: 1, spread: 0, pellets: 1, melee: true, col: 0x2b2b2b, fc: 0xe5e7eb, bl: 0.2, gl: 0.05, th: 0.6, tracer: 0xffe08a };
 const BOX_POOL = [['smg', 18], ['ar', 18], ['shotgun', 16], ['sniper', 12], ['lmg', 10], ['magnum', 14], ['ray', 6]];
 BOX_POOL.push(['burst', 14], ['fsmg', 12], ['dmr', 10], ['ashot', 12], ['apistol', 10], ['xbow', 7]);
 const BOX_COST = 500;
@@ -6197,7 +6198,8 @@ const GM = {
   snd: { name: 'السيرش', tag: 'ازرعوا القنبلة أو امنعوهم. ما فيه رجعة لين الجولة الجاية' },
   ffa: { name: 'الكل ضد الكل', ffa: true, tag: 'كل واحد لنفسه' }
 };
-const GG_LADDER = ['pistol', 'smg', 'shotgun', 'ar', 'hunting', 'lmg', 'sniper', 'magnum', 'ray', 'thunder'];
+const GG_LADDER = ['pistol', 'apistol', 'fsmg', 'smg', 'ashot', 'shotgun', 'burst', 'ar', 'lmg', 'hunting', 'dmr', 'xbow', 'magnum', 'sniper', 'ray', 'knife', 'thunder'];
+const GG_DROP = 3;          // a death sets you back this many steps
 const DOM_R = 4.2, DOM_LIMIT = 200, SND_WINS = 6, SND_ROUND = 120, SND_BOMB = 40, PLANT_T = 4, DEFUSE_T = 5, TAG_LIFE = 30, FLAG_NAME = ['أ', 'ب', 'ج'];
 let gmId = 'tdm', botN = 5;
 try { const g = localStorage.getItem('fps-gm'); if (GM[g]) gmId = g; const n = localStorage.getItem('fps-bots'); if (n !== null && +n >= 0 && +n <= 5) botN = Math.floor(+n); } catch (e) {}
@@ -6436,7 +6438,7 @@ function tdmKill(b, byTeam, killerName, byPeer, kb) {
   if (mine) { tdm.myKills++; kills++; if (netOn) netKills++; ggKill(); ksKilled(KS.src === 2); }
   if (kb) { GS.bk[kb.name] = (GS.bk[kb.name] || 0) + 1; ksBotKill(kb.name); }
   ksBotDied(b.name);
-  if (GS.id === 'gg' && ggCrowd() > 2) GS.bk[b.name] = 0;          // a bot that dies starts the ladder again too
+  if (GS.id === 'gg' && ggCrowd() > 2) GS.bk[b.name] = Math.max(0, (GS.bk[b.name] || 0) - GG_DROP * 2);          // a bot that dies falls back three steps too
   modeDeath({ x: b.group.position.x, z: b.group.position.z, at: b.at, name: b.name });
   if (!GS.snd) tdm.queue.push({ at: b.at, name: b.name, t: TDM_RESPAWN });
   const kn = killerName || (byTeam === 'blue' ? 'زميلك' : 'الأحمر');
@@ -6463,7 +6465,7 @@ function playerDiedTdm() {
   tdm.myDeaths++;
   ksDied(); kcamArm(lh);
   { const gg = GS.id === 'gg'; $('dCls').style.display = gg ? 'none' : ''; $('dClsLbl').style.display = gg ? 'none' : ''; }
-  if (GS.id === 'gg' && GS.tier > 0 && ggCrowd() > 2) { GS.tier = 0; setTimeout(() => toast('💀 رجعت للمسدس'), 600); }
+  if (GS.id === 'gg' && GS.tier > 0 && ggCrowd() > 2) { const was = GS.tier; GS.tier = Math.max(0, GS.tier - GG_DROP); setTimeout(() => toast('💀 نزلت ' + (was - GS.tier) + (was - GS.tier > 1 ? ' مراحل' : ' مرحلة')), 600); }
   tdm.respawn = TDM_RESPAWN;
   if (gsHost()) {
     modeDeath({ x: player.x, z: player.z, at: myAt(), name: netMyName() });
@@ -6478,13 +6480,13 @@ function ggGive(anim) {
   const w = mkWeapon(GG_LADDER[Math.min(GS.tier, GG_LADDER.length - 1)]); w.reserve = 999;
   player.weapons = [w]; player.cur = 0; player.reloading = 0;
   player.nades = 0; player.tk = 0; player.lethal = 'frag';
-  applyGunModel(w.def);
+  applyGunModel(w.def); gun.visible = !w.def.melee;
   if (anim) { swapT = 1; swapDone = false; SFX.swap(); }
 }
 function ggKill() {
   if (GS.id !== 'gg') return;
   GS.tier = Math.min(GG_LADDER.length, GS.tier + 1);
-  if (GS.tier >= GG_LADDER.length) return;
+  if (GS.tier >= GG_LADDER.length) { checkTdmEnd(); return; }
   ggGive(true);
   toast('🔫 ' + WEAPONS[GG_LADDER[GS.tier]].name + ' — ' + (GS.tier + 1) + ' من ' + GG_LADDER.length);
   tone(660, 0.1, 'triangle', 0.07, 300);
@@ -6913,7 +6915,7 @@ function updateTdmBots(dt) {
 function updateTdm(dt) {
   if (tdm.over) return;
   GS.age += dt;
-  if (!netOn) { GS.hum = { b: 1, r: 0 }; GS.pb = { k: tdm.myKills, n: 'أنت', p: 'me' }; }
+  if (!netOn) { GS.hum = { b: 1, r: 0 }; GS.pb = { k: GS.id === 'gg' ? GS.tier : tdm.myKills, n: 'أنت', p: 'me' }; }
   if (gsHost()) {
     if (!GS.snd) { tdm.t -= dt; if (tdm.t <= 0) { tdm.t = 0; modeTimeUp(); return; } }
     for (let i = tdm.queue.length - 1; i >= 0; i--) {
@@ -6958,18 +6960,19 @@ function gsOut() {                              // my part of the presence messa
   for (const [id, d] of GS.pend) GS.hits.push([++GS.hitSeq, id, Math.round(d)]);
   GS.pend.clear();
   while (GS.hits.length > 16) GS.hits.shift();
-  const o = { gm: GS.id, bh: GS.hits, me: GS.myEv };
+  const o = { gm: GS.id, bh: GS.hits, me: GS.myEv, gt: GS.id === 'gg' ? GS.tier : 0 };
   if (gsHost()) { o.ho = 1; o.hs = gsEncode(); }
   return o;
 }
 function gsScan() {                             // before reading the peers
   GS.humT = { b: 0, r: 0 }; GS.humT[myAt()]++;
-  GS.pb = { k: tdm.myKills, n: netMyName(), p: meId() };
+  GS.pb = { k: GS.id === 'gg' ? GS.tier : tdm.myKills, n: netMyName(), p: meId() };
   GS.hp = ''; GS.hg = null;
 }
 function gsPeer(peer, g, gt, name, gk) {
   GS.humT[gt]++;
-  if (gk > GS.pb.k) GS.pb = { k: gk, n: name, p: peer };
+  const pk = GS.id === 'gg' ? clamp(Math.floor(+g.gt || 0), 0, 99) : gk;
+  if (pk > GS.pb.k) GS.pb = { k: pk, n: name, p: peer };
   if (g.ho === 1 && g.hs && typeof g.hs === 'object' && (!GS.hp || peer < GS.hp)) { GS.hp = peer; GS.hg = g; }
   if (!gsHost()) return;
   if (Array.isArray(g.bh)) {                           // damage they did to bots I run
@@ -9298,6 +9301,7 @@ function knifeStrike() {
   shakeT = Math.max(shakeT, 0.08);
   E.cross.classList.add('hit'); setTimeout(() => E.cross.classList.remove('hit'), 120);
   addPoints(10);
+  if (GS.id === 'gg' && !best.net) GS.bk[best.name] = Math.max(0, (GS.bk[best.name] || 0) - 2);          // knifed in gun game: one more step down
   best.knifed = true;
   applyDamage(best, mode === 'tdm' ? 100 : 80, false);
   best.knifed = false;
@@ -9495,6 +9499,7 @@ function tryFire() {
   if (!running || !player.alive || player.reloading > 0 || swapT > 0.2 || knifeT > 0 || throwT > 0.15 || mantle || repairing || reviving || DR.t >= 0) return;
   if (mode === 'tdm' && (GS.act || (GS.snd && GS.snd.ph !== 'live'))) return;
   const w = cw(), def = w.def;
+  if (def.melee) { knife(); return; }
   const now = performance.now();
   const rr = def.burst && player.burst > 0 ? def.brate : def.rate;
   if (now - player.lastShot < rr * (player.perks.dtap ? 0.72 : 1)) return;
@@ -12303,7 +12308,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.4';
+const GAME_VERSION = '4.5';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
