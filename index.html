@@ -6478,7 +6478,7 @@ function playerDiedTdm() {
 function ggCrowd() { const w = botsWant(), h = GS.hum || { b: 1, r: 0 }; return (h.b || 0) + (h.r || 0) + w.b + w.r; }   // everyone in the match
 function ggGive(anim) {
   const w = mkWeapon(GG_LADDER[Math.min(GS.tier, GG_LADDER.length - 1)]); w.reserve = 999;
-  player.weapons = [w]; player.cur = 0; player.reloading = 0;
+  player.weapons = [w]; player.cur = 0; player.reloading = 0; player.burst = 0;
   player.nades = 0; player.tk = 0; player.lethal = 'frag';
   applyGunModel(w.def); gun.visible = !w.def.melee;
   if (anim) { swapT = 1; swapDone = false; SFX.swap(); }
@@ -12308,7 +12308,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.5';
+const GAME_VERSION = '4.5.1';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
@@ -12365,6 +12365,7 @@ function loop(now) {
     if (running) {
       if (player.alive && !KF.on) {
         updatePlayer(dt);
+        if (player.burst > 0 && !(cw() && cw().def.burst)) player.burst = 0;
         if (mouseFire || fireHeld || player.burst > 0) tryFire();
         if (down) downTick(dt);
       }
