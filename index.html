@@ -259,6 +259,52 @@
   button.big { background:#f59e0b; color:#000; border:0; border-radius:12px; padding:14px 28px; font-size:1.1rem; font-weight:700; cursor:pointer; }
   #stick { position:fixed; bottom:44px; left:24px; width:140px; height:140px; border-radius:50%; display:none; direction:ltr;
            background:rgba(255,255,255,.14); border:2px solid rgba(255,255,255,.35); touch-action:none; }
+  #fireL { position:fixed; bottom:220px; left:40px; width:72px; height:72px; border-radius:50%; border:0; background:rgba(239,68,68,.7); color:#fff; font-weight:700; font-size:14px; display:none; touch-action:none; }
+  body.inmenu #fireL, body.dead #fireL, body.zdead #fireL { display:none !important; }
+  body.kf #fireL { visibility:hidden; }
+  body.flt #stick:not(.live) { opacity:.5; }
+  #stick.run { border-color:#facc15; box-shadow:0 0 0 3px rgba(250,204,21,.45); }
+  #stick.run #knob { background:rgba(250,204,21,.8); }
+  #cross.lock { border-color:#ff4d4d; }
+  .sSeg { padding:11px 0; border-bottom:1px solid rgba(141,151,170,.16); }
+  .sSegT { font-size:15px; font-weight:700; margin-bottom:8px; }
+  .sSegB { display:flex; gap:8px; }
+  .sSegB button { flex:1; padding:10px; border-radius:10px; border:1px solid rgba(141,151,170,.35); background:rgba(20,28,46,.72); color:var(--bone); font:700 15px var(--body); }
+  .sSegB button.sel { background:var(--blood-hi); border-color:var(--blood-hi); color:#fff; }
+  .sSeg small { display:block; margin-top:6px; font-size:12px; color:var(--steel); }
+  #lyOpenBtn { display:block; width:100%; margin-top:14px; padding:13px; border-radius:12px; border:1px solid var(--ember); background:rgba(255,177,26,.14); color:var(--ember); font:800 16px var(--body); }
+  body:not(.touch) #lyOpenBtn { display:none; }
+  #lyEd { position:fixed; inset:0; z-index:3000; display:none; background:rgba(5,7,13,.9);
+          background-image:linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); background-size:40px 40px; touch-action:none; }
+  .lyBar { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:min(430px, 62vw); z-index:3002; background:rgba(5,7,13,.92); border:1px solid rgba(141,151,170,.35); border-radius:14px;
+           padding:10px 12px; color:var(--bone); font-family:var(--body); direction:rtl; display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; }
+  #lyEd.low .lyBar { top:auto; bottom:10px; }
+  .lyBar b { grid-column:1 / -1; font-size:14px; text-align:center; }
+  .lyBar small { grid-column:1 / -1; font-size:11px; color:var(--steel); text-align:center; margin-top:-4px; }
+  .lyS { font-size:12px; font-weight:700; display:flex; flex-direction:column; }
+  .lyS i { font-style:normal; color:var(--ember); }
+  .lyS input { width:100%; accent-color:var(--blood-hi); direction:ltr; }
+  .lyBtns { grid-column:1 / -1; display:flex; gap:8px; }
+  .lyBtns button { flex:1; padding:9px; border-radius:10px; border:0; font:800 14px var(--body); background:rgba(141,151,170,.3); color:#fff; }
+  #lySave { background:var(--blood-hi); }
+  html body.lyEdit #stick, html body.lyEdit #fire, html body.lyEdit #reloadBtn, html body.lyEdit #swapBtn, html body.lyEdit #jumpBtn, html body.lyEdit #aimBtn, html body.lyEdit #runBtn, html body.lyEdit #crouchBtn, html body.lyEdit #knifeBtn, html body.lyEdit #nadeBtn, html body.lyEdit #decoyBtn, html body.lyEdit #ksBtn, html body.lyEdit.lf #fireL { display:block !important; visibility:visible !important; z-index:3001 !important; pointer-events:auto !important; }
+  html body.lyEdit .lySel { outline:3px dashed var(--ember); outline-offset:4px; }
+  /* phone held sideways: every button in reach of a thumb, nothing over the radar, the score or the health */
+  @media (orientation: landscape) {
+    body.touch #fire { right:20px; bottom:40px; width:90px; height:90px; left:auto; top:auto; }
+    body.touch #aimBtn { right:119px; bottom:137px; width:62px; height:62px; left:auto; top:auto; }
+    body.touch #jumpBtn { right:27px; bottom:150px; width:56px; height:56px; left:auto; top:auto; }
+    body.touch #crouchBtn { right:146px; bottom:26px; width:58px; height:58px; left:auto; top:auto; }
+    body.touch #reloadBtn { right:185px; bottom:89px; width:58px; height:58px; left:auto; top:auto; }
+    body.touch #swapBtn { right:240px; bottom:30px; width:56px; height:56px; left:auto; top:auto; }
+    body.touch #knifeBtn { right:229px; bottom:169px; width:52px; height:52px; left:auto; top:auto; }
+    body.touch #nadeBtn { right:114px; bottom:226px; width:52px; height:52px; left:auto; top:auto; }
+    body.touch #decoyBtn { right:309px; bottom:114px; width:52px; height:52px; left:auto; top:auto; }
+    body.touch #ksBtn { right:315px; bottom:188px; width:60px; height:60px; left:auto; top:auto; }
+    body.touch #runBtn { left:176px; bottom:161px; width:58px; height:58px; right:auto; top:auto; }
+    body.touch #fireL { left:180px; bottom:60px; width:70px; height:70px; right:auto; top:auto; }
+    body.touch #stick { left:30px; bottom:30px; }
+  }
   #knob { position:absolute; left:50%; top:50%; width:60px; height:60px; margin:-30px 0 0 -30px; border-radius:50%;
           background:rgba(255,255,255,.55); box-shadow:0 2px 8px rgba(0,0,0,.35); pointer-events:none; }
   #fire { position:fixed; bottom:50px; right:20px; width:90px; height:90px; border-radius:50%; border:0; background:rgba(239,68,68,.75); color:#fff; font-weight:700; font-size:16px; display:none; touch-action:none; }
@@ -701,8 +747,8 @@
     </div>
     <div class="pane sel" id="pCtl">
       <div class="row onlyTouch"><span>النظر</span><span>اسحب بإصبعك على يمين الشاشة</span></div>
-      <div class="row onlyTouch"><span>الحركة</span><span>العصا الدائرية يسار الشاشة، وكل ما دفعتها أكثر تمشي أسرع</span></div>
-      <div class="row onlyTouch"><span>القتال</span><span><b>نار</b> للإطلاق، <b>تصويب</b> للتصويب الدقيق، <b>تعبئة</b> و<b>تبديل</b> للسلاح</span></div>
+      <div class="row onlyTouch"><span>الحركة</span><span>حط إصبعك في أي مكان يسار الشاشة وتطلع العصا. ادفعها لقدّام لآخرها وتركض</span></div>
+      <div class="row onlyTouch"><span>القتال</span><span><b>نار</b> للإطلاق، <b>تصويب</b> للتصويب الدقيق، <b>تعبئة</b> و<b>تبديل</b> للسلاح. طريقة الإطلاق ومساعدة التصويب وترتيب الأزرار في الإعدادات</span></div>
       <div class="row onlyTouch"><span>الأزرار</span><span><b>ركض</b>، <b>قفز</b>، <b>نزول</b>، والسكين والقنبلة والطُعم يمين الشاشة</span></div>
       <div class="row onlyKeys"><span><kbd data-act="fwd"></kbd> <kbd data-act="left"></kbd> <kbd data-act="back"></kbd> <kbd data-act="right"></kbd></span><span>الحركة، و<kbd data-act="sprint"></kbd> للركض</span></div>
       <div class="row onlyKeys"><span><kbd data-act="fire"></kbd> <kbd data-act="aim"></kbd></span><span>نار، وتصويب دقيق. اضغط على الشاشة مرة عشان يتقفل المؤشر</span></div>
@@ -764,11 +810,18 @@
   </div>
 </div>
 
+<div id="lyEd"><div class="lyBar">
+  <b id="lyName">اسحب أي زر وحطه وين تبي</b><small>اضغط على زر عشان تغيّر حجمه ووضوحه</small>
+  <label class="lyS"><span>الحجم <i id="lySizeV"></i></span><input type="range" id="lySize" min="0.6" max="1.6" step="0.05" disabled></label>
+  <label class="lyS"><span>الوضوح <i id="lyOpV"></i></span><input type="range" id="lyOp" min="0.2" max="1" step="0.05" disabled></label>
+  <div class="lyBtns"><button type="button" id="lyReset">الافتراضي</button><button type="button" id="lyCancel">إلغاء</button><button type="button" id="lySave">حفظ</button></div>
+</div></div>
 <div id="stick"><div id="knob"></div></div>
 <button id="reloadBtn" type="button">تعبئة</button>
 <button id="swapBtn" type="button">تبديل</button>
 <button id="useBtn" type="button"></button>
 <button id="fire" type="button">نار</button>
+<button id="fireL" type="button">نار</button>
 <button id="jumpBtn" class="mb" type="button">قفز</button>
 <button id="aimBtn" class="mb" type="button">تصويب</button>
 <button id="runBtn" class="mb" type="button">ركض</button>
@@ -4081,7 +4134,7 @@ const addPoints = (n, kind) => { if (mode === 'tdm') return; const v = n * (play
 const cw = () => player.weapons[player.cur];
 player.y = 0; player.vy = 0; player.grounded = true;
 let aimHeld = false, aimToggle = false, sprintToggle = false, aimT = 0;
-const isAiming = () => (aimHeld || aimToggle) && player.alive && player.reloading <= 0 && DR.t < 0;
+const isAiming = () => (aimHeld || aimToggle || tfAim) && player.alive && player.reloading <= 0 && DR.t < 0;
 // ---------- Movement: momentum, stamina, crouch, slide, dive, mantle ----------
 let pvx = 0, pvz = 0, stance = 'stand', slideT = 0, slideCd = 0, slDx = 0, slDz = 0, diving = false, proneT = 0, mantle = null, mantleK = 0;
 let stamina = 100, stamWait = 0, winded = false, windT = 0, sinceSprint = 9, eyeH = 1.6, moveFov = 0;
@@ -5072,7 +5125,7 @@ function padTick(dt) {
     if (stickId === null) { joy.x = ax[0]; joy.y = ax[1]; PAD.joyOwn = true; }
     const lx = ax[2], ly = ax[3], m = Math.min(1, Math.hypot(lx, ly));
     if (m > 0) {
-      const curve = Math.pow(m, 1.8) / m, sp = 3.2 * (settings.pad || 1) * lookK() * (camera.fov / 75);
+      const curve = Math.pow(m, 1.8) / m, sp = 3.2 * (settings.pad || 1) * lookK() * (camera.fov / 75) * aaSlow; TC.lookAt = performance.now();
       player.yaw -= lx * curve * sp * dt;
       player.pitch = clamp(player.pitch - ly * curve * sp * dt * 0.8 * lookY(), -1.4, 1.4);
     }
@@ -5616,6 +5669,260 @@ const joy = { x: 0, y: 0 };   // analog stick, each axis -1..1
 let running = false, lookId = null, lookType = 'mouse', lx = 0, ly = 0, mouseFire = false, fireHeld = false;
 
 // ---------- Settings: one saved object for every option; each menu tab reads and writes it ----------
+// ---------- Phone controls (v4.6): aim assist, floating stick with auto-sprint, simple / advanced fire,
+// fire-to-aim per gun type, a second fire button on the left, and a layout editor for every on-screen button ----------
+const ADS_DEF = { ar: true, smg: false, shotgun: false, lmg: true, sniper: true, pistol: false };
+const ADS_NAMES = [['ar', 'بنادق هجومية', 'تصوّب وتطلق مع بعض'], ['smg', 'رشاشات خفيفة', 'أغلب اللاعبين يطلقونها بدون تصويب'], ['shotgun', 'شوتقن', 'الأفضل بدون تصويب'],
+  ['lmg', 'رشاش ثقيل', ''], ['sniper', 'قناصات', 'اضغط تصوّب، وشيل إصبعك تطلق'], ['pistol', 'مسدسات', '']];
+const WCLS = { pistol: 'pistol', apistol: 'pistol', magnum: 'pistol', smg: 'smg', fsmg: 'smg', ar: 'ar', burst: 'ar', shotgun: 'shotgun', ashot: 'shotgun',
+  lmg: 'lmg', sniper: 'sniper', hunting: 'sniper', dmr: 'sniper', xbow: 'sniper' };
+const AUTO_RANGE = { pistol: 28, smg: 24, ar: 42, shotgun: 11, lmg: 42, sniper: 90, other: 30 };      // simple mode only fires at what the gun can reach
+const LY_IDS = ['stick', 'fire', 'fireL', 'reloadBtn', 'swapBtn', 'jumpBtn', 'aimBtn', 'runBtn', 'crouchBtn', 'knifeBtn', 'nadeBtn', 'decoyBtn', 'ksBtn'];
+const LY_NAME = { stick: 'عصا الحركة', fire: 'زر النار', fireL: 'زر النار اليسار', reloadBtn: 'تعبئة', swapBtn: 'تبديل', jumpBtn: 'قفز', aimBtn: 'تصويب', runBtn: 'ركض',
+  crouchBtn: 'نزول', knifeBtn: 'سكين', nadeBtn: 'قنبلة', decoyBtn: 'طُعم', ksBtn: 'سلسلة القتل' };
+const TC = { ptr: new Map(), left: null, wasBtn: false, shot: 0, ls: 0, autoHit: false, scanK: 0, lostT: 0, lookAt: 0, wasAim: false, snapB: null, snapT: 0 };
+let tfAim = false, autoRun = false, aaSlow = 1;
+const AA = { bub: 1.2, pull: 3.0, pullN: 3.5, slow: 0.3, cap: 0.6 };      // aim assist strength at setting 1
+const wcls = id => WCLS[id] || 'other';
+function touchLoad(sv) {                              // read the phone options out of the saved settings, checking every value
+  settings.assist = numIn(sv.assist, 0, 2, 1);
+  settings.fireMode = sv.fireMode === 'simple' ? 'simple' : 'adv';
+  settings.adsFire = Object.assign({}, ADS_DEF);
+  if (sv.adsFire && typeof sv.adsFire === 'object') for (const k in ADS_DEF) if (typeof sv.adsFire[k] === 'boolean') settings.adsFire[k] = sv.adsFire[k];
+  settings.fixStick = sv.fixStick === true; settings.autoRun = sv.autoRun !== false; settings.leftFire = sv.leftFire === true;
+  settings.lay = {};
+  if (sv.lay && typeof sv.lay === 'object') for (const id of LY_IDS) {
+    const L = sv.lay[id];
+    if (L && typeof L === 'object' && isFinite(L.x) && isFinite(L.y)) settings.lay[id] = { x: clamp(+L.x, 0.02, 0.98), y: clamp(+L.y, 0.02, 0.98), s: numIn(+L.s, 0.6, 1.6, 1), o: numIn(+L.o, 0.2, 1, 1) };
+  }
+}
+function touchReset() {                               // "back to defaults" in the controls tab (the layout has its own reset)
+  settings.assist = 1; settings.fireMode = 'adv'; settings.adsFire = Object.assign({}, ADS_DEF);
+  settings.fixStick = false; settings.autoRun = true; settings.leftFire = false;
+  fireLShow();
+}
+
+// ---- aim assist: the crosshair slows down over an enemy and is drawn gently onto his chest while you move or shoot ----
+function aaFind(cone) {                               // closest enemy to the crosshair inside his bubble: [bot, yaw error, pitch error, 0..1 how far out]
+  const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z, L = [];
+  for (const b of enemies) {
+    if (b.dead || b.rise > 0 || !b.body || (mode === 'tdm' && b.team !== 'red')) continue;
+    const g = b.group.position, sc = b.group.scale.y || 1;
+    const dx = g.x - cx, dy = g.y + (b.body.position.y + 0.35) * sc - cy, dz = g.z - cz, d = Math.hypot(dx, dz), D = Math.hypot(d, dy);
+    if (D < 1.2 || D > 70) continue;
+    let ey = Math.atan2(-dx, -dz) - player.yaw; ey = Math.atan2(Math.sin(ey), Math.cos(ey));
+    const pt = Math.atan2(dy, d), ep = pt - player.pitch, e = Math.hypot(ey * Math.cos(pt), ep);
+    const bub = clamp(Math.atan2(AA.bub, D), 0.03, 0.2) * cone;
+    if (e < bub) L.push([b, ey, ep, e / bub, g.x, g.y + (b.body.position.y + 0.35) * sc, g.z]);
+  }
+  L.sort((a, b) => a[3] - b[3]);
+  for (let i = 0; i < Math.min(2, L.length); i++) if (hasLOS(cx, cy, cz, L[i][4], L[i][5], L[i][6])) return L[i];
+  return null;
+}
+function aaTick(dt) {
+  const S = settings.assist, padUse = typeof PAD !== 'undefined' && PAD.on && !locked();
+  aaSlow = 1;
+  if (!(S > 0) || !(isCoarse || padUse) || KS.mapOn || KF.on) { TC.wasAim = isAiming(); return; }
+  const melee = cw() && cw().def.melee;
+  // aiming in snaps onto a close-by target once, the way it does on a phone in the big games
+  const aim = isAiming();
+  if (aim && !TC.wasAim && !melee) { const t = aaFind(2.6); if (t) { TC.snapB = t[0]; TC.snapT = 0.16; } }
+  TC.wasAim = aim;
+  if (TC.snapT > 0) {
+    TC.snapT -= dt;
+    const t = aaFind(3.2);
+    if (t && t[0] === TC.snapB) { const k = Math.min(1, 10 * Math.min(S, 1.3) * dt); player.yaw += t[1] * k; player.pitch = clamp(player.pitch + t[2] * k, -1.4, 1.4); }
+    else TC.snapT = 0;
+  }
+  const t = aaFind(1);
+  if (!t) return;
+  const near = 1 - t[3];                              // 1 = right on him
+  aaSlow = 1 - Math.min(AA.cap, AA.slow * S) * (0.45 + 0.55 * near);
+  if (melee) return;
+  const active = performance.now() - TC.lookAt < 260 || Math.hypot(joy.x, joy.y) > 0.2 || fireHeld || mouseFire;
+  if (!active) return;
+  const k = Math.min(0.5, (AA.pull + AA.pullN * near) * S * (aimT > 0.5 ? 1.25 : 1) * dt);
+  player.yaw += t[1] * k;
+  player.pitch = clamp(player.pitch + t[2] * k * 0.75, -1.4, 1.4);
+}
+
+// ---- the trigger on a phone: buttons, simple mode's auto-fire, and fire-to-aim ----
+function tcOnTarget(cls) {                            // simple mode: is an enemy under the crosshair, in range, with no wall in front?
+  shotRay.setFromCamera(_ndc.set(0, 0), camera);
+  const hits = shotRay.intersectObjects(targets, false);
+  if (!hits.length) return false;
+  const h = hits[0], b = h.object.userData.bot;
+  if (!b || b.dead || b.rise > 0 || h.distance > (AUTO_RANGE[cls] || 30)) return false;
+  const walls = shotRay.intersectObjects(obstacleMeshes, false);
+  return !(walls.length && walls[0].distance < h.distance);
+}
+function touchTick(dt) {
+  if (!isCoarse) return;
+  if (!running || !player.alive || KF.on || pauseOpen || setOpen || KS.mapOn) {
+    TC.ptr.clear(); TC.left = null; TC.wasBtn = false; TC.shot = 0; TC.autoHit = false; tfAim = false; fireHeld = false; E.cross.classList.remove('lock'); return;
+  }
+  const w = cw(), def = w && w.def;
+  if (!def) return;
+  const cls = def.melee ? 'melee' : wcls(w.id), btn = TC.ptr.size > 0 || TC.left !== null;
+  let auto = false;
+  if (settings.fireMode === 'simple' && cls !== 'melee' && player.reloading <= 0) {
+    if ((TC.scanK = (TC.scanK + 1) % 2) === 0) TC.autoHit = tcOnTarget(cls);
+    auto = TC.autoHit;
+  } else TC.autoHit = false;
+  E.cross.classList.toggle('lock', auto);
+  TC.lostT = auto ? 0.4 : Math.max(0, TC.lostT - dt);
+  const ads = cls in ADS_DEF && settings.adsFire[cls], already = aimHeld || aimToggle;
+  if (ads && cls === 'sniper' && !already) {
+    // a sniper: hold to look down the scope, let go to shoot. Simple mode scopes in on its own and shoots once zoomed
+    if (TC.wasBtn && !btn) { TC.shot = 0.4; TC.ls = player.lastShot; }
+    if (TC.shot > 0) { if (player.lastShot !== TC.ls) TC.shot = 0; else TC.shot -= dt; }
+    tfAim = btn || auto || TC.lostT > 0 || TC.shot > 0;
+    fireHeld = TC.shot > 0 || (auto && !btn && aimT > 0.85);
+  } else {
+    tfAim = !!ads && (btn || auto || (settings.fireMode === 'simple' && TC.lostT > 0));
+    fireHeld = btn || auto;
+    TC.shot = 0;
+  }
+  TC.wasBtn = btn;
+}
+
+// ---- floating stick and auto-sprint ----
+const stickFloat = () => isCoarse && !settings.fixStick;
+const lyScale = id => (settings.lay[id] && settings.lay[id].s) || 1;
+function stickPlace(x, y) {                           // the stick comes up under the thumb, kept fully on the screen
+  const s = lyScale('stick'), half = 70 * s;
+  x = clamp(x, half + 6, innerWidth * 0.5); y = clamp(y, half + 6, innerHeight - half - 6);
+  const st = stick.style;
+  st.left = x + 'px'; st.top = y + 'px'; st.bottom = 'auto'; st.right = 'auto'; st.transform = 'translate(-50%, -50%) scale(' + s + ')';
+  return [x, y];
+}
+function stickStart(e, float) {
+  stickId = e.pointerId;
+  if (float) { const p = stickPlace(e.clientX, e.clientY); sx = p[0]; sy = p[1]; }
+  else { const r = stick.getBoundingClientRect(); sx = r.left + r.width / 2; sy = r.top + r.height / 2; }
+  stick.classList.add('live');
+  try { stick.setPointerCapture(e.pointerId); } catch (err) {}
+  setStick(e.clientX - sx, e.clientY - sy);
+}
+function stickRun(dx, dy, d, m) {                     // push the stick all the way forward and you run, no button needed
+  const up = d > 0 ? -dy / d : 0;
+  autoRun = settings.autoRun && (autoRun ? m > 0.72 && up > 0.72 : m > 0.94 && up > 0.87);
+  stick.classList.toggle('run', autoRun);
+}
+
+// ---- the layout editor ----
+const LY = { on: false, draft: null, sel: null, drag: null };
+function lyApply1(id, lay) {
+  const el = $(id); if (!el) return;
+  const L = (lay || settings.lay)[id], st = el.style;
+  if (!L) { st.left = st.top = st.bottom = st.right = st.transform = st.filter = ''; return; }
+  st.left = (L.x * 100).toFixed(2) + '%'; st.top = (L.y * 100).toFixed(2) + '%'; st.bottom = 'auto'; st.right = 'auto';
+  st.transform = 'translate(-50%, -50%) scale(' + L.s + ')';
+  st.filter = L.o < 1 ? 'opacity(' + L.o + ')' : '';
+}
+function lyApplyAll(lay) { for (const id of LY_IDS) lyApply1(id, lay); }
+function fireLShow() {
+  document.body.classList.toggle('lf', !!settings.leftFire);
+  if (isCoarse) $('fireL').style.display = settings.leftFire ? 'block' : 'none';
+}
+function lyCenter(id) { const r = $(id).getBoundingClientRect(); return { x: clamp((r.left + r.width / 2) / innerWidth, 0.02, 0.98), y: clamp((r.top + r.height / 2) / innerHeight, 0.02, 0.98) }; }
+function lyEntry(id) { return LY.draft[id] || Object.assign(lyCenter(id), { s: 1, o: 1 }); }
+function lySel(id) {
+  if (LY.sel) $(LY.sel).classList.remove('lySel');
+  LY.sel = id;
+  const on = !!id;
+  $('lySize').disabled = $('lyOp').disabled = !on;
+  $('lyName').textContent = on ? LY_NAME[id] : 'اسحب أي زر وحطه وين تبي';
+  if (!on) return;
+  $(id).classList.add('lySel');
+  const L = lyEntry(id); $('lySize').value = L.s; $('lyOp').value = L.o;
+  $('lySizeV').textContent = Math.round(L.s * 100) + '%'; $('lyOpV').textContent = Math.round(L.o * 100) + '%';
+}
+function lyOpen() {
+  LY.on = true; LY.draft = JSON.parse(JSON.stringify(settings.lay)); LY.drag = null;
+  $('setScr').style.display = 'none';
+  document.body.classList.add('lyEdit');
+  $('lyEd').style.display = 'block';
+  lyApplyAll(LY.draft); lySel(null);
+}
+function lyClose(save) {
+  if (save) { settings.lay = LY.draft; saveSettings(); toast('✅ انحفظ ترتيب الأزرار'); }
+  if (LY.sel) $(LY.sel).classList.remove('lySel');
+  LY.on = false; LY.drag = null; LY.sel = null;
+  document.body.classList.remove('lyEdit');
+  $('lyEd').style.display = 'none';
+  lyApplyAll();
+  if (setOpen) $('setScr').style.display = 'flex';
+}
+addEventListener('pointerdown', e => {
+  if (!LY.on) return;
+  const el = e.target.closest && e.target.closest(LY_IDS.map(i => '#' + i).join(','));
+  if (!el) { if (!(e.target.closest && e.target.closest('.lyBar'))) lySel(null); return; }
+  e.preventDefault(); e.stopImmediatePropagation();
+  lySel(el.id);
+  const r = el.getBoundingClientRect();
+  LY.drag = { id: el.id, pid: e.pointerId, ox: e.clientX - (r.left + r.width / 2), oy: e.clientY - (r.top + r.height / 2) };
+}, true);
+addEventListener('pointermove', e => {
+  if (!LY.on || !LY.drag || e.pointerId !== LY.drag.pid) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const id = LY.drag.id, L = lyEntry(id);
+  L.x = clamp((e.clientX - LY.drag.ox) / innerWidth, 0.03, 0.97); L.y = clamp((e.clientY - LY.drag.oy) / innerHeight, 0.04, 0.96);
+  LY.draft[id] = L; lyApply1(id, LY.draft);
+  $('lyEd').classList.toggle('low', L.y < 0.36);      // the panel gets out of the way of a button dragged up top
+}, true);
+const lyUp = e => { if (LY.on && LY.drag && e.pointerId === LY.drag.pid) { LY.drag = null; e.stopImmediatePropagation(); } };
+addEventListener('pointerup', lyUp, true); addEventListener('pointercancel', lyUp, true);
+addEventListener('click', e => { if (LY.on && e.target.closest && e.target.closest(LY_IDS.map(i => '#' + i).join(','))) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+function lyInit() {
+  const slide = (inp, out, key) => inp.addEventListener('input', () => {
+    if (!LY.sel) return;
+    const L = lyEntry(LY.sel); L[key] = +inp.value; LY.draft[LY.sel] = L; lyApply1(LY.sel, LY.draft);
+    out.textContent = Math.round(L[key] * 100) + '%';
+  });
+  slide($('lySize'), $('lySizeV'), 's'); slide($('lyOp'), $('lyOpV'), 'o');
+  $('lySave').addEventListener('click', () => lyClose(true));
+  $('lyCancel').addEventListener('click', () => lyClose(false));
+  $('lyReset').addEventListener('click', () => { if (LY.sel) $(LY.sel).classList.remove('lySel'); LY.draft = {}; lyApplyAll(LY.draft); lySel(null); toast('رجعت الأزرار لأماكنها'); });
+  addEventListener('resize', () => { if (!LY.on && stickId === null) lyApplyAll(); });
+}
+
+// ---- the phone section of the controls tab ----
+function touchSettings(pane) {
+  const tog = (label, note, get, set) => {
+    const row = document.createElement('label'); row.className = 'opt onlyTouch'; row.style.marginTop = '10px';
+    const t = document.createElement('span'); t.textContent = label;
+    if (note) { const sm = document.createElement('small'); sm.textContent = note; t.appendChild(sm); }
+    const c = document.createElement('input'); c.type = 'checkbox';
+    const sw = document.createElement('span'); sw.className = 'sw';
+    c.addEventListener('change', () => { set(c.checked); saveSettings(); });
+    row.append(t, c, sw); pane.appendChild(row); setShow.push(() => { c.checked = !!get(); });
+  };
+  setHead(pane, 'تحكم الجوال', 'onlyTouch');
+  // fire mode: two big choices side by side
+  const seg = document.createElement('div'); seg.className = 'sSeg onlyTouch';
+  const segT = document.createElement('div'); segT.className = 'sSegT'; segT.textContent = 'طريقة الإطلاق';
+  seg.appendChild(segT);
+  const segB = document.createElement('div'); segB.className = 'sSegB'; seg.appendChild(segB);
+  const segN = document.createElement('small'); seg.appendChild(segN);
+  const opts = [['adv', 'متقدم', 'أنت اللي تضغط النار'], ['simple', 'بسيط', 'يطلق لحاله أول ما يكون المؤشر على العدو']];
+  const segShow = () => { segB.querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.v === settings.fireMode)); segN.textContent = opts.find(o => o[0] === settings.fireMode)[2]; };
+  for (const o of opts) {
+    const b = document.createElement('button'); b.type = 'button'; b.dataset.v = o[0]; b.textContent = o[1];
+    b.addEventListener('click', () => { settings.fireMode = o[0]; saveSettings(); segShow(); });
+    segB.appendChild(b);
+  }
+  pane.appendChild(seg); setShow.push(segShow);
+  setSlider(pane, 'assist', 'مساعدة التصويب', '0 = طافية. كل ما زادت يثبت المؤشر على العدو أكثر (للجوال ويد التحكم)', 0, 2);
+  tog('ركض تلقائي', 'ادفع العصا لقدّام لآخرها وتركض بدون زر', () => settings.autoRun, v => { settings.autoRun = v; });
+  tog('عصا ثابتة', 'طافية = تطلع العصا مكان ما تحط إصبعك يسار الشاشة', () => settings.fixStick, v => { settings.fixStick = v; document.body.classList.toggle('flt', stickFloat()); });
+  tog('زر نار يسار', 'زر نار ثاني تحت إبهامك اليسار', () => settings.leftFire, v => { settings.leftFire = v; fireLShow(); });
+  setHead(pane, 'النار تصوّب لحالها', 'onlyTouch');
+  for (const [k, n, note] of ADS_NAMES) tog(n, note, () => settings.adsFire[k], v => { settings.adsFire[k] = v; });
+  const lb = document.createElement('button'); lb.type = 'button'; lb.id = 'lyOpenBtn'; lb.className = 'onlyTouch'; lb.textContent = '✋ ترتيب الأزرار';
+  lb.addEventListener('click', lyOpen);
+  pane.appendChild(lb);
+}
 const SET_KEY = 'fps-settings';
 const SET_DEF = { sens: 1, ads: 1, touch: 1, pad: 1, invY: false, keys: {} };
 const settings = Object.assign({}, SET_DEF, { keys: {} });
@@ -5700,6 +6007,7 @@ try {
     if (sv.keys && typeof sv.keys === 'object') for (const a of ACTIONS) if (Array.isArray(sv.keys[a.id])) settings.keys[a.id] = sv.keys[a.id].slice(0, 2).map(c => (typeof c === 'string' ? c : ''));
   } else settings.sens = numIn(+localStorage.getItem('fps-sens') || 1, 0.3, 3, 1);       // the old single-number setting
 } catch (e) {}
+try { const sv = JSON.parse(localStorage.getItem(SET_KEY) || 'null'); touchLoad(sv && typeof sv === 'object' ? sv : {}); } catch (e) { touchLoad({}); }
 bindLoad();
 const lookK = () => 1 + (settings.ads - 1) * aimT;       // the zoomed-in sensitivity fades in with the aim
 const lookY = () => (settings.invY ? -1 : 1);
@@ -5773,21 +6081,22 @@ function quitToMenu() {
 
 canvas.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse') return;    // mouse is handled above
+  if (running && stickFloat() && stickId === null && e.clientX < innerWidth * 0.42 && e.clientY > innerHeight * 0.28) { stickStart(e, true); return; }
   if (lookId !== null) return;
   lookId = e.pointerId; lookType = e.pointerType; lx = e.clientX; ly = e.clientY;
   if (e.pointerType === 'mouse' && e.button === 0) mouseFire = true;
 });
-let fireId = null, fx = 0, fy = 0;   // the finger held on the fire button can also aim
-addEventListener('pointermove', e => {
-  const sens = 0.006 * settings.touch * lookK() * (camera.fov / 75);
+addEventListener('pointermove', e => {     // the finger held on the fire button can also aim
+  const sens = 0.006 * settings.touch * lookK() * (camera.fov / 75) * aaSlow;
+  const fp = TC.ptr.get(e.pointerId);
   if (e.pointerId === lookId) {
     player.yaw -= (e.clientX - lx) * sens;
     player.pitch = clamp(player.pitch - (e.clientY - ly) * sens * lookY(), -1.4, 1.4);
-    lx = e.clientX; ly = e.clientY;
-  } else if (e.pointerId === fireId) {
-    player.yaw -= (e.clientX - fx) * sens;
-    player.pitch = clamp(player.pitch - (e.clientY - fy) * sens * lookY(), -1.4, 1.4);
-    fx = e.clientX; fy = e.clientY;
+    lx = e.clientX; ly = e.clientY; TC.lookAt = performance.now();
+  } else if (fp) {
+    player.yaw -= (e.clientX - fp.x) * sens;
+    player.pitch = clamp(player.pitch - (e.clientY - fp.y) * sens * lookY(), -1.4, 1.4);
+    fp.x = e.clientX; fp.y = e.clientY; TC.lookAt = performance.now();
   }
 });
 const endLook = e => { if (e.pointerId === lookId) { lookId = null; mouseFire = false; } };
@@ -5798,11 +6107,12 @@ addEventListener('pointercancel', endLook);
 const stick = $('stick'), knob = $('knob');
 let stickId = null, sx = 0, sy = 0;
 function setStick(dx, dy) {
-  const R = 50;
+  const ss = lyScale('stick'), R = 50 * ss;
   let d = Math.hypot(dx, dy);
   if (d > R) { dx *= R / d; dy *= R / d; d = R; }
-  knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  knob.style.transform = `translate(${dx / ss}px, ${dy / ss}px)`;
   const m = d / R;
+  stickRun(dx, dy, d, m);
   if (m < 0.12) { joy.x = 0; joy.y = 0; }           // small dead zone
   else {
     const strength = (m - 0.12) / 0.88;              // smooth ramp from 0 to 1
@@ -5810,27 +6120,24 @@ function setStick(dx, dy) {
     joy.y = (dy / d) * strength;
   }
 }
-stick.addEventListener('pointerdown', e => {
-  stickId = e.pointerId;
-  const r = stick.getBoundingClientRect();
-  sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-  try { stick.setPointerCapture(e.pointerId); } catch (err) {}
-  setStick(e.clientX - sx, e.clientY - sy);
-});
+stick.addEventListener('pointerdown', e => { if (stickId === null) stickStart(e, stickFloat()); });
 addEventListener('pointermove', e => { if (e.pointerId === stickId) setStick(e.clientX - sx, e.clientY - sy); });
 const endStick = e => {
   if (e.pointerId !== stickId) return;
-  stickId = null; joy.x = 0; joy.y = 0;
+  stickId = null; joy.x = 0; joy.y = 0; autoRun = false;
   knob.style.transform = 'translate(0px, 0px)';
+  stick.classList.remove('live', 'run');
+  if (stickFloat()) lyApply1('stick');                // back to where it rests
 };
 addEventListener('pointerup', endStick);
 addEventListener('pointercancel', endStick);
 const fireBtn = $('fire');
 fireBtn.addEventListener('pointerdown', e => {
-  fireHeld = true; fireId = e.pointerId; fx = e.clientX; fy = e.clientY;
+  TC.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
   try { fireBtn.setPointerCapture(e.pointerId); } catch (err) {}
 });
-const endFire = e => { if (e.pointerId === fireId) { fireHeld = false; fireId = null; } };
+$('fireL').addEventListener('pointerdown', e => { TC.left = e.pointerId; try { $('fireL').setPointerCapture(e.pointerId); } catch (err) {} });
+const endFire = e => { TC.ptr.delete(e.pointerId); if (e.pointerId === TC.left) TC.left = null; };
 addEventListener('pointerup', endFire);
 addEventListener('pointercancel', endFire);
 $('reloadBtn').addEventListener('pointerdown', () => startReload());
@@ -5850,6 +6157,8 @@ if (isCoarse) {
   fireBtn.style.display = 'block';
   $('reloadBtn').style.display = 'block';
 }
+document.body.classList.toggle('flt', stickFloat());
+fireLShow(); lyApplyAll(); lyInit();
 
 // ---------- Collision ----------
 let _cx = 0, _cz = 0;
@@ -9793,7 +10102,7 @@ function updatePlayer(dt) {
   if (mantle) updateMantle(dt);
   else {
     // sprinting burns stamina; out of breath means walking until some of it is back
-    const wantSprint = (held('sprint') || sprintToggle) && moving && f > 0.3 && !isAiming() && !winded && slideT <= 0 && !diving && proneT <= 0 && !down;
+    const wantSprint = (held('sprint') || sprintToggle || (autoRun && !fireHeld)) && moving && f > 0.3 && !isAiming() && !winded && slideT <= 0 && !diving && proneT <= 0 && !down;
     if (wantSprint && stance === 'crouch') stance = 'stand';
     if (wantSprint && player.grounded && Math.hypot(pvx, pvz) > 4) {
       stamina -= dt * (player.perks.stam ? 8 : 16); stamWait = 0.7;
@@ -12088,6 +12397,7 @@ const SET_TABS = [
     setSlider(pane, 'pad', 'حساسية يد التحكم', 'سرعة لفّ النظر بالعصا اليمين 🎮', 0.3, 3);
     setSlider(pane, 'ads', 'حساسية التصويب الدقيق', '1.0 = نفس الإحساس. أقل = أهدأ وأنت مصوّب', 0.3, 2);
     setToggle(pane, 'invY', 'عكس المحور الرأسي', 'تسحب لتحت فتطالع فوق');
+    touchSettings(pane);
     setHead(pane, 'الأزرار', 'onlyKeys');
     const hd = document.createElement('div'); hd.className = 'kRow kHead onlyKeys';
     for (const t of ['', 'أساسي', 'بديل']) { const sp = document.createElement('span'); sp.textContent = t; hd.appendChild(sp); }
@@ -12109,7 +12419,7 @@ const SET_TABS = [
     const rs = document.createElement('button'); rs.type = 'button'; rs.id = 'setReset'; rs.textContent = 'رجّع الافتراضي';
     rs.addEventListener('click', () => {
       keyCapEnd();
-      settings.sens = SET_DEF.sens; settings.ads = SET_DEF.ads; settings.touch = SET_DEF.touch; settings.pad = SET_DEF.pad; settings.invY = SET_DEF.invY; settings.keys = {};
+      settings.sens = SET_DEF.sens; settings.ads = SET_DEF.ads; settings.touch = SET_DEF.touch; settings.pad = SET_DEF.pad; settings.invY = SET_DEF.invY; settings.keys = {}; touchReset();
       keysClear(); bindLoad(); saveSettings(); setRefresh(); toast('رجعت إعدادات التحكم للافتراضي');
     });
     pane.appendChild(rs);
@@ -12308,7 +12618,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.5.1';
+const GAME_VERSION = '4.6';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
@@ -12363,8 +12673,10 @@ function loop(now) {
     if (zDeath && running) { zDeathTick(rdt); dt = rdt * zDeath.k; }
     if (safeT > 0) safeT -= dt;
     if (running) {
+      touchTick(dt);
       if (player.alive && !KF.on) {
         updatePlayer(dt);
+        aaTick(dt);
         if (player.burst > 0 && !(cw() && cw().def.burst)) player.burst = 0;
         if (mouseFire || fireHeld || player.burst > 0) tryFire();
         if (down) downTick(dt);
