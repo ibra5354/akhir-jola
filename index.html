@@ -697,10 +697,13 @@
       <button class="mapBtn sel" data-map="arena" data-sec="z" type="button"><span class="mName">الساحة</span><small>ليل مفتوح بين السواتر والحاويات</small></button>
       <button class="mapBtn" data-map="town" data-sec="z" type="button"><span class="mName">الحي القديم</span><small>بيتين بدور واحد وشارع وباص، وقتال قريب</small></button>
       <button class="mapBtn" data-map="base" data-sec="z" type="button"><span class="mName">المجمّع</span><span class="mKind n">جديد</span><small>قاعدة عسكرية ومختبر سري: أبواب بالنقاط، كهرباء، فخاخ، ناقل وسر مدفون</small></button>
+      <button class="mapBtn" data-map="zmall" data-sec="z" type="button"><span class="mName">المول</span><span class="mKind n">جديد</span><small>الزومبي يكسرون الشبابيك ويلحقونك فوق الدرج الكهربائي. طابقين، ودوّر بينهم</small></button>
       <button class="mapBtn camp" data-map="camp" data-sec="z" type="button"><span class="mName">🌀 الحملة</span><span class="mKind n">جديد</span><small>من المجمّع إلى الحي القديم: خلّصوا المهام، اشحنوا الناقل وكمّلوا القصة بنقاطكم وأسلحتكم</small></button>
       <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind n">جديد</span><small>بيتين بدورين ودرج وحوش خلفي، وشارع بينهم فيه باص</small></button>
       <button class="mapBtn" data-map="souq" data-sec="m" type="button"><span class="mName">السوق</span><span class="mKind n">جديد</span><small>ميدان ونافورة وحارات دكاكين، وسطحين تطلع لهم بالدرج</small></button>
       <button class="mapBtn" data-map="bigsouq" data-sec="m" type="button"><span class="mName">السوق الكبير</span><span class="mKind n">سيرش</span><small>وقت الغروب: سوق مسقوف، وساحة برج الساعة، وسطوح تنط بينها. لسيرش بس</small></button>
+      <button class="mapBtn" data-map="mall" data-sec="m" type="button"><span class="mName">المول</span><span class="mKind n">جديد</span><small>طابقين ودرج كهربائي: سوبرماركت وساحة مطاعم تحت، وسينما وصالة ألعاب وجسر مكشوف فوق</small></button>
+      <button class="mapBtn" data-map="farm" data-sec="m" type="button"><span class="mName">المزرعة</span><span class="mKind n">جديد</span><small>الصبح بدري: نخل وسواقي، حقول مكشوفة للقنّاص، وبرج ماء تطلع فوقه</small></button>
       <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
     </div>
     <p id="best"></p>
@@ -1194,7 +1197,9 @@ function setSky(c, forceNight) {
   }
   const dusk = !night && c === 0xf0a868;
   if (dusk) { hemi.color.setHex(0xffc8a0); hemi.groundColor.setHex(0x3e2c20); hemi.intensity = 0.66; sun.color.setHex(0xffa65c); sun.intensity = 1.12; scene.fog.near = 32; scene.fog.far = 130; }
-  sun.position.set(dusk ? -56 : 30, dusk ? 21 : 45, dusk ? -14 : 15);
+  const morn = !night && c === 0xf3d2a2;
+  if (morn) { hemi.color.setHex(0xffe2c0); hemi.groundColor.setHex(0x4a3a28); hemi.intensity = 0.7; sun.color.setHex(0xffcf90); sun.intensity = 1.08; scene.fog.near = 26; scene.fog.far = 120; }
+  sun.position.set(dusk ? -56 : morn ? 54 : 30, dusk ? 21 : morn ? 19 : 45, dusk ? -14 : morn ? 16 : 15);
   sunSprite.position.copy(sun.position).normalize().multiplyScalar(190);
   sunSprite.visible = !night; moonSprite.visible = night;
   document.body.classList.toggle('zmode', night && mode !== 'tdm');
@@ -3771,6 +3776,462 @@ function buildBigSouq() {
   const bm = BS.B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
   const gm = BS.G.mesh(BS.gmat || (BS.gmat = new THREE.MeshBasicMaterial({ vertexColors: true }))); if (gm) track(gm, true);
 }
+// ================= Map: the farm, early morning (all team modes) =================
+// North (z < 0) and south (z > 0) bases mirror each other. Three ways across:
+//   west: the palm grove, rows of palms with water channels between them (long lanes north-south, broken where the rows are crossed)
+//   mid:  the walled yard with the mud house; its roof is reached by stairs on the south face
+//   east: the open fields, watched over by the water tower; the greenhouses are covered ways through them
+// Only players go up the tower and the house roof; the bots fight from the ground.
+const FM_SKY = 0xf3d2a2;
+SKIES[FM_SKY] = ['#6c98c6', '#e9c7a0', '#f2dcc2'];
+const FM_SPAWNS = [[-4, -26.4], [0, -25.8], [4, -26.4], [8.6, -29.6], [12.4, -29.6], [8.6, -26.6], [12.4, -26.6],
+                   [-4, 26.4], [0, 25.8], [4, 26.4], [8.6, 29.6], [12.4, 29.6], [8.6, 26.6], [12.4, 26.6]];
+const FM = { B: null, L: null, G: null, W: null };
+const FM_MUD = 0xb08a5e, FM_MUD2 = 0xc49d6e, FM_WOOD = 0x6b4a2b;
+// a solid block that goes in the bag; you can stand on it unless told otherwise
+function fmBlock(x0, x1, z0, z1, y0, y1, c, noTop) {
+  const n = obstacles.length;
+  if (y0 > 0.01) ob(x0, x1, z0, z1, y0, y1, c, true); else boxMM(x0, x1, z0, z1, y0, y1, c, true);
+  if (noTop) delete obstacles[n].top;
+  FM.B.box(c, x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+}
+function fmPalm(x, z, s) {
+  s = s || 1; const lean = (rnd() - 0.5) * 0.2, ry = rnd() * 6.28;
+  for (let i = 0; i < 5; i++) FM.B.put(trunkGeo, 0x7a5a36, x + Math.sin(i * 0.5) * 0.12 * s + lean * i * 0.3, (0.55 + i * 1.05) * s, z, 0, 0, 0, (1.15 - i * 0.1) * s, 1.1 * s, (1.15 - i * 0.1) * s);
+  const tx = x + lean * 1.5, ty = 5.5 * s;
+  for (let i = 0; i < 8; i++) FM.L.put(palmLeafGeo, i % 2 ? 0x3f7a34 : 0x4d8a3a, tx, ty, z, 0, ry + i / 8 * 6.283, -1.1 - (i % 3) * 0.17, 1.5 * s, s, 0.5 * s);
+  FM.B.box(0x8a5a2a, 0.5 * s, 0.4 * s, 0.5 * s, tx, ty - 0.1, z);              // dates hanging under the leaves
+  const n = obstacles.length; boxMM(x - 0.25, x + 0.25, z - 0.25, z + 0.25, 0, 3, 0x8a7f70, 2); delete obstacles[n].top;
+}
+function fmBale(x, z, alongX) {
+  const w = alongX ? 2.4 : 1.3, d = alongX ? 1.3 : 2.4;
+  addBox(x, z, w, 1.25, d, 0x8a7f70, true);
+  FM.B.box(0xd9b863, w, 1.25, d, x, 0.625, z); FM.B.box(0xc4a24e, w + 0.02, 0.08, d + 0.02, x, 0.9, z);
+}
+function fmGreenhouse(x, z0, z1) {        // a plastic tunnel, open at both ends; walk through it, not over it
+  const W = 4, H = 2.7, hx = W / 2;
+  for (const s of [-1, 1]) { const n = obstacles.length; boxMM(x + s * hx - 0.1, x + s * hx + 0.1, z0, z1, 0, H, 0xe8ecef, true); delete obstacles[n].top; }
+  const L = z1 - z0, zc = (z0 + z1) / 2;
+  const g = new THREE.CylinderGeometry(hx, hx, L, 12, 1, true, -Math.PI / 2, Math.PI);
+  FM.L.put(g, 0xe9eef0, x, 1.6, zc, Math.PI / 2, 0, 0, 1, 1, 0.55); g.dispose();
+  FM.L.box(0xe2e8ea, 0.04, 1.6, L, x - hx, 0.8, zc); FM.L.box(0xe2e8ea, 0.04, 1.6, L, x + hx, 0.8, zc);
+  for (let z = z0 + 0.4; z <= z1 - 0.3; z += 2.4) FM.B.box(0x9aa3a8, W + 0.1, 0.06, 0.06, x, 2.68, z);       // the hoops
+  for (const s of [-0.9, 0.9]) {                                                                         // beds of tomatoes inside, low cover
+    const n = obstacles.length; boxMM(x + s - 0.35, x + s + 0.35, z0 + 1.2, z1 - 1.2, 0, 0.55, 0x8a7f70, true); delete obstacles[n].top;
+    FM.B.box(0x5a3f26, 0.7, 0.4, L - 2.4, x + s, 0.2, zc);
+    for (let z = z0 + 1.6; z < z1 - 1.2; z += 0.8) FM.L.box(z % 1.6 > 0.8 ? 0x4c8a32 : 0x3f7a2a, 0.55, 0.55, 0.6, x + s, 0.7, z);
+    for (let z = z0 + 2; z < z1 - 1.2; z += 1.6) FM.G.box(0xd83a2a, 0.12, 0.12, 0.12, x + s + 0.2, 0.75, z);
+  }
+}
+function fmStairs(x, z, dx, dz, w, h, c) {     // straight stairs from (x, z) along +-x or +-z up to h
+  const steps = Math.ceil(h / 0.3), run = 0.5, rise = h / steps;
+  for (let i = 0; i < steps; i++) {
+    const a = i * run, b = (i + 1) * run, top = +(rise * (i + 1)).toFixed(3);
+    let x0, x1, z0, z1;
+    if (dx) { const p = x + dx * a, q = x + dx * b; x0 = Math.min(p, q); x1 = Math.max(p, q); z0 = z - w / 2; z1 = z + w / 2; }
+    else { const p = z + dz * a, q = z + dz * b; x0 = x - w / 2; x1 = x + w / 2; z0 = Math.min(p, q); z1 = Math.max(p, q); }
+    boxMM(x0, x1, z0, z1, 0, top, c, true); FM.B.box(i % 2 ? c : shade(c, 0.92), x1 - x0, top, z1 - z0, (x0 + x1) / 2, top / 2, (z0 + z1) / 2);
+    obstacles[obstacles.length - 1].step = true;
+  }
+}
+// a wall along x with openings, the way into a base
+function fmWallX(z, x0, x1, ops, h, c) {
+  let cur = x0;
+  for (const [a, b] of ops.concat([[x1, x1]])) { if (a > cur + 0.05) { fmBlock(cur, a, z - 0.3, z + 0.3, 0, h, c, true); FM.B.box(shade(c, 0.85), a - cur + 0.1, 0.12, 0.7, (cur + a) / 2, h + 0.06, z); } cur = b; }
+}
+function fmBase(s) {                       // s = -1 north (date store), 1 south (animal pen)
+  const zb = s * 33;
+  // the store / pen against the outer wall, solid
+  fmBlock(-5.5, 5.5, Math.min(zb, zb - s * 4.4), Math.max(zb, zb - s * 4.4), 0, 3.6, s < 0 ? FM_MUD : FM_MUD2, true);
+  FM.B.box(FM_WOOD, 2.2, 2.4, 0.08, 0, 1.2, zb - s * 4.44);                               // its door
+  for (const x of [-3.6, 3.6]) FM.B.box(0x2a2018, 0.9, 0.8, 0.08, x, 2.2, zb - s * 4.44);
+  stnSign([{ t: s < 0 ? 'مخزن التمر' : 'الحظيرة', f: 'bold 64px ' + FONT, c: '#3a2410', y: 0.52 }], 2.6, 0.55, 0, 3.1, zb - s * 4.47, s < 0 ? 0 : Math.PI);
+  // a wall with three ways out hides the spawn from the fields and the tower
+  fmWallX(s * 23.5, 3.5, 31, [[4.2, 6.8], [17, 20]], 2.6, FM_MUD);
+  fmWallX(s * 23.5, -7.8, -3.5, [], 2.6, FM_MUD);
+  // trucks and dates waiting to go out
+  carX(16, s * 26.4, s < 0 ? 0x2563eb : 0xb91c1c);
+  for (const [x, z] of [[-8.2, s * 31.5], [8.2, s * 31.5]]) cover('crates', x, z, 1.4, 1.2, 1.4, 0);
+  for (let i = 0; i < 4; i++) FM.B.box([0x8a5a2a, 0x6b4423][i % 2], 0.7, 0.5, 0.5, -6.3 + (i % 2) * 0.75, 0.25 + Math.floor(i / 2) * 0.5, zb - s * 4.9);
+}
+function buildFarm() {
+  ARENA = 33; radarRange = 26;
+  FM.B = VB(); FM.L = VB(); FM.G = VB(); FM.W = VB();
+  setSky(FM_SKY);
+  makeGround(0xc9b083, 'concrete');
+  perimeter(FM_MUD);
+  backdrop(0xb49a6a, false);
+  for (let i = 0; i < 26; i++) { const a = i / 26 * 6.283, r = ARENA + 5 + rnd() * 6; fmPalm(Math.cos(a) * r, Math.sin(a) * r, 0.9 + rnd() * 0.4); obstacles.pop(); obstacleMeshes.pop(); }   // palms outside the wall, just to look at
+  // ---- the palm grove: six rows, a water channel between each pair ----
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(24, 64), new THREE.MeshLambertMaterial({ color: 0x8d8a55, map: getTex('grass', 4, 10) })); m.rotation.x = -Math.PI / 2; m.position.set(-20, 0.02, 0); track(m, true); m.receiveShadow = true; }
+  const cross = [-17.5, -6, 6, 17.5];                                     // where you can cross the channels
+  for (let r = 0; r < 6; r++) {
+    const x = -30 + r * 4;
+    for (let z = -28; z <= 28; z += 4) {
+      if (Math.hypot(x + 18, z) < 4.6 || Math.hypot(x + 20, z + 15) < 4.4) continue;     // clearings at the well and at site أ
+      fmPalm(x + (rnd() - 0.5) * 0.5, z + (rnd() - 0.5) * 0.6, 0.9 + rnd() * 0.25);
+    }
+    if (r === 5) continue;
+    const cx = x + 2;                                                     // the channel: two low mud banks with water between
+    const cuts = cross.map(c => [c - 1.4, c + 1.4]);
+    if (Math.abs(cx + 18) < 3) cuts.push([-4.6, 4.6]);                    // the clearing round the well
+    if (Math.abs(cx + 20) < 5) cuts.push([-19.2, -10.4]);                 // the clearing at site أ
+    cuts.sort((p, q) => p[0] - q[0]);
+    let a = -30;
+    for (const [cb, ca] of cuts.concat([[31, 31]])) {
+      const b = cb;
+      if (b > a) {
+        boxMM(cx - 0.8, cx + 0.8, a, b, 0, 0.6, 0x8a7f70, true);                     // a raised channel: jump over it, lie down behind it
+        for (const s of [-0.6, 0.6]) FM.B.box(0x8f6f48, 0.4, 0.6, b - a, cx + s, 0.3, (a + b) / 2);
+        FM.B.box(0x7a5c3a, 0.8, 0.4, b - a, cx, 0.2, (a + b) / 2);
+        FM.W.box(0x3d7f9a, 0.8, 0.02, b - a, cx, 0.5, (a + b) / 2);
+      }
+      a = Math.max(a, ca);
+    }
+  }
+  for (const [x0, x1, z] of [[-30, -24, -21.5], [-20, -14, -21.5], [-26, -20, 21.5], [-14, -8, 21.5]]) {     // palm-frond fences cut the long lanes before the bases
+    const n = obstacles.length; boxMM(x0, x1, z - 0.2, z + 0.2, 0, 2.0, 0x8a7f70, true); delete obstacles[n].top;
+    for (let x = x0 + 0.15; x < x1; x += 0.3) FM.B.box(x * 7 % 2 > 1 ? 0xa88a5a : 0x96784a, 0.24, 2.0 + (x * 13 % 3) * 0.08, 0.3, x, 1.0, z);
+    FM.B.box(FM_WOOD, x1 - x0, 0.1, 0.12, (x0 + x1) / 2, 1.6, z + 0.18);
+  }
+  // the well (A)
+  fmBlock(-19.1, -16.9, -1.1, 1.1, 0, 0.9, 0x8a7f70, true);
+  FM.B.cyl(0xbfa77d, 1.1, 1.15, 0.9, -18, 0.45, 0, 10); FM.B.cyl(0x2f5560, 0.9, 0.9, 0.04, -18, 0.9, 0, 10);
+  for (const s of [-1, 1]) FM.B.box(FM_WOOD, 0.12, 1.8, 0.12, -18 + s * 0.9, 1.4, 0);
+  FM.B.box(FM_WOOD, 2.0, 0.14, 0.14, -18, 2.3, 0);
+  fmBlock(-21.6, -20.4, 1.6, 4.0, 0, 0.6, 0x9a8a72); fmBlock(-15.6, -14.4, -4.0, -1.6, 0, 0.6, 0x9a8a72);       // stone troughs
+  // site أ in the grove: a pump shed and sacks
+  fmBlock(-24.2, -21.6, -18.4, -15.6, 0, 2.6, FM_MUD2, true); FM.B.box(0x7a8088, 2.8, 0.1, 3.0, -22.9, 2.65, -17);
+  cover('sand', -16.8, -12.2, 2.2, 1.0, 1.0, 0); cover('crates', -17.2, -18.4, 1.2, 1.1, 1.2, 0);
+  // ---- the walled yard and the mud house (B) ----
+  { const H = 2.1, c = FM_MUD;
+    fmBlock(-6, -1, -6.3, -5.7, 0, H, c, true); fmBlock(1, 6, -6.3, -5.7, 0, H, c, true);           // north wall, gate in the middle
+    fmBlock(-6, -1, 5.7, 6.3, 0, H, c, true); fmBlock(1, 6, 5.7, 6.3, 0, H, c, true);               // south wall
+    fmBlock(-6.3, -5.7, -6, -1, 0, H, c, true); fmBlock(-6.3, -5.7, 1, 6, 0, H, c, true);           // west wall
+    fmBlock(5.7, 6.3, -6, -2.6, 0, H, c, true); fmBlock(5.7, 6.3, -0.6, 6, 0, H, c, true);           // east wall, gate north of the middle
+    for (const [x, z, ry] of [[0, -6, 0], [0, 6, 0], [-6, 0, Math.PI / 2], [6, -1.6, Math.PI / 2]]) {   // gate frames
+      FM.B.box(FM_WOOD, 2.4, 0.3, 0.7, x, H + 0.3, z, 0, ry); }
+  }
+  { // the house: one room, doors east and west, windows north and south, a flat roof with a parapet
+    const x0 = -4.5, x1 = 1.5, z0 = -4, z1 = 2, H = 3.2, c = FM_MUD2;
+    fmBlock(x0, x1, z0, z0 + 0.35, 0, H, c, true);                                     // north wall
+    fmBlock(x0, -2.4, z1 - 0.35, z1, 0, H, c, true); fmBlock(-0.6, x1, z1 - 0.35, z1, 0, H, c, true);   // south wall with a window
+    fmBlock(-2.4, -0.6, z1 - 0.35, z1, 0, 0.95, c, true); fmBlock(-2.4, -0.6, z1 - 0.35, z1, 2.1, H, c, true);
+    fmBlock(x0, x0 + 0.35, z0, -2, 0, H, c, true); fmBlock(x0, x0 + 0.35, 0, z1, 0, H, c, true); fmBlock(x0, x0 + 0.35, -2, 0, 2.3, H, c, true);   // west door
+    fmBlock(x1 - 0.35, x1, z0, -2.2, 0, H, c, true); fmBlock(x1 - 0.35, x1, -0.2, z1, 0, H, c, true); fmBlock(x1 - 0.35, x1, -2.2, -0.2, 2.3, H, c, true);   // east door
+    fmBlock(x0, x1, z0, z1, H, H + 0.25, shade(c, 0.9));                               // the roof you stand on
+    for (const [a, b, p, q] of [[x0, x1, z0, z0 + 0.2], [x0, -1.0, z1 - 0.2, z1], [0.3, x1, z1 - 0.2, z1], [x0, x0 + 0.2, z0, z1], [x1 - 0.2, x1, z0, z1]]) fmBlock(a, b, p, q, H + 0.25, H + 0.75, c, true);   // parapet, open where the stairs come up
+    FM.B.box(0x6e3b2a, 4.8, 0.02, 4.4, -1.5, 0.03, -1);                                // a rug inside
+    cover('crates', -3.6, -3, 1.0, 0.9, 1.0, 0);
+    fmStairs(5.3, 2.75, -1, 0, 1.1, H + 0.25, 0xa8845a);                               // up along the south face, onto the roof
+  }
+  { // the majlis: a shade on poles, cushions you can hide behind
+    for (const [x, z] of [[2.4, -5.3], [5.2, -5.3], [2.4, -2.8], [5.2, -2.8]]) FM.B.box(FM_WOOD, 0.12, 2.3, 0.12, x, 1.15, z);
+    FM.L.box(0x8c2f2a, 3.2, 0.05, 2.9, 3.8, 2.32, -4.05);
+    fmBlock(2.4, 5.2, -5.4, -5.0, 0, 0.75, 0x7a2e28, true);
+  }
+  cover('barrel', -3.4, 4.2, 1.1, 1.0, 1.1, 0); cover('crates', 3.8, 4.4, 1.2, 1.1, 1.2, 0);
+  // ---- the open fields ----
+  { const m = new THREE.Mesh(new THREE.PlaneGeometry(25, 64), new THREE.MeshLambertMaterial({ color: 0xa88a52, map: getTex('concrete', 6, 16) })); m.rotation.x = -Math.PI / 2; m.position.set(19.5, 0.02, 0); track(m, true); m.receiveShadow = true; }
+  for (let z = -30; z <= 30; z += 1.5) if (Math.abs(z) > 3.2) FM.B.box(z % 3 ? 0x8f7442 : 0x9b8049, 23, 0.12, 0.35, 19.5, 0.06, z);    // furrows
+  for (let z = -29; z <= 29; z += 3) for (let x = 9; x < 31; x += 1.6) if (Math.abs(z) > 4 && rnd() < 0.7) FM.L.box(0x6f8a3a, 0.4, 0.35, 0.4, x, 0.2, z + 0.7);      // young crops
+  for (const [x, z, a] of [[14, -20, 1], [24, -24.5, 0], [27, -10, 1], [12.5, 22, 1], [24, 24.5, 0], [27, 10, 1], [30, -4.5, 0], [16.5, -1.8, 0], [18.5, -8, 1], [18.5, 8, 1], [26, -27.5, 0], [26, 27.5, 0]]) fmBale(x, z, a);
+  // the tractor
+  fmBlock(16.4, 21.6, 13.1, 14.9, 0, 1.3, 0xb91c1c, true);
+  FM.B.box(0x3a3a3a, 1.6, 1.6, 0.4, 17.4, 0.8, 12.9); FM.B.box(0x3a3a3a, 1.6, 1.6, 0.4, 17.4, 0.8, 15.1);
+  FM.B.box(0x3a3a3a, 0.9, 0.9, 0.3, 20.8, 0.45, 12.95); FM.B.box(0x3a3a3a, 0.9, 0.9, 0.3, 20.8, 0.45, 15.05);
+  FM.B.box(0x222831, 1.4, 1.2, 1.5, 17.6, 2.0, 14); FM.B.box(0xb91c1c, 1.6, 0.1, 1.7, 17.6, 2.65, 14);
+  // the greenhouses
+  for (const [z0, z1] of [[-17, -7], [7, 17]]) { fmGreenhouse(6, z0, z1); fmGreenhouse(12, z0, z1); }
+  // site ب: by the greenhouses, a pump on a concrete pad, a tank
+  fmBlock(16.2, 19.4, -19.2, -16.4, 0, 1.0, 0x9a9a9a); FM.B.cyl(0x4b6b78, 0.9, 0.9, 1.8, 17.8, 1.9, -17.8, 12);
+  cover('sand', 21.6, -15, 1.0, 1.0, 2.2, 0); cover('crates', 15, -21.4, 1.3, 1.1, 1.3, 0);
+  // ---- the water tower (C): stand under it, or climb the stairs to the deck around the tank ----
+  { const D = 4.6;
+    for (const [x, z] of [[18, -2], [22, -2], [18, 2], [22, 2]]) { fmBlock(x - 0.2, x + 0.2, z - 0.2, z + 0.2, 0, D, 0x6b7280, true); }
+    for (const y of [1.6, 3.2]) { FM.B.box(0x6b7280, 4.4, 0.08, 0.08, 20, y, -2); FM.B.box(0x6b7280, 4.4, 0.08, 0.08, 20, y, 2); FM.B.box(0x6b7280, 0.08, 0.08, 4.4, 18, y, 0); FM.B.box(0x6b7280, 0.08, 0.08, 4.4, 22, y, 0); }
+    fmBlock(17.4, 22.6, -2.6, 2.6, D - 0.25, D, 0x7c8590); obstacles[obstacles.length - 1].step = true;   // the deck, walked onto from the top step
+    for (const [a, b, p, q] of [[17.4, 22.6, -2.6, -2.45], [17.4, 22.6, 2.45, 2.6], [17.4, 17.55, -2.6, 2.6], [22.45, 22.6, -2.6, 0.2], [22.45, 22.6, 1.6, 2.6]]) fmBlock(a, b, p, q, D, D + 1.05, 0x9aa3ab, true);   // a railing you can crouch behind
+    { const n = obstacles.length; ob(18.6, 21.4, -1.4, 1.4, D, D + 2.6, 0x9aa3ab, true); delete obstacles[n].top; }
+    FM.B.cyl(0xa3acb4, 1.55, 1.55, 2.6, 20, D + 1.3, 0, 16); FM.B.cyl(0x7c8590, 1.65, 1.0, 0.7, 20, D + 2.95, 0, 16);
+    FM.B.box(0x3d7f9a, 1.6, 0.6, 0.04, 20, D + 1.4, -1.57);
+    fmStairs(30.2, 0.9, -1, 0, 1.2, D, 0x8a8f96);                                      // up from the east, in the open
+  }
+  // ---- the bases ----
+  fmBase(-1); fmBase(1);
+  // a sprinkle of life
+  for (const [x, z] of [[-6.6, -9], [7.5, -24.6], [-7.2, 9.6], [7.5, 24.6]]) cover('barrel', x, z, 1.1, 1.0, 1.1, 0);
+  for (const [x, z] of [[-2, -14], [2, 14], [-3, 18.5], [3, -18.5]]) cover('sand', x, z, 2.2, 1.0, 1.0, 0);
+  cover('crates', 2.6, -11, 1.3, 1.2, 1.3, 0); cover('crates', -2.6, 11, 1.3, 1.2, 1.3, 0);
+  stnSign([{ t: 'مزرعة الواحة', f: 'bold 64px ' + FONT, c: '#3a2410', y: 0.52 }], 2.8, 0.55, 0, 2.6, -6.34, Math.PI);
+  // bake the bags
+  const bm = FM.B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
+  const lm = FM.L.mesh(FM.lmat || (FM.lmat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }))); if (lm) { lm.castShadow = true; lm.receiveShadow = true; track(lm, true); }
+  const wm = FM.W.mesh(FM.wmat || (FM.wmat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 90, specular: 0x99bbcc }))); if (wm) { wm.receiveShadow = true; track(wm, true); }
+  const gm = FM.G.mesh(FM.gmat || (FM.gmat = new THREE.MeshBasicMaterial({ vertexColors: true }))); if (gm) track(gm, true);
+}
+// ================= Map: the mall (team modes as 'mall', zombies as 'zmall') =================
+// Two floors. The ground floor: an atrium with a fountain and the food court in the middle, the supermarket (west),
+// the electronics store (east), shops and an entrance hall on the north and south sides, store rooms in the corners.
+// The first floor (y 4.5): a walkway round the open atrium with a bridge across it, the arcade (west), the cinema (east),
+// clothes shops north and south. Up and down: two escalators in the atrium and two service stairs in the corners.
+// Everything north of the middle line is the south half turned half a circle, so both teams get the same mall.
+// Bots and zombies use both floors (FLO); the objectives all stand on the ground floor.
+const ML_F = 4.5, ML_R = 8.6, ML_C = 4.2;     // upper floor top, roof, ground-floor ceiling (underside of the slab)
+const ML = { B: null, S: null, G: null, Gl: null };
+const ML_SPAWNS = [[-16, -23.4], [-11, -24.6], [-4, -25.2], [4, -25.2], [11, -24.6], [16, -23.4], [0, -28.2],
+                   [16, 23.4], [11, 24.6], [4, 25.2], [-4, 25.2], [-11, 24.6], [-16, 23.4], [0, 28.2]];
+const ML_STAIRS = [                                         // ground approach -> along the steps -> out on the first floor
+  { path: [[-6, 1.4], [-6, -0.1], [-6, -8.2], [-6, -9.7]] },             // north escalator
+  { path: [[6, -1.4], [6, 0.1], [6, 8.2], [6, 9.7]] },                   // south escalator
+  { path: [[-16.1, -19], [-17.2, -19], [-24.6, -19], [-24.6, -17.2]] },  // north-west service stairs
+  { path: [[16.1, 19], [17.2, 19], [24.6, 19], [24.6, 17.2]] }           // south-east service stairs
+];
+const ML_BOX = [[-19, 1.5, 0], [19, -1.5, 0], [0, -16.5, 0], [0, 16.5, 0]];
+// one rectangle, given for the north half and turned for the south half (s = -1)
+const mlR = (s, x0, x1, z0, z1) => s > 0 ? [x0, x1, z0, z1] : [-x1, -x0, -z1, -z0];
+// a solid block with its collider; top: can you stand on it; bag: where it is drawn
+function mlBlock(x0, x1, z0, z1, y0, y1, c, top, bag) {
+  if (x1 - x0 < 0.01 || z1 - z0 < 0.01 || y1 - y0 < 0.01) return;
+  const n = obstacles.length;
+  if (y0 >= 0.5) ob(x0, x1, z0, z1, y0, y1, c, true); else boxMM(x0, x1, z0, z1, y0, y1, c, true);
+  if (!top && obstacles[n]) obstacles[n].noClimb = true;     // keeps its top, so the floor above is not walled off, but nobody climbs it
+  (bag || ML.B).box(c, x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+}
+// a wall along x (at z) or along z (at x), with openings [a, b]; s turns it into the south half
+function mlWallX(s, z, x0, x1, ops, y0, y1, c, t) {
+  t = t || 0.3; let cur = x0;
+  for (const [a, b] of ops.concat([[x1, x1]])) { if (a > cur) { const r = mlR(s, cur, a, z - t / 2, z + t / 2); mlBlock(r[0], r[1], r[2], r[3], y0, y1, c); } cur = b; }
+  // a lintel over each door that does not go all the way up
+  if (y1 - y0 > 3.2) for (const [a, b] of ops) { if (b > a) { const r = mlR(s, a, b, z - t / 2, z + t / 2); ML.B.box(c, r[1] - r[0], 0.6, r[3] - r[2], (r[0] + r[1]) / 2, y1 - 0.3, (r[2] + r[3]) / 2); } }
+}
+function mlWallZ(s, x, z0, z1, ops, y0, y1, c, t) {
+  t = t || 0.3; let cur = z0;
+  for (const [a, b] of ops.concat([[z1, z1]])) { if (a > cur) { const r = mlR(s, x - t / 2, x + t / 2, cur, a); mlBlock(r[0], r[1], r[2], r[3], y0, y1, c); } cur = b; }
+  if (y1 - y0 > 3.2) for (const [a, b] of ops) { if (b > a) { const r = mlR(s, x - t / 2, x + t / 2, a, b); ML.B.box(c, r[1] - r[0], 0.6, r[3] - r[2], (r[0] + r[1]) / 2, y1 - 0.3, (r[2] + r[3]) / 2); } }
+}
+// stairs or an escalator from (x, z) along +-x or +-z up to h; drawn in the bag, every step a step
+function mlStairs(x, z, dx, dz, w, h, c, esc) {
+  const steps = Math.ceil(h / 0.3), run = esc ? 0.5 : 0.5, rise = h / steps;
+  for (let i = 0; i < steps; i++) {
+    const a = i * run, b = (i + 1) * run, top = +(rise * (i + 1)).toFixed(3);
+    let x0, x1, z0, z1;
+    if (dx) { const p = x + dx * a, q = x + dx * b; x0 = Math.min(p, q); x1 = Math.max(p, q); z0 = z - w / 2; z1 = z + w / 2; }
+    else { const p = z + dz * a, q = z + dz * b; x0 = x - w / 2; x1 = x + w / 2; z0 = Math.min(p, q); z1 = Math.max(p, q); }
+    boxMM(x0, x1, z0, z1, 0, top, c, true); obstacles[obstacles.length - 1].step = true;
+    ML.B.box(i % 2 ? c : shade(c, 0.9), x1 - x0, top, z1 - z0, (x0 + x1) / 2, top / 2, (z0 + z1) / 2);
+    if (esc) ML.B.box(0x9aa3ab, x1 - x0 + (dx ? 0 : 0.02), 0.03, z1 - z0 + (dz ? 0 : 0.02), (x0 + x1) / 2, top + 0.015, (z0 + z1) / 2);   // the metal tread
+  }
+  if (esc) {                                              // glass sides with a black rubber handrail
+    const L = steps * run, mx = x + dx * L / 2, mz = z + dz * L / 2, ang = Math.atan2(h, L);
+    for (const sd of [-1, 1]) {
+      const ox = dz ? sd * (w / 2 + 0.06) : 0, oz = dx ? sd * (w / 2 + 0.06) : 0;
+      if (dz) { ML.Gl.box(0xbfe3ff, 0.05, 1.0, L, mx + ox, h / 2 + 0.6, mz + oz, dz * ang, 0, 0); ML.B.box(0x111111, 0.1, 0.08, L * 1.03, mx + ox, h / 2 + 1.1, mz + oz, dz * ang, 0, 0); }
+      else { ML.Gl.box(0xbfe3ff, L, 1.0, 0.05, mx + ox, h / 2 + 0.6, mz + oz, 0, 0, -dx * ang); ML.B.box(0x111111, L * 1.03, 0.08, 0.1, mx + ox, h / 2 + 1.1, mz + oz, 0, 0, -dx * ang); }
+    }
+  }
+}
+function mlRail(x0, x1, z0, z1) {                         // a glass railing on the first floor: crouch behind it, shoot over it
+  const n = obstacles.length; ob(x0, x1, z0, z1, ML_F, ML_F + 1.05, 0x9aa3ab, true); delete obstacles[n].top;
+  const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  ML.Gl.box(0xbfe3ff, w, 0.95, d, cx, ML_F + 0.5, cz);
+  ML.B.box(0xc9ced4, w + 0.04, 0.07, d + 0.04, cx, ML_F + 1.05, cz);
+}
+function mlSign(t, col, x, y, z, ry, w) {
+  stnSign([{ t, f: 'bold 64px ' + FONT, c: '#ffffff', glow: col, y: 0.52 }], w || 3.2, 0.62, x, y, z, ry);
+}
+function mlTable(x, z) {                                  // food-court table: crouch cover
+  addBox(x, z, 1.5, 0.9, 1.5, 0x8a7f70, true);
+  ML.B.box(0xe8e2d6, 1.5, 0.08, 1.5, x, 0.86, z); ML.B.box(0x4b5563, 0.2, 0.82, 0.2, x, 0.41, z);
+  for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ML.B.box(0xd9534f, 0.45, 0.5, 0.45, x + a * 1.05, 0.25, z + b * 1.05);
+}
+function mlShelf(x0, x1, z, h, cols) {                    // a supermarket shelf: tall, nobody stands on it
+  mlBlock(x0, x1, z - 0.45, z + 0.45, 0, h, 0xd7dbe0);
+  for (let k = 0; k < 4; k++) for (let x = x0 + 0.35; x < x1 - 0.2; x += 0.6) for (const sd of [-1, 1])
+    ML.B.box(cols[(Math.floor(x * 3) + k + (sd > 0 ? 2 : 0) + 90) % cols.length], 0.5, 0.32, 0.22, x, 0.35 + k * 0.42, z + sd * 0.36);
+}
+function mlShelfZ(x, z0, z1, h, cols) {
+  mlBlock(x - 0.45, x + 0.45, z0, z1, 0, h, 0xd7dbe0);
+  for (let k = 0; k < 4; k++) for (let z = z0 + 0.35; z < z1 - 0.2; z += 0.6) for (const sd of [-1, 1])
+    ML.B.box(cols[(Math.floor(z * 3) + k + (sd > 0 ? 2 : 0) + 70) % cols.length], 0.22, 0.32, 0.5, x + sd * 0.36, 0.35 + k * 0.42, z);
+}
+function mlRack(x, z, y) {                                // a clothes rack: low, see over it
+  y = y || 0;
+  const n = obstacles.length; if (y) ob(x - 0.9, x + 0.9, z - 0.3, z + 0.3, y, y + 1.1, 0x8a7f70, true); else addBox(x, z, 1.8, 1.1, 0.6, 0x8a7f70, true);
+  if (y) delete obstacles[n].top;
+  ML.B.box(0x9aa3ab, 1.8, 0.05, 0.05, x, y + 1.25, z);
+  for (let i = 0; i < 6; i++) ML.B.box([0xb91c1c, 0x1d4ed8, 0xf59e0b, 0x10b981, 0xf3f4f6, 0x7c3aed][Math.abs(i + Math.round(x)) % 6], 0.25, 0.85, 0.5, x - 0.7 + i * 0.28, y + 0.75, z);
+}
+function buildMall() {
+  ARENA = 32; radarRange = 26;
+  const Z = mode !== 'tdm';                               // zombies: the doors are shuttered, the windows are boarded
+  ML.B = VB(); ML.S = VB(); ML.G = VB(); ML.Gl = VB();
+  setSky(0x9cc9e8);
+  makeGround(0x55585c, 'asphalt');
+  perimeter(0x8a7f70);
+  backdrop(0x6f7a84, false);
+  const EXT = 0xd6d0c4, INT = 0xe4ded2, INT2 = 0xd2ccc0, F = ML_F, C = ML_C, R = ML_R, TILE = 0xc9c3b6;
+  // ---- the car parks ----
+  for (const s of [-1, 1]) {
+    for (let x = -26; x <= 26; x += 4) ML.S.box(0xf3f4f6, 0.12, 0.02, 4.5, x, 0.02, s * 27.6);
+    carX(s * -21, s * 26.8, s < 0 ? 0x1d4ed8 : 0xb91c1c); carX(s * 20, s * 27.4, 0xe5e7eb); carX(s * -9, s * 29.6, 0x374151);
+    cover('barrel', s * 24.5, s * 22.6, 1.2, 1.0, 1.2, 0); cover('crates', s * -26.5, s * 23.2, 1.4, 1.2, 1.4, 0);
+    for (const x of [-10, 10]) { ML.B.box(0x6b7280, 0.14, 4.6, 0.14, x, 2.3, s * 22.4); ML.G.box(0xfff3c4, 0.9, 0.12, 0.3, x, 4.6, s * 22.4); }
+  }
+  // ---- the outside walls, all the way up; doors (team games) or shutters and boarded windows (zombies) ----
+  ML.S.box(TILE, 52, 0.02, 40, 0, 0.012, 0);
+  for (const s of [1, -1]) {
+    const doors = [[-17, -14], [-3, 3], [14, 17]];
+    const wins = Z ? [-21, -10.5, 10.5, 21] : [], ops = wins.map(g => [g - 1.25, g + 1.25]).concat(doors).sort((a, b) => a[0] - b[0]);
+    mlWallX(s, -20, -26.25, 26.25, ops, 0, R + 0.3, EXT, 0.5);
+    for (const [a, b] of doors) {
+      const r = mlR(s, a, b, -20.25, -19.75); mlBlock(r[0], r[1], r[2], r[3], 3.2, R + 0.3, EXT);
+      if (Z) { mlBlock(r[0], r[1], r[2], r[3], 0, 3.2, 0x6b7280); for (let y = 0.25; y < 3.1; y += 0.3) ML.B.box(0x4b5563, r[1] - r[0], 0.04, r[3] - r[2] + 0.04, (r[0] + r[1]) / 2, y, (r[2] + r[3]) / 2); }
+    }
+    for (const g of wins) { const r = mlR(s, g - 1.25, g + 1.25, -20.25, -19.75); mlBlock(r[0], r[1], r[2], r[3], 0, 0.9, EXT); mlBlock(r[0], r[1], r[2], r[3], 2.65, R + 0.3, EXT); addBarrier(s * g, s * -20, 0, s); }
+    // east (s = 1) and west (s = -1) walls
+    const dock = [[-3, 3]];
+    { const wins = Z ? [-8, 8] : [], ops = wins.map(g => [g - 1.25, g + 1.25]).concat(dock).sort((a, b) => a[0] - b[0]);
+      mlWallZ(s, 26, -20, 20, ops, 0, R + 0.3, EXT, 0.5);
+      const r = mlR(s, 25.75, 26.25, -3, 3); mlBlock(r[0], r[1], r[2], r[3], 3.2, R + 0.3, EXT);
+      if (Z) mlBlock(r[0], r[1], r[2], r[3], 0, 3.2, 0x6b7280);
+      for (const g of wins) { const q = mlR(s, 25.75, 26.25, g - 1.25, g + 1.25); mlBlock(q[0], q[1], q[2], q[3], 0, 0.9, EXT); mlBlock(q[0], q[1], q[2], q[3], 2.65, R + 0.3, EXT); addBarrier(s * 26, s * g, -s, 0); } }
+    // the canopy over the main door and its name
+    const r = mlR(s, -5, 5, -22.2, -20.25); ML.B.box(0x374151, r[1] - r[0], 0.3, r[3] - r[2], (r[0] + r[1]) / 2, 3.6, (r[2] + r[3]) / 2);
+    mlSign('المول', '#0ea5e9', 0, 5.6, s * -20.3, s > 0 ? Math.PI : 0, 4.2);
+    if (!Z) for (const x of [-3, -1, 1, 3]) ML.B.box(0x9ca3af, 0.08, 3.0, 0.08, x, 1.5, s * -20);     // what is left of the glass doors
+  }
+  // ---- the ground floor, north half (the south half is the same, turned) ----
+  for (const s of [1, -1]) {
+    const H = C;
+    mlWallX(s, -12, -26, -12, [[-22, -19]], 0, H, INT2);       // supermarket / store room
+    mlWallX(s, -12, -12, -4, [[-10, -6]], 0, H, INT);           // shop front onto the atrium
+    mlWallX(s, -12, 4, 12, [[6, 10]], 0, H, INT);
+    mlWallX(s, -12, 12, 26, [[19, 22]], 0, H, INT2);            // electronics / store room
+    mlWallZ(s, -12, -20, -12, [[-19, -17]], 0, H, INT2);
+    mlWallZ(s, -4, -20, -12, [[-16, -14]], 0, H, INT);
+    mlWallZ(s, 4, -20, -12, [[-16, -14]], 0, H, INT);
+    mlWallZ(s, 12, -20, -12, [[-19, -17]], 0, H, INT2);
+    mlWallZ(s, -12, -12, 0, [[-7, -3]], 0, H, INT);              // supermarket's front; turned, the electronics store's
+    mlWallZ(s, 12, -12, 0, [[-7, -3]], 0, H, INT);
+    // the shops either side of the entrance hall
+    for (const [x0, x1, col, name] of [[-12, -4, '#f472b6', s > 0 ? 'عطور' : 'ألعاب'], [4, 12, '#a3e635', s > 0 ? 'أحذية' : 'نظارات']]) {
+      const cx = (x0 + x1) / 2;
+      const fr = mlR(s, x0 + 2, x1 - 2, -12.2, -12.0); ML.G.box(new THREE.Color(col).getHex(), fr[1] - fr[0], 0.5, 0.06, (fr[0] + fr[1]) / 2, 3.4, s * -11.9);
+      mlSign(name, col, s * cx, 3.4, s * -11.85, s > 0 ? 0 : Math.PI, 3.0);
+      mlRack(s * (cx - 2), s * -14.6); mlRack(s * (cx + 2), s * -14.6);
+    }
+    // the store rooms in the corners
+    for (const [x, z] of [[-23.5, -14], [-15, -14.2], [21.5, -16.8], [15, -14]]) cover('crates', s * x, s * z, 1.4, 1.2, 1.4, 0);
+    cover('cont', s * 23.7, s * -13.6, 3.0, 2.4, 1.6, 2);
+    // the service stairs (north-west; turned: south-east) and the hole above them
+    mlStairs(s * -17.4, s * -19, s * -1, 0, 1.2, F, 0x9ca3af, false);
+    // the entrance hall
+    for (const x of [-3.2, 3.2]) { const p = mlR(s, x - 0.6, x + 0.6, -15.6, -14.4); mlBlock(p[0], p[1], p[2], p[3], 0, 0.8, 0x6b4f3a, true); ML.B.box(0x3f7a34, 1.0, 0.9, 1.0, s * x, 1.2, s * -15); }
+  }
+  // ---- the atrium on the ground floor: the fountain, the food court, two kiosks ----
+  addBox(0, 0, 3.8, 0.8, 3.8, 0x8a7f70, true);
+  ML.B.cyl(0xcfc8bb, 1.95, 2.05, 0.8, 0, 0.4, 0, 16); ML.Gl.cyl(0x38bdf8, 1.75, 1.75, 0.04, 0, 0.74, 0, 16); ML.B.cyl(0xcfc8bb, 0.25, 0.35, 2.0, 0, 1.2, 0, 10);
+  ML.Gl.cyl(0x7dd3fc, 0.9, 0.2, 0.6, 0, 2.4, 0, 12);
+  for (const [x, z] of [[-3.4, 5.6], [3.4, -5.6], [-3.2, 10.4], [3.2, -10.4], [-10.2, 3.6], [10.2, -3.6], [-8.4, 9.8], [8.4, -9.8]]) mlTable(x, z);
+  for (const s of [1, -1]) {
+    const k = mlR(s, -11.4, -9.4, -6.2, -4.2); mlBlock(k[0], k[1], k[2], k[3], 0, 1.15, 0x7c2d12, true);
+    ML.B.box(0x7c2d12, k[1] - k[0], 0.15, k[3] - k[2], (k[0] + k[1]) / 2, 2.6, (k[2] + k[3]) / 2);
+    for (const [a, b] of [[k[0], k[2]], [k[1], k[2]], [k[0], k[3]], [k[1], k[3]]]) ML.B.box(0x3f2a1a, 0.08, 1.5, 0.08, a, 1.9, b);
+    mlSign(s > 0 ? 'قهوة' : 'عصير', s > 0 ? '#f59e0b' : '#22c55e', s * -10.4, 3.05, s * -5.2, s > 0 ? Math.PI / 2 : -Math.PI / 2, 1.8);
+  }
+  // escalators: up to the north balcony from the middle, and the same turned
+  mlStairs(-6, -0.4, 0, -1, 1.6, F, 0x6b7280, true);
+  mlStairs(6, 0.4, 0, 1, 1.6, F, 0x6b7280, true);
+  // ---- the supermarket (west) ----
+  const GOODS = [0xef4444, 0xf59e0b, 0x22c55e, 0x3b82f6, 0xa855f7, 0xf3f4f6, 0x14b8a6];
+  for (const x of [-24.4, -21.6, -16.4]) mlShelfZ(x, -9.4, -4.2, 1.9, GOODS);                     // north half: aisles run north-south
+  for (const z of [5.4, 9.4]) { mlShelf(-24.6, -19.7, z, 1.9, GOODS); mlShelf(-18.3, -14.4, z, 1.9, GOODS); }   // south half: east-west
+  for (const z of [-2.4, 2.4]) { const n = obstacles.length; boxMM(-22.6, -20.4, z - 0.5, z + 0.5, 0, 0.95, 0x8a7f70, true); ML.B.box(0xdbeafe, 2.2, 0.95, 1.0, -21.5, 0.475, z); ML.Gl.box(0x93c5fd, 2.0, 0.04, 0.8, -21.5, 0.97, z); }   // freezers
+  for (const z of [-1.2, 1.2]) mlBlock(-14.4, -13.4, z - 0.6, z + 0.6, 0, 1.0, 0x374151, true);    // tills by the doors
+  mlSign('سوبرماركت', '#ef4444', -12.2, 3.5, 0, -Math.PI / 2, 3.4);
+  // ---- the electronics store (east) ----
+  for (const [x, z] of [[15.4, -8.6], [22.6, -8.6], [15.4, 8.6], [22.6, 8.6], [16.2, -3.6], [21.8, 3.6]]) {
+    mlBlock(x - 1.3, x + 1.3, z - 0.7, z + 0.7, 0, 1.0, 0x1f2937, true);
+    for (let i = 0; i < 3; i++) { ML.B.box(0x111827, 0.7, 0.45, 0.06, x - 0.85 + i * 0.85, 1.25, z, -0.2, 0, 0); ML.G.box([0x38bdf8, 0x818cf8, 0x34d399][i], 0.62, 0.38, 0.02, x - 0.85 + i * 0.85, 1.25, z + 0.04, -0.2, 0, 0); }
+  }
+  for (let z = -10; z <= 10; z += 2.5) { if (Z && Math.abs(z) >= 7.5) continue; ML.B.box(0x0b0f19, 0.1, 1.3, 2.2, 25.65, 2.2, z); ML.G.box([0x0ea5e9, 0x6366f1, 0x10b981, 0xf472b6][Math.abs(Math.round(z)) % 4], 0.02, 1.15, 2.05, 25.58, 2.2, z); }   // the wall of screens
+  mlSign('إلكترونيات', '#38bdf8', 12.2, 3.5, 0, Math.PI / 2, 3.4);
+  // ---- the first floor: the slab with its holes (atrium, the two stairs), the bridge ----
+  const SLAB = (x0, x1, z0, z1) => mlBlock(x0, x1, z0, z1, C, F, 0xd8d2c6, true, ML.S);
+  for (const s of [1, -1]) {
+    for (const r of [mlR(s, -26, 26, -18.3, -8), mlR(s, -26, -25.6, -20, -18.3), mlR(s, -17.4, 26, -20, -18.3), mlR(s, -25.6, -17.4, -20, -19.7), mlR(s, -26, -9, -8, 0), mlR(s, 9, 26, -8, 0)]) SLAB(r[0], r[1], r[2], r[3]);
+    ML.S.box(0xc9c2b4, 52, 0.02, 0.4, 0, F + 0.01, s * -8.2);            // a darker strip at the balcony edge
+  }
+  SLAB(-9, 9, -1.3, 1.3);
+  // railings round the hole and along the bridge
+  for (const s of [1, -1]) {
+    let r = mlR(s, -9, -6.9, -8.05, -7.95); mlRail(r[0], r[1], r[2], r[3]);
+    r = mlR(s, -5.1, 9, -8.05, -7.95); mlRail(r[0], r[1], r[2], r[3]);
+    r = mlR(s, -9.05, -8.95, -7.95, -1.3); mlRail(r[0], r[1], r[2], r[3]);
+    r = mlR(s, 8.95, 9.05, -7.95, -1.3); mlRail(r[0], r[1], r[2], r[3]);
+    r = mlR(s, -9, 9, -1.35, -1.25); mlRail(r[0], r[1], r[2], r[3]);
+  }
+  // first-floor walls (they start on the slab and go up to the roof)
+  for (const s of [1, -1]) {
+    const y0 = F, y1 = R, W = INT;
+    mlWallX(s, -11, -26, -12, [[-20, -17]], y0, y1, W);
+    mlWallX(s, -11, -12, -4, [[-10, -6]], y0, y1, W);
+    mlWallX(s, -11, 4, 12, [[6, 10]], y0, y1, W);
+    mlWallX(s, -11, 12, 26, [], y0, y1, W);
+    mlWallZ(s, -12, -20, -11, [[-16, -13]], y0, y1, W);
+    mlWallZ(s, -4, -20, -11, [], y0, y1, W);
+    mlWallZ(s, 4, -20, -11, [], y0, y1, W);
+    mlWallZ(s, 12, -20, -11, [[-16, -13]], y0, y1, W);
+    mlWallZ(s, -12, -11, 0, [[-6, -3]], y0, y1, W);            // arcade's front; turned, the cinema's
+    mlWallZ(s, 12, -11, 0, [[-6, -3]], y0, y1, W);
+    // clothes shops upstairs
+    for (const [x0, x1] of [[-12, -4], [4, 12]]) { const cx = (x0 + x1) / 2; mlRack(s * (cx - 2), s * -15.5, F); mlRack(s * (cx + 2), s * -15.5, F); mlRack(s * cx, s * -18.4, F); }
+    for (const x of [-23, -16]) mlRack(s * x, s * -14.5, F);
+    mlRack(s * 22, s * -15, F); mlRack(s * 16, s * -17.5, F);
+    // the overlook above the entrance: a bench and a planter
+    { const p = mlR(s, -2.4, 2.4, -14.6, -13.8); mlBlock(p[0], p[1], p[2], p[3], F, F + 0.5, 0x6b4f3a, true); }
+    mlSign(s > 0 ? 'أزياء' : 'موضة', '#e879f9', s * -8, F + 3.2, s * -10.85, s > 0 ? 0 : Math.PI, 2.8);
+    mlSign(s > 0 ? 'رياضة' : 'أطفال', '#fb923c', s * 8, F + 3.2, s * -10.85, s > 0 ? 0 : Math.PI, 2.8);
+  }
+  // the arcade (west, first floor)
+  for (const [x, z] of [[-24.6, -8.6], [-24.6, -5.4], [-24.6, -2.2], [-24.6, 2.2], [-24.6, 5.4], [-24.6, 8.6], [-17.4, -7], [-19.6, -7], [-17.4, 7], [-19.6, 7]]) {
+    const n = obstacles.length; ob(x - 0.55, x + 0.55, z - 0.6, z + 0.6, F, F + 1.9, 0x8a7f70, true); delete obstacles[n].top;
+    ML.B.box(0x1e1b4b, 1.1, 1.9, 1.2, x, F + 0.95, z); ML.G.box([0xf472b6, 0x22d3ee, 0xfacc15, 0xa3e635][Math.abs(Math.round(x + z)) % 4], 0.04, 0.6, 0.8, x + (x < -22 ? 0.57 : -0.57), F + 1.3, z);
+  }
+  { const n = obstacles.length; ob(-21, -16, -2.2, 2.2, F, F + 0.7, 0x8a7f70, true); ML.B.box(0x7c3aed, 5, 0.7, 4.4, -18.5, F + 0.35, 0); for (let i = 0; i < 30; i++) ML.G.box([0xef4444, 0xfacc15, 0x22c55e, 0x3b82f6][i % 4], 0.25, 0.25, 0.25, -20.6 + (i * 1.37) % 4.3, F + 0.78, -1.9 + (i * 0.73) % 3.8); }  // the ball pit: stand on it
+  mlSign('صالة الألعاب', '#22d3ee', -12.2, F + 3.2, 0, -Math.PI / 2, 3.4);
+  // the cinema (east, first floor): rows of seats facing the screen, crouch behind them
+  for (const x of [14.6, 17.0, 19.4, 21.8]) for (const [z0, z1] of [[-10.4, -1.2], [1.2, 10.4]]) {
+    const n = obstacles.length; ob(x - 0.45, x + 0.45, z0, z1, F, F + 0.95, 0x8a7f70, true); delete obstacles[n].top;
+    for (let z = z0 + 0.3; z < z1; z += 0.6) { ML.B.box(0x7f1d1d, 0.5, 0.45, 0.52, x + 0.1, F + 0.25, z); ML.B.box(0x991b1b, 0.15, 0.95, 0.52, x + 0.38, F + 0.5, z); }
+  }
+  ML.G.box(0xe5e7eb, 0.05, 3.0, 16, 25.6, F + 2.1, 0);
+  mlSign('سينما', '#f43f5e', 12.2, F + 3.2, 0, Math.PI / 2, 2.8);
+  // ---- the roof, the skylight over the atrium, the lights ----
+  for (const [x0, x1, z0, z1] of [[-26, 26, -20, -8], [-26, 26, 8, 20], [-26, -9, -8, 8], [9, 26, -8, 8]]) ML.S.box(0xbdb6a8, x1 - x0, 0.3, z1 - z0, (x0 + x1) / 2, R + 0.15, (z0 + z1) / 2);
+  for (let x = -8; x <= 8; x += 2) ML.B.box(0x4b5563, 0.12, 0.2, 16, x, R + 0.1, 0);
+  for (let z = -7; z <= 7; z += 3.5) ML.B.box(0x4b5563, 18, 0.2, 0.12, 0, R + 0.1, z);
+  ML.Gl.box(0xc7e6ff, 18, 0.04, 16, 0, R + 0.2, 0);
+  for (const y of [C - 0.04, R - 0.04]) for (let x = -22; x <= 22; x += 6) for (let z = -17; z <= 17; z += 6) {
+    if (Math.abs(x) < 10 && Math.abs(z) < 9) continue;
+    ML.G.box(0xf8fafc, 1.6, 0.04, 0.4, x, y, z);
+  }
+  // ---- zombies: the machines on the ground floor ----
+  if (Z) {
+    perkMachine(-6.6, -19.4, 1, 'jug'); perkMachine(6.6, -19.4, 1, 'speed');
+    perkMachine(6.6, 19.4, -1, 'dtap'); perkMachine(-6.6, 19.4, -1, 'stam');
+    perkMachine(-11, -11.4, 1, 'revive');
+    papMachine(15, 11.3, -1);
+  }
+  // ---- bake ----
+  const bm = ML.B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
+  const sm = ML.S.mesh(ML.smat || (ML.smat = new THREE.MeshLambertMaterial({ vertexColors: true }))); if (sm) { sm.receiveShadow = true; track(sm, true); }
+  const gm = ML.G.mesh(ML.gmat || (ML.gmat = new THREE.MeshBasicMaterial({ vertexColors: true }))); if (gm) track(gm, true);
+  const lm = ML.Gl.mesh(ML.lmat || (ML.lmat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide }))); if (lm) track(lm, true);
+  Object.assign(FLO, { F: ML_F, stairs: ML_STAIRS, sided: false });
+  navUpRebuild();
+}
 const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x: 25, y: 9.5, z: 25.5, tx: 3, ty: 0.5, tz: 1 }, start: [-17, 20.5, 0], boxSpots: BASE_BOX }, town: { build: buildTown }, station: { build: buildStation, start: [0, 24, 0] }, tdm: { build: buildTown, tdm: true },
   port: { build: buildPort, tdm: true, cam: { x: -11.5, y: 7.5, z: 12.5, tx: 1, ty: 0.6, tz: -1 },
           spawns: [[-11.6, 12.2], [11.6, 12.2], [-6.4, 12.3], [6.4, 12.3], [-12.4, 7], [12.4, 7.2], [-12.4, 0], [12.4, 0],
@@ -3778,6 +4239,15 @@ const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x:
 MAPS.souq = { build: buildSouq, tdm: true, cam: { x: -17, y: 10, z: 22, tx: 0, ty: 1, tz: 0 }, spawns: SOUQ_SPAWNS, sideBias: 14,
               flags: [[-6, 9.6], [0, 0], [6, -9.6]], sites: [[-16, -8], [16.5, -8.6]] };
 MAPS.port.flags = [[-1.2, 9.6], [0, 0], [1.2, -9.6]]; MAPS.port.sites = [[-11.4, -5.6], [11.3, -6.6]];
+MAPS.mall = { build: buildMall, tdm: true, floors: true, cam: { x: -30, y: 16, z: 30, tx: 0, ty: 2, tz: 0 }, spawns: ML_SPAWNS, sideBias: 16,
+              flags: [[-19, 0], [0, -4.4], [19, 0]], sites: [[-19, -15.4], [18.5, -15.6]],
+              hills: [{ n: 'ساحة المطاعم', x: 0, z: 4.6, w: 7, d: 3, y: 0 }, { n: 'السوبرماركت', x: -19, z: 0, w: 8, d: 3.4, y: 0 }, { n: 'الإلكترونيات', x: 19, z: 0, w: 5.5, d: 4.5, y: 0 },
+                      { n: 'الجسر فوق', x: 0, z: 0, w: 14, d: 2.2, y: ML_F }, { n: 'السينما فوق', x: 19, z: 0, w: 9, d: 2.2, y: ML_F }, { n: 'المدخل الشمالي', x: 0, z: -16, w: 6, d: 5, y: 0 }, { n: 'المدخل الجنوبي', x: 0, z: 16, w: 6, d: 5, y: 0 }] };
+MAPS.zmall = { build: buildMall, floors: true, cam: { x: -30, y: 16, z: 30, tx: 0, ty: 2, tz: 0 }, start: [0, 4.5, 0], boxSpots: ML_BOX };
+MAPS.farm = { build: buildFarm, tdm: true, cam: { x: -26, y: 14, z: 30, tx: 2, ty: 1, tz: 0 }, spawns: FM_SPAWNS, sideBias: 16,
+              flags: [[-18, -3.4], [0, 4.4], [20, -4.2]], sites: [[-20, -14.6], [18.2, -14.6]],
+              hills: [{ n: 'البئر', x: -18, z: -3.6, w: 6, d: 2.6, y: 0 }, { n: 'الحوش', x: 0, z: 4.4, w: 9, d: 2.4, y: 0 }, { n: 'تحت البرج', x: 20, z: 0, w: 3.4, d: 3.4, y: 0 },
+                      { n: 'البيت المحمي الشمالي', x: 6, z: -12, w: 3, d: 8, y: 0 }, { n: 'البيت المحمي الجنوبي', x: 12, z: 12, w: 3, d: 8, y: 0 }, { n: 'موقع الشاحنات', x: -8, z: -18, w: 5, d: 4, y: 0 }] };
 MAPS.bigsouq = { build: buildBigSouq, tdm: true, only: 'snd', cam: { x: -24, y: 13, z: 29, tx: 0, ty: 2, tz: 0 }, spawns: BS_SPAWNS, sideBias: 14,
                  sites: [[-22, -19.5], [21, -19]], lanes: [[[-23, 6], [-4.5, 5]], [[4.5, 5], [23, 6]]] };   // attackers split over two ways to the site they go for
 
@@ -3909,6 +4379,7 @@ function buildNuke() {
   [[-3, -8.4], [3, -8.4], [-14, -8], [14, -8], [-3, 8.4], [3, 8.4], [-14, 8], [14, 8], [-16, -25], [16, 25]].forEach(([x, z]) => mannequin(x, z));
   [[-20, 9], [20, -9]].forEach(([x, z]) => fireBarrel(x, z));
   nukeMerge(mapObjects.slice(m0));
+  Object.assign(FLO, { F: NK.F, stairs: NUKE_STAIRS, sided: true });
   navUpRebuild();
 }
 // hundreds of wall pieces cost hundreds of draws: bake the plain ones into one mesh per material.
@@ -3953,10 +4424,10 @@ function navUpRebuild() {
   const bl = NAV2.blocked;
   for (let iz = 0; iz < n; iz++) for (let ix = 0; ix < n; ix++) {
     const x = -ARENA + (ix + 0.5) * cs, z = -ARENA + (iz + 0.5) * cs;
-    if (floorAt(x, z, 0, NK.F + 0.1) < NK.F - 0.05) continue;          // no floor here
+    if (floorAt(x, z, 0, FLO.F + 0.1) < FLO.F - 0.05) continue;          // no floor here
     let ok = true;
     for (const o of obstacles) {
-      if (o.top <= NK.F + 0.05 || (o.bot !== undefined && o.bot > NK.F + 1.6)) continue;
+      if (o.top <= FLO.F + 0.05 || (o.bot !== undefined && o.bot > FLO.F + 1.6)) continue;
       if (x > o.minX - pad && x < o.maxX + pad && z > o.minZ - pad && z < o.maxZ + pad) { ok = false; break; }
     }
     if (ok) bl[iz * n + ix] = 0;
@@ -3989,12 +4460,13 @@ function navStep2(b, px, pz) {
   const vx = -ARENA + (ix + bx + 0.5) * cs - px, vz = -ARENA + (iz + bz + 0.5) * cs - pz, l = Math.hypot(vx, vz) || 1;
   _nx = vx / l; _nz = vz / l; return true;
 }
-const upLvl = y => y > 2 ? 1 : 0;
+const FLO = { F: NK.F, stairs: NUKE_STAIRS, sided: true };     // the upper floor on this map; sided: the nuke houses, one upstairs per side
+const upLvl = y => y > FLO.F * 0.59 ? 1 : 0;
 let _rgx = 0, _rgz = 0;
 // where a bot should walk next on a map with two floors. Returns true if it set (_nx, _nz).
 function botRoute(b, dt, gx, gz, gy) {
   const P = b.group.position, L = upLvl(b.y || 0), G0 = upLvl(gy || 0), mySide = Math.sign(P.z) || 1, gSide = Math.sign(gz) || 1;
-  const G = L === 1 && G0 === 1 && mySide !== gSide ? 0 : G0;      // the other house upstairs: down first
+  const G = FLO.sided && L === 1 && G0 === 1 && mySide !== gSide ? 0 : G0;      // the other house upstairs: down first
   if (b.climb) {                                            // on the stairs: follow the points
     const S = b.climb, pts = S.path, i = b.climbI;
     const [tx, tz] = pts[i], d = Math.hypot(tx - P.x, tz - P.z);
@@ -4014,7 +4486,7 @@ function botRoute(b, dt, gx, gz, gy) {
   }
   // other floor: the nearest stairs, walk to their end on this floor, then climb
   let best = null, bs = 1e9;
-  for (const S of NUKE_STAIRS) { if (S.side !== (L === 0 ? gSide : mySide)) continue; const e = L === 0 ? S.path[0] : S.path[S.path.length - 1], f = L === 0 ? S.path[S.path.length - 1] : S.path[0]; const sc = Math.hypot(e[0] - P.x, e[1] - P.z) + Math.hypot(f[0] - gx, f[1] - gz); if (sc < bs) { bs = sc; best = S; } }
+  for (const S of FLO.stairs) { if (FLO.sided && S.side !== (L === 0 ? gSide : mySide)) continue; const e = L === 0 ? S.path[0] : S.path[S.path.length - 1], f = L === 0 ? S.path[S.path.length - 1] : S.path[0]; const sc = Math.hypot(e[0] - P.x, e[1] - P.z) + Math.hypot(f[0] - gx, f[1] - gz); if (sc < bs) { bs = sc; best = S; } }
   if (!best) return 0;
   const e = L === 0 ? best.path[0] : best.path[best.path.length - 1], de = Math.hypot(e[0] - P.x, e[1] - P.z);
   if (de < 0.6) { b.climb = best; b.climbD = L === 0 ? 1 : -1; b.climbI = L === 0 ? 1 : best.path.length - 2; return botRoute(b, dt, gx, gz, gy); }
@@ -4149,7 +4621,7 @@ function findLedge(dx, dz, reach) {
   for (const dist of [0.6, 0.95]) {
     const px = player.x + dx * dist, pz = player.z + dz * dist;
     for (const q of obstacles) {
-      if (q.top === undefined) continue;
+      if (q.top === undefined || q.noClimb) continue;
       const h = q.top - player.y;
       if (h < 0.45 || h > reach) continue;
       if (px > q.minX && px < q.maxX && pz > q.minZ && pz < q.maxZ && (!o || q.top < o.top)) o = q;
@@ -8576,7 +9048,7 @@ function navStep(b, dt, px, pz, tx, tz) {
 let groanT = 3;
 function updateBots(dt) {
   if (coClient()) { coMirror(dt); return; }
-  const lure = coLure(), tgX0 = lure ? lure.x : player.x, tgZ0 = lure ? lure.z : player.z, team = co.live && co.role === 'host' && coPeers.size > 0;
+  const lure = coLure(), tgX0 = lure ? lure.x : player.x, tgZ0 = lure ? lure.z : player.z, team = co.live && co.role === 'host' && coPeers.size > 0, FLOM = !!(MAPS[currentMap] && MAPS[currentMap].floors);
   const sig = currentMap + ARENA + '|' + obstacles.length + '|' + (box ? box.x + ',' + box.z : '');
   if (NAV.sig !== sig) { NAV.sig = sig; navRebuild(); NAV.t = 0; }
   NAV.t -= dt;
@@ -8601,7 +9073,18 @@ function updateBots(dt) {
     const reach = b.type === 'boss' ? 2.3 : b.type === 'tank' || b.type === 'armor' ? 1.7 : 1.35;
     if (d > reach * 0.7) {
       let ux = dx / d, uz = dz / d;
-      const nav = navStep(b, dt, ox, oz, tgX, tgZ);
+      let nav;
+      if (FLOM) {                                // two floors: the stairs first if you are on the other one
+        const rt = botRoute(b, dt, tgX, tgZ, lure ? 0 : T ? (T.ty || 0) : player.y);
+        if (rt === 1) nav = 2;
+        else if (rt === 2) {
+          const sx = _rgx, sz = _rgz, cells = NAV.n * NAV.n;
+          if (!b.sdist || b.sdist.length !== cells) { b.sdist = new Int16Array(cells); b.sflowT = 0; }
+          if ((b.sflowT = (b.sflowT || 0) - dt) <= 0) { b.sflowT = 0.5 + Math.random() * 0.3; navFlow(sx, sz, b.sdist); }
+          const keep = b.dist; b.dist = b.sdist; nav = navStep(b, dt, ox, oz, sx, sz); b.dist = keep;
+          if (nav !== 2) { const fx = sx - ox, fz = sz - oz, fl = Math.hypot(fx, fz) || 1; _nx = fx / fl; _nz = fz / fl; nav = 2; }
+        } else nav = navStep(b, dt, ox, oz, tgX, tgZ);
+      } else nav = navStep(b, dt, ox, oz, tgX, tgZ);
       if (nav === 2) { ux = _nx; uz = _nz; b.detour = 0; }       // no straight way: take the route around
       else if (b.detour > 0) {                 // last resort when stuck with no route: shuffle sideways
         b.detour -= dt;
@@ -8623,13 +9106,14 @@ function updateBots(dt) {
         const ex = nx - o.group.position.x, ez = nz - o.group.position.z, e2 = ex * ex + ez * ez;
         if (e2 < 0.5 && e2 > 1e-4) { const e = Math.sqrt(e2), p = (0.707 - e) * 0.5 / e; nx += ex * p; nz += ez * p; }
       }
-      collide(nx, nz, b.type === 'boss' ? 0.8 : 0.5);
+      collide(nx, nz, b.type === 'boss' ? 0.8 : 0.5, FLOM ? (b.y || 0) : undefined);
       if (b.detour <= 0 && Math.hypot(_cx - ox, _cz - oz) < step * 0.4) {
         b.detour = 0.8 + Math.random() * 0.6;
         b.side = Math.random() < 0.5 ? -1 : 1;
       }
       g.position.x = clamp(_cx, -ARENA + 2, ARENA - 2);
       g.position.z = clamp(_cz, -ARENA + 2, ARENA - 2);
+      if (FLOM) botFeet(b, dt);
     }
 
     if (b.hitT > 0) b.hitT -= dt;
@@ -8637,12 +9121,12 @@ function updateBots(dt) {
     animBot(b, dt);
     if (b.stag > 0) b.stag -= dt;
     b.lean += ((b.crawl ? 1.2 : b.stag > 0 ? -0.3 : 0) - b.lean) * Math.min(1, dt * 12);
-    g.rotation.x = b.lean; g.position.y = b.crawl ? 0.1 : 0;
+    g.rotation.x = b.lean; g.position.y = (FLOM ? (b.y || 0) : 0) + (b.crawl ? 0.1 : 0);
 
     b.cool -= dt;
     if (lure) { if (d < reach && b.cool <= 0) { b.cool = 0.9; b.swipe = 0.35; } }     // clawing at the radio instead of you
-    else if (T) { if (d < reach && b.cool <= 0) { b.cool = 1.1; b.swipe = 0.35; zVoice('attack', g.position.x, g.position.z); coAttack(T.peer, b, 0); } }
-    else if (d < reach * (evading() ? 0.55 : 1) && b.cool <= 0 && player.alive && player.y < 3 && !(down && down.wait)) {     // close enough: swipe (hard to land on someone sliding past)
+    else if (T) { if (d < reach && b.cool <= 0 && (!FLOM || Math.abs((T.ty || 0) - (b.y || 0)) < 1.6)) { b.cool = 1.1; b.swipe = 0.35; zVoice('attack', g.position.x, g.position.z); coAttack(T.peer, b, 0); } }
+    else if (d < reach * (evading() ? 0.55 : 1) && b.cool <= 0 && player.alive && (FLOM ? Math.abs(player.y - (b.y || 0)) < 1.6 : player.y < 3) && !(down && down.wait)) {     // close enough: swipe (hard to land on someone sliding past)
       b.cool = 1.1; b.swipe = 0.35;
       zVoice('attack', g.position.x, g.position.z);
       zHit(b);
@@ -8793,7 +9277,7 @@ function coApply(hs, hostId) {                                 // draw the host'
     if (!Array.isArray(e) || e.length < 7 || !e.every(v => typeof v === 'number' && isFinite(v))) continue;
     const id = e[0]; seen.add(id);
     if (co.dead.has(id)) continue;
-    const f = e[5], ph = f & 3, x = clamp(e[2] / 10, -ARENA - 40, ARENA + 40), z = clamp(e[3] / 10, -ARENA - 40, ARENA + 40), y = e.length > 7 ? clamp(e[7] / 10, -5, 3) : 0;
+    const f = e[5], ph = f & 3, x = clamp(e[2] / 10, -ARENA - 40, ARENA + 40), z = clamp(e[3] / 10, -ARENA - 40, ARENA + 40), y = e.length > 7 ? clamp(e[7] / 10, -5, 9) : 0;
     let b = have.get(id);
     if (!b) {
       if (enemies.length >= 40) continue;
@@ -12618,7 +13102,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.6';
+const GAME_VERSION = '4.7';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
