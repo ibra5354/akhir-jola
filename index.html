@@ -697,11 +697,15 @@
       <button class="mapBtn sel" data-map="arena" data-sec="z" type="button"><span class="mName">الساحة</span><small>ليل مفتوح بين السواتر والحاويات</small></button>
       <button class="mapBtn" data-map="town" data-sec="z" type="button"><span class="mName">الحي القديم</span><small>بيتين بدور واحد وشارع وباص، وقتال قريب</small></button>
       <button class="mapBtn" data-map="base" data-sec="z" type="button"><span class="mName">المجمّع</span><span class="mKind n">جديد</span><small>قاعدة عسكرية ومختبر سري: أبواب بالنقاط، كهرباء، فخاخ، ناقل وسر مدفون</small></button>
+      <button class="mapBtn" data-map="school" data-sec="z" type="button"><span class="mName">المدرسة</span><span class="mKind n">جديد</span><small>بالليل: فصول وممر وصالة رياضية ومقصف، والزومبي يكسرون شبابيك الفصول</small></button>
+      <button class="mapBtn" data-map="hospital" data-sec="z" type="button"><span class="mName">المستشفى المهجور</span><span class="mKind n">جديد</span><small>مظلم: ممر طويل وأجنحة وغرفة عمليات ومشرحة، والمصعد عطلان</small></button>
       <button class="mapBtn" data-map="zmall" data-sec="z" type="button"><span class="mName">المول</span><span class="mKind n">جديد</span><small>الزومبي يكسرون الشبابيك ويلحقونك فوق الدرج الكهربائي. طابقين، ودوّر بينهم</small></button>
       <button class="mapBtn camp" data-map="camp" data-sec="z" type="button"><span class="mName">🌀 الحملة</span><span class="mKind n">جديد</span><small>من المجمّع إلى الحي القديم: خلّصوا المهام، اشحنوا الناقل وكمّلوا القصة بنقاطكم وأسلحتكم</small></button>
       <button class="mapBtn" data-map="tdm" data-sec="m" type="button"><span class="mName">الحي النووي</span><span class="mKind n">جديد</span><small>بيتين بدورين ودرج وحوش خلفي، وشارع بينهم فيه باص</small></button>
       <button class="mapBtn" data-map="souq" data-sec="m" type="button"><span class="mName">السوق</span><span class="mKind n">جديد</span><small>ميدان ونافورة وحارات دكاكين، وسطحين تطلع لهم بالدرج</small></button>
       <button class="mapBtn" data-map="bigsouq" data-sec="m" type="button"><span class="mName">السوق الكبير</span><span class="mKind n">سيرش</span><small>وقت الغروب: سوق مسقوف، وساحة برج الساعة، وسطوح تنط بينها. لسيرش بس</small></button>
+      <button class="mapBtn" data-map="gas" data-sec="m" type="button"><span class="mName">محطة البنزين</span><span class="mKind n">جديد</span><small>بالليل على الطريق السريع: مضخات وبقالة ومطعم، شاحنات تطلع فوقها، ومغسلة تقاتل جواها</small></button>
+      <button class="mapBtn" data-map="tower" data-sec="m" type="button"><span class="mName">البرج تحت الإنشاء</span><span class="mKind n">جديد</span><small>هيكل برج: تحت بين الأعمدة وفوق على طابق ناقص الزوايا، ودرج سقالات ورافعات</small></button>
       <button class="mapBtn" data-map="mall" data-sec="m" type="button"><span class="mName">المول</span><span class="mKind n">جديد</span><small>طابقين ودرج كهربائي: سوبرماركت وساحة مطاعم تحت، وسينما وصالة ألعاب وجسر مكشوف فوق</small></button>
       <button class="mapBtn" data-map="farm" data-sec="m" type="button"><span class="mName">المزرعة</span><span class="mKind n">جديد</span><small>الصبح بدري: نخل وسواقي، حقول مكشوفة للقنّاص، وبرج ماء تطلع فوقه</small></button>
       <button class="mapBtn" data-map="port" data-sec="m" type="button"><span class="mName">الميناء</span><small>ساحة حاويات صغيرة بالليل، قتال من أول ثانية</small></button>
@@ -4232,6 +4236,501 @@ function buildMall() {
   Object.assign(FLO, { F: ML_F, stairs: ML_STAIRS, sided: false });
   navUpRebuild();
 }
+// ---------- A small kit for the v4.8 maps: everything static goes into four bags (lit, lit without shadows, glowing, glass) ----------
+const KIT = { B: null, S: null, G: null, Gl: null };
+function kitStart() { KIT.B = VB(); KIT.S = VB(); KIT.G = VB(); KIT.Gl = VB(); }
+function kitBake() {
+  const bm = KIT.B.mesh(vcLam); if (bm) { bm.castShadow = true; bm.receiveShadow = true; track(bm, true); }
+  const sm = KIT.S.mesh(KIT.smat || (KIT.smat = new THREE.MeshLambertMaterial({ vertexColors: true }))); if (sm) { sm.receiveShadow = true; track(sm, true); }
+  const gm = KIT.G.mesh(KIT.gmat || (KIT.gmat = new THREE.MeshBasicMaterial({ vertexColors: true }))); if (gm) track(gm, true);
+  const lm = KIT.Gl.mesh(KIT.lmat || (KIT.lmat = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.34, depthWrite: false, side: THREE.DoubleSide }))); if (lm) track(lm, true);
+}
+// a solid block with its collider. climb: you can get up on it; otherwise it keeps its top (so a floor above it is not walled off) but nobody climbs it
+function kBlock(x0, x1, z0, z1, y0, y1, c, climb, bag) {
+  if (x1 - x0 < 0.01 || z1 - z0 < 0.01 || y1 - y0 < 0.01) return;
+  const n = obstacles.length;
+  if (y0 >= 0.5) ob(x0, x1, z0, z1, y0, y1, c, true); else boxMM(x0, x1, z0, z1, y0, y1, c, true);
+  if (!climb && obstacles[n]) obstacles[n].noClimb = true;
+  (bag || KIT.B).box(c, x1 - x0, y1 - y0, z1 - z0, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+}
+// a wall along x at z (or along z at x) with openings [a, b]; a strip over each opening shows the door frame
+function kWallX(z, x0, x1, ops, y0, y1, c, t) {
+  t = t || 0.3; let cur = x0;
+  for (const [a, b] of ops.concat([[x1, x1]]).sort((p, q) => p[0] - q[0])) { if (a > cur) kBlock(cur, a, z - t / 2, z + t / 2, y0, y1, c); cur = Math.max(cur, b); }
+  if (y1 - y0 > 2.9) for (const [a, b] of ops) if (b > a && a >= x0 && b <= x1) KIT.B.box(c, b - a, y1 - y0 - 2.5, t, (a + b) / 2, (y0 + 2.5 + y1) / 2, z);
+}
+function kWallZ(x, z0, z1, ops, y0, y1, c, t) {
+  t = t || 0.3; let cur = z0;
+  for (const [a, b] of ops.concat([[z1, z1]]).sort((p, q) => p[0] - q[0])) { if (a > cur) kBlock(x - t / 2, x + t / 2, cur, a, y0, y1, c); cur = Math.max(cur, b); }
+  if (y1 - y0 > 2.9) for (const [a, b] of ops) if (b > a && a >= z0 && b <= z1) KIT.B.box(c, t, y1 - y0 - 2.5, b - a, x, (y0 + 2.5 + y1) / 2, (a + b) / 2);
+}
+// stairs from (x, z) along +-x or +-z up to h, every step a step
+function kStairs(x, z, dx, dz, w, h, c, grate) {
+  const steps = Math.ceil(h / 0.3), run = 0.5, rise = h / steps;
+  for (let i = 0; i < steps; i++) {
+    const a = i * run, b = (i + 1) * run, top = +(rise * (i + 1)).toFixed(3);
+    let x0, x1, z0, z1;
+    if (dx) { const p = x + dx * a, q = x + dx * b; x0 = Math.min(p, q); x1 = Math.max(p, q); z0 = z - w / 2; z1 = z + w / 2; }
+    else { const p = z + dz * a, q = z + dz * b; x0 = x - w / 2; x1 = x + w / 2; z0 = Math.min(p, q); z1 = Math.max(p, q); }
+    boxMM(x0, x1, z0, z1, 0, top, c, true); obstacles[obstacles.length - 1].step = true;
+    if (grate) KIT.B.box(i % 2 ? c : shade(c, 0.85), x1 - x0, 0.08, z1 - z0, (x0 + x1) / 2, top - 0.04, (z0 + z1) / 2);
+    else KIT.B.box(i % 2 ? c : shade(c, 0.9), x1 - x0, top, z1 - z0, (x0 + x1) / 2, top / 2, (z0 + z1) / 2);
+  }
+}
+// furniture
+function kTable(x, z, w, d, top, legs, chairs) {      // crouch cover
+  w = w || 1.5; d = d || 1.5;
+  addBox(x, z, w, 0.9, d, 0x8a7f70, true);
+  KIT.B.box(top || 0xe8e2d6, w, 0.08, d, x, 0.86, z); KIT.B.box(legs || 0x4b5563, 0.2, 0.82, 0.2, x, 0.41, z);
+  if (chairs) for (const [a, b] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) KIT.B.box(chairs, 0.45, 0.5, 0.45, x + a * (w / 2 + 0.3), 0.25, z + b * (d / 2 + 0.3));
+}
+function kShelfX(x0, x1, z, h, cols, base) {          // a tall shelf along x, goods on both faces
+  kBlock(x0, x1, z - 0.45, z + 0.45, 0, h, base || 0xd7dbe0);
+  for (let k = 0; k < Math.floor((h - 0.3) / 0.42); k++) for (let x = x0 + 0.35; x < x1 - 0.2; x += 0.6) for (const sd of [-1, 1])
+    KIT.B.box(cols[(Math.floor(x * 3) + k + (sd > 0 ? 2 : 0) + 90) % cols.length], 0.5, 0.32, 0.22, x, 0.35 + k * 0.42, z + sd * 0.36);
+}
+function kShelfZ(x, z0, z1, h, cols, base) {
+  kBlock(x - 0.45, x + 0.45, z0, z1, 0, h, base || 0xd7dbe0);
+  for (let k = 0; k < Math.floor((h - 0.3) / 0.42); k++) for (let z = z0 + 0.35; z < z1 - 0.2; z += 0.6) for (const sd of [-1, 1])
+    KIT.B.box(cols[(Math.floor(z * 3) + k + (sd > 0 ? 2 : 0) + 90) % cols.length], 0.22, 0.32, 0.5, x + sd * 0.36, 0.35 + k * 0.42, z);
+}
+function kPanel(x, z, y, w, d, col) { KIT.G.box(col || 0xf8fafc, w || 1.6, 0.04, d || 0.4, x, y, z); }
+function kSign(t, col, x, y, z, ry, w, fg) { stnSign([{ t, f: 'bold 64px ' + FONT, c: fg || '#ffffff', glow: col, y: 0.52 }], w || 3, 0.62, x, y, z, ry); }
+function kCeil(x0, x1, z0, z1, y, c) { KIT.S.box(c || 0x8f8a80, x1 - x0, 0.2, z1 - z0, (x0 + x1) / 2, y + 0.1, (z0 + z1) / 2); }
+function kFloor(x0, x1, z0, z1, c, y) { KIT.S.box(c, x1 - x0, 0.02, z1 - z0, (x0 + x1) / 2, (y || 0) + 0.012, (z0 + z1) / 2); }
+// ================= Map: the gas station on the highway, at night (team modes) =================
+// The middle: the pumps under the canopy, the shop (west) and the restaurant (east).
+// North and south of it (the same on both sides): a box truck and a flatbed truck (west), the car wash (east).
+// The flatbed's cargo is a place to stand; the car wash is a tunnel to fight through.
+const GS_SPAWNS = [[-14, -18.7], [-8, -18.7], [-3, -18.7], [3, -18.7], [8, -18.7], [14, -18.7], [0, -18.2],
+                   [-14, 18.7], [-8, 18.7], [-3, 18.7], [3, 18.7], [8, 18.7], [14, 18.7], [0, 18.2]];
+function gsTruckBox(z) {                                // a box truck along x, cab to the east
+  kBlock(-20, -11.2, z - 1.3, z + 1.3, 0, 3.4, 0xe5e7eb);
+  KIT.B.box(0x1d4ed8, 8.6, 0.5, 0.04, -15.6, 2.4, z - 1.32); KIT.B.box(0x1d4ed8, 8.6, 0.5, 0.04, -15.6, 2.4, z + 1.32);
+  kBlock(-11.2, -8.8, z - 1.2, z + 1.2, 0, 2.7, 0xb91c1c);
+  KIT.B.box(0x111827, 0.04, 0.8, 2.0, -8.78, 1.9, z);
+  for (const x of [-18.6, -16.6, -12.6, -9.8]) for (const s of [-1, 1]) KIT.B.cyl(0x111111, 0.5, 0.5, 0.35, x, 0.5, z + s * 1.25, 10, Math.PI / 2, 0, 0);
+}
+function gsFlatbed(z) {                                 // a flatbed with two crates: jump on, climb up
+  kBlock(-19, -11.6, z - 1.2, z + 1.2, 0, 1.3, 0x4b5563, true);
+  kBlock(-11.6, -9.2, z - 1.15, z + 1.15, 0, 2.6, 0xf59e0b);
+  KIT.B.box(0x111827, 0.04, 0.8, 1.9, -9.18, 1.9, z);
+  for (const x of [-17.8, -15.8, -12.6, -10.2]) for (const s of [-1, 1]) KIT.B.cyl(0x111111, 0.5, 0.5, 0.35, x, 0.5, z + s * 1.15, 10, Math.PI / 2, 0, 0);
+  for (const x of [-17.2, -13.6]) { kBlock(x - 0.7, x + 0.7, z - 0.7, z + 0.7, 1.3, 2.6, 0x8b5a2b, true); KIT.B.box(0x6b4423, 1.42, 0.08, 1.42, x, 1.95, z); }
+}
+function gsCarWash(s) {                                 // s = -1 north, 1 south
+  const z0 = s < 0 ? -15 : 9, z1 = s < 0 ? -9 : 15, zc = (z0 + z1) / 2;
+  kBlock(10, 18, z0, z0 + 0.3, 0, 3.2, 0x94a3b8); kBlock(10, 18, z1 - 0.3, z1, 0, 3.2, 0x94a3b8);
+  KIT.S.box(0x64748b, 8.4, 0.3, z1 - z0 + 0.4, 14, 3.35, zc);
+  KIT.G.box(0x38bdf8, 8.2, 0.12, 0.06, 14, 3.1, z0 + 0.32); KIT.G.box(0x38bdf8, 8.2, 0.12, 0.06, 14, 3.1, z1 - 0.32);
+  for (const x of [11.4, 16.6]) { KIT.B.cyl(0x2563eb, 0.45, 0.45, 2.6, x, 1.45, z0 + 0.9, 10); KIT.B.cyl(0x2563eb, 0.45, 0.45, 2.6, x, 1.45, z1 - 0.9, 10); }
+  carX(16.4, zc, s < 0 ? 0xdc2626 : 0x16a34a);
+  kSign('مغسلة', '#38bdf8', 9.95, 2.6, zc, -Math.PI / 2, 2.4);
+  for (const [x, z] of [[19.3, s * 7.8], [9, s * 16.6]]) { kBlock(x - 0.55, x + 0.55, z - 0.55, z + 0.55, 0, 1.2, 0x8a7f70, true); for (let i = 0; i < 4; i++) KIT.B.cyl(0x1f2937, 0.55, 0.55, 0.28, x, 0.15 + i * 0.3, z, 12); }
+}
+function buildGas() {
+  ARENA = 21; radarRange = 20;
+  kitStart();
+  setSky(0x9cc9e8, true);
+  hemi.intensity = 0.95; hemi.color.setHex(0x9fb4e0); sun.intensity = 0.7; scene.fog.near = 18; scene.fog.far = 80;
+  makeGround(0x2c3138, 'asphalt');
+  perimeter(0x3d4249);
+  backdrop(0x1a212c, false);
+  kFloor(-9, 9, -6.2, 6.2, 0x8d9096);                                          // the forecourt
+  for (const s of [-1, 1]) {
+    kFloor(-20.5, 20.5, s * 7.3 - 1.1, s * 7.3 + 1.1, 0x23272d);              // the lane past the station
+    for (let x = -19; x < 20; x += 3) KIT.S.box(0xf5f5f4, 1.4, 0.02, 0.14, x, 0.03, s * 7.3);
+  }
+  // ---- the canopy and the pumps ----
+  for (const [x, z] of [[-7, -3.8], [7, -3.8], [-7, 3.8], [7, 3.8]]) kBlock(x - 0.3, x + 0.3, z - 0.3, z + 0.3, 0, 5, 0xe5e7eb);
+  KIT.S.box(0xf3f4f6, 17.4, 0.5, 11.4, 0, 5.25, 0);
+  for (const s of [-1, 1]) { KIT.G.box(0xef4444, 17.5, 0.22, 0.05, 0, 5.2, s * 5.72); KIT.G.box(0xf8fafc, 17.5, 0.1, 0.05, 0, 5.42, s * 5.72); }
+  for (const s of [-1, 1]) KIT.G.box(0xef4444, 0.05, 0.22, 11.4, s * 8.72, 5.2, 0);
+  for (const x of [-5, 0, 5]) for (const z of [-3, 3]) kPanel(x, z, 4.98, 1.8, 0.6, 0xfffbeb);
+  lightPool(0, -2.5, 0xfff1c9, 9); lightPool(0, 2.5, 0xfff1c9, 9);
+  for (const x of [-4.5, 4.5]) {
+    kBlock(x - 0.6, x + 0.6, -2.6, 2.6, 0, 0.25, 0xd1d5db, true);
+    for (const z of [-1.3, 1.3]) {
+      kBlock(x - 0.42, x + 0.42, z - 0.34, z + 0.34, 0.25, 1.95, 0xdc2626);
+      KIT.G.box(0x67e8f9, 0.5, 0.3, 0.02, x, 1.45, z - 0.36); KIT.G.box(0x67e8f9, 0.5, 0.3, 0.02, x, 1.45, z + 0.36);
+      KIT.B.box(0x111111, 0.1, 0.5, 0.1, x + 0.45, 1.2, z);
+    }
+    kBlock(x - 0.3, x + 0.3, -2.45, -2.05, 0.25, 0.9, 0x6b7280, true); kBlock(x - 0.3, x + 0.3, 2.05, 2.45, 0.25, 0.9, 0x6b7280, true);
+  }
+  // ---- the shop (west) ----
+  { const H = 3.4, W = 0xd6d3d1;
+    kWallZ(-10, -6, 6, [[-1.6, 1.6]], 0, H, W);
+    kWallX(-6, -20.5, -10, [[-17, -15]], 0, H, W); kWallX(6, -20.5, -10, [[-17, -15]], 0, H, W);
+    KIT.S.box(0x57534e, 10.8, 0.3, 12.3, -15.25, H + 0.15, 0);
+    for (const z of [-4, 4]) KIT.Gl.box(0xbfe3ff, 0.05, 1.6, 2.2, -10, 1.6, z);
+    kSign('بقالة', '#22c55e', -9.84, 2.85, 0, Math.PI / 2, 2.6);
+    kFloor(-20.4, -10.1, -5.9, 5.9, 0xbfb8ab);
+    const GOODS = [0xef4444, 0xf59e0b, 0x22c55e, 0x3b82f6, 0xa855f7, 0xf3f4f6];
+    kShelfX(-18.4, -13.2, -3.2, 1.6, GOODS); kShelfX(-18.4, -13.2, 3.2, 1.6, GOODS);
+    kBlock(-12.4, -11.4, 2.2, 5.2, 0, 1.05, 0x374151, true);
+    for (let z = -5; z <= 5; z += 1.25) { KIT.B.box(0xe5e7eb, 0.8, 2.0, 1.15, -19.95, 1.0, z); KIT.G.box(0xbae6fd, 0.02, 1.6, 1.0, -19.54, 1.05, z); }
+    kBlock(-20.4, -19.55, -5.6, 5.6, 0, 2.0, 0xe5e7eb);
+    for (const x of [-17, -13.5]) for (const z of [-4.6, 0, 4.6]) kPanel(x, z, H - 0.05, 1.4, 0.35);
+    kBlock(-9.55, -8.9, 3.1, 3.9, 0, 1.6, 0x0f766e); KIT.G.box(0x5eead4, 0.02, 0.3, 0.5, -8.88, 1.25, 3.5);    // the cash machine outside
+  }
+  // ---- the restaurant (east) ----
+  { const H = 3.4, W = 0xd6d3d1;
+    kWallZ(10, -6, 6, [[-1.6, 1.6]], 0, H, W);
+    kWallX(-6, 10, 20.5, [[15, 17]], 0, H, W); kWallX(6, 10, 20.5, [[15, 17]], 0, H, W);
+    KIT.S.box(0x57534e, 10.8, 0.3, 12.3, 15.25, H + 0.15, 0);
+    for (const z of [-4, 4]) KIT.Gl.box(0xbfe3ff, 0.05, 1.6, 2.2, 10, 1.6, z);
+    kSign('مطعم', '#f59e0b', 9.84, 2.85, 0, -Math.PI / 2, 2.6);
+    kFloor(10.1, 20.4, -5.9, 5.9, 0x7c5c43);
+    for (const [x, z] of [[12.8, -3.4], [12.8, 3.4], [16.4, -3.6], [16.4, 3.6]]) kTable(x, z, 1.4, 1.4, 0xf3f4f6, 0x4b5563, 0xdc2626);
+    kBlock(18.9, 19.8, -4.2, 4.2, 0, 1.1, 0x7c2d12, true);
+    KIT.B.box(0x111827, 0.1, 1.0, 6, 20.3, 2.4, 0); for (let i = 0; i < 4; i++) KIT.G.box([0xf59e0b, 0xef4444, 0x22c55e, 0xfef3c7][i], 0.02, 0.8, 1.3, 20.24, 2.4, -2.25 + i * 1.5);
+    for (const x of [12.5, 16.5]) for (const z of [-4, 0, 4]) kPanel(x, z, H - 0.05, 1.4, 0.35, 0xfff7ed);
+  }
+  // ---- north and south: the trucks, the car wash, the barriers ----
+  for (const s of [-1, 1]) {
+    gsTruckBox(s * 9.8); gsFlatbed(s * 15.6); gsCarWash(s);
+    for (const [x0, x1] of [[-8.4, -4.2], [4.2, 8.4]]) {
+      kBlock(x0, x1, s * 7.3 - 0.3, s * 7.3 + 0.3, 0, 0.9, 0xcbd5e1, true);
+      for (let x = x0 + 0.4; x < x1; x += 1.0) KIT.B.box(0xdc2626, 0.5, 0.14, 0.62, x, 0.55, s * 7.3);
+    }
+    kBlock(-1.2, 1.2, s * 16.4 - 0.4, s * 16.4 + 0.4, 0, 1.0, 0x9ca3af, true);       // a low wall in front of each spawn
+    cover('barrel', 3.4, s * 12.2, 1.1, 1.0, 1.1, 0); cover('crates', -4.2, s * 12.6, 1.3, 1.2, 1.3, 0);
+    cover('barrel', 6.8, s * 16.2, 1.1, 1.0, 1.1, 0);
+    // the price sign on its pole, glowing
+    kBlock(19.1, 19.7, s * 4 - 0.3, s * 4 + 0.3, 0, 4.2, 0x4b5563);
+    KIT.B.box(0x111827, 0.3, 2.0, 1.8, 19.4, 5.2, s * 4); KIT.G.box(0xef4444, 0.04, 0.5, 1.5, 19.22, 5.8, s * 4);
+    for (let i = 0; i < 3; i++) KIT.G.box(0xfacc15, 0.04, 0.28, 1.1, 19.22, 5.15 - i * 0.42, s * 4);
+  }
+  for (const x of [-9.2, 9.2]) for (const s of [-1, 1]) lamp(x, s * 7.3);
+  kSign('محطة الطريق', '#ef4444', 0, 5.95, -5.75, 0, 4.8);
+  kSign('محطة الطريق', '#ef4444', 0, 5.95, 5.75, Math.PI, 4.8);
+  kitBake();
+}
+// ================= Map: the tower under construction (team modes, two floors) =================
+// The tower's frame in the middle: the ground floor among the columns, and the first floor (4.6 m up) with two corners
+// still missing, two concrete stairs inside and two scaffold stairs outside. Round it: the cranes, the cement mixers,
+// the site offices (where the teams start), sand, pipes and pallets of blocks. The south half is the north half turned.
+const TW_F = 4.6, TW_C = 4.3;
+const TW_SPAWNS = [[-18, -21.5], [-12, -21.8], [-4, -21.8], [2, -21.8], [8, -21.8], [14, -21.5], [19, -20.6],
+                   [18, 21.5], [12, 21.8], [4, 21.8], [-2, 21.8], [-8, 21.8], [-14, 21.5], [-19, 20.6]];
+const TW_STAIRS = [
+  { path: [[5.2, -6.8], [4.1, -6.8], [-3.6, -6.8], [-3.6, -5.3]] },
+  { path: [[-5.2, 6.8], [-4.1, 6.8], [3.6, 6.8], [3.6, 5.3]] },
+  { path: [[-11.2, -5.2], [-11.2, -4.1], [-11.2, 3.6], [-9.4, 3.6]] },
+  { path: [[11.2, 5.2], [11.2, 4.1], [11.2, -3.6], [9.4, -3.6]] }
+];
+const twR = (s, x0, x1, z0, z1) => s > 0 ? [x0, x1, z0, z1] : [-x1, -x0, -z1, -z0];
+function twBox(s, x0, x1, z0, z1, y0, y1, c, climb, bag) { const r = twR(s, x0, x1, z0, z1); kBlock(r[0], r[1], r[2], r[3], y0, y1, c, climb, bag); }
+function twCrane(x, z, ry) {                             // a tower crane: only its concrete foot is solid
+  kBlock(x - 1.4, x + 1.4, z - 1.4, z + 1.4, 0, 1.1, 0x9ca3af, true);
+  const H = 22, Y = 0xfacc15;
+  for (const [a, b] of [[-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) KIT.B.box(Y, 0.16, H, 0.16, x + a, 1.1 + H / 2, z + b);
+  for (let y = 2.6; y < H; y += 2.2) for (const [w, d, ox, oz] of [[1.5, 0.08, 0, -0.7], [1.5, 0.08, 0, 0.7], [0.08, 1.5, -0.7, 0], [0.08, 1.5, 0.7, 0]]) KIT.B.box(Y, w, 0.08, d, x + ox, y, z + oz);
+  const c = Math.cos(ry), s = Math.sin(ry), L = 20;
+  KIT.B.box(Y, L, 0.9, 0.9, x + c * (L / 2 - 2), H + 1.6, z - s * (L / 2 - 2), 0, ry, 0);
+  KIT.B.box(Y, 7, 0.7, 0.9, x - c * 4.5, H + 1.5, z + s * 4.5, 0, ry, 0);
+  KIT.B.box(0x6b7280, 2.4, 1.6, 1.4, x - c * 6.5, H + 0.6, z + s * 6.5, 0, ry, 0);              // counterweight
+  KIT.B.box(0x1f2937, 1.4, 1.4, 1.4, x + c * 1.2, H + 0.4, z - s * 1.2, 0, ry, 0);              // the cab
+  KIT.B.box(Y, 0.3, 3.2, 0.3, x, H + 3.4, z);
+  const hx = x + c * 12, hz = z - s * 12;
+  KIT.B.box(0x111111, 0.04, H - 8.5, 0.04, hx, 8.6 + (H - 8.5) / 2, hz);
+  KIT.B.box(0x8b5a2b, 1.4, 0.15, 1.4, hx, 8.4, hz); KIT.B.box(0x9ca3af, 1.2, 0.9, 1.2, hx, 8.95, hz);
+}
+function twMixer(s) {                                     // a cement mixer truck along z
+  const r = twR(s, -17, -14.5, -7, 0);
+  kBlock(r[0], r[1], r[2], r[3], 0, 3.0, 0xe5e7eb);
+  const cx = (r[0] + r[1]) / 2, cz = (r[2] + r[3]) / 2;
+  KIT.B.cyl(0xf97316, 1.15, 0.8, 4.2, cx, 2.2, cz + s * 0.6, 12, Math.PI / 2 + s * 0.25, 0, 0);
+  KIT.B.box(0x1d4ed8, 2.3, 1.6, 1.8, cx, 2.2, s < 0 ? r[3] - 1.0 : r[2] + 1.0);
+  for (const dz of [-2.8, -0.6, 2.4]) for (const dx of [-1.25, 1.25]) KIT.B.cyl(0x111111, 0.5, 0.5, 0.3, cx + dx, 0.5, cz + dz, 10, 0, 0, Math.PI / 2);
+}
+function twCabin(s) {                                     // the site office
+  const r = twR(s, -14, -6, -19, -16);
+  kBlock(r[0], r[1], r[2], r[3], 0, 2.7, 0xf8fafc);
+  const zf = s > 0 ? r[3] + 0.02 : r[2] - 0.02;
+  for (const x of [-12.4, -10.2, -7.8]) KIT.B.box(0x1e3a8a, 1.2, 0.8, 0.04, s * x, 1.6, zf);
+  KIT.B.box(0x6b7280, 0.9, 2.0, 0.04, s * -9, 1.0, zf);
+  KIT.B.box(0x2563eb, 8.1, 0.3, 3.1, (r[0] + r[1]) / 2, 2.75, (r[2] + r[3]) / 2);
+  kSign('مكتب الموقع', '#f97316', s * -10, 3.3, (r[2] + r[3]) / 2, s > 0 ? 0 : Math.PI, 2.6, '#1f2937');
+}
+function buildTower() {
+  ARENA = 24; radarRange = 24;
+  kitStart();
+  setSky(0x9cc9e8);
+  makeGround(0xa08a66, 'concrete');
+  perimeter(0x9a8a70);
+  backdrop(0x6d7c86, false);
+  const F = TW_F, C = TW_C, CON = 0xa8a29e, CON2 = 0x9ca3af, ORG = 0xf97316;
+  // ---- the tower: columns all the way up, beams, the ground floor ----
+  kFloor(-10.3, 10.3, -8.3, 8.3, 0xb5b0a8);
+  for (const x of [-10, -5, 0, 5, 10]) for (const z of [-8, -2.7, 2.7, 8]) {
+    kBlock(x - 0.3, x + 0.3, z - 0.3, z + 0.3, 0, 14, CON2);
+    for (const [a, b] of [[-0.18, -0.18], [0.18, 0.18], [-0.18, 0.18], [0.18, -0.18]]) KIT.B.box(0x7c2d12, 0.03, 1.2, 0.03, x + a, 14.6, z + b);    // rebar out of the top
+  }
+  for (const y of [9.4, 13.8]) {
+    for (const z of [-8, -2.7, 2.7, 8]) KIT.B.box(CON2, 20.6, 0.5, 0.4, 0, y - 0.25, z);
+    for (const x of [-10, -5, 0, 5, 10]) KIT.B.box(CON2, 0.4, 0.5, 16.6, x, y - 0.25, 0);
+  }
+  KIT.S.box(CON, 10, 0.25, 10.8, -5, 9.0, 2.6); KIT.S.box(CON, 5, 0.25, 5.4, 7.5, 9.0, -5.3);   // bits of the second floor, out of reach
+  // ---- the first floor slab (two corners missing, holes over the stairs) ----
+  const SLAB = (x0, x1, z0, z1) => { kBlock(x0, x1, z0, z1, C, F, CON, true, KIT.S); };
+  SLAB(-5, 10.3, -8.3, -7.5); SLAB(-5, -4.2, -7.5, -6.1); SLAB(4.2, 10.3, -7.5, -6.1); SLAB(-5, 10.3, -6.1, -2.7);
+  SLAB(-10.3, 10.3, -2.7, 2.7);
+  SLAB(-10.3, 5, 2.7, 6.1); SLAB(-10.3, -4.2, 6.1, 7.5); SLAB(4.2, 5, 6.1, 7.5); SLAB(-10.3, 5, 7.5, 8.3);
+  for (const [x0, x1, z0, z1] of [[-5, 10.3, -8.3, -2.7], [-10.3, 5, 2.7, 8.3]]) KIT.S.box(0x8f8a82, x1 - x0, 0.02, z1 - z0, (x0 + x1) / 2, C - 0.01, (z0 + z1) / 2);
+  // the stairs: concrete inside, scaffold outside
+  kStairs(4, -6.8, -1, 0, 1.2, F, CON2); kStairs(-4, 6.8, 1, 0, 1.2, F, CON2);
+  kStairs(-11.2, -4, 0, 1, 1.2, F, 0x71717a, true); kStairs(11.2, 4, 0, -1, 1.2, F, 0x71717a, true);
+  for (const s of [-1, 1]) {
+    const x = s * 11.2;
+    for (const dz of [-4.2, -1.4, 1.4, 4.2]) for (const dx of [-0.7, 0.7]) KIT.B.box(ORG, 0.07, F + 1.1, 0.07, x + dx, (F + 1.1) / 2, dz);
+    for (let y = 1.2; y < F + 1; y += 1.4) { KIT.B.box(ORG, 0.06, 0.06, 8.6, x - 0.7, y, 0); KIT.B.box(ORG, 0.06, 0.06, 8.6, x + 0.7, y, 0); }
+  }
+  // the first floor: half-built block walls, cement bags, the edges
+  for (const s of [1, -1]) {
+    twBox(s, -1.8, 1.8, -4.0, -3.6, F, F + 1.2, 0x9ca3af, true);
+    twBox(s, 6.4, 6.8, -5.6, -3.2, F, F + 1.2, 0x9ca3af, true);
+    twBox(s, -9.6, -7.6, -1.4, -0.2, F, F + 0.9, 0xe7e5e4, true);
+    twBox(s, 1.8, 3.0, 0.6, 1.8, F, F + 0.9, 0xe7e5e4, true);
+    for (const [x0, x1, z0, z1] of [[-4.8, -1, -8.3, -8.15], [7, 10.3, -8.3, -8.15]]) { const r = twR(s, x0, x1, z0, z1); kBlock(r[0], r[1], r[2], r[3], F, F + 1.0, ORG, false, KIT.Gl); KIT.B.box(ORG, r[1] - r[0], 0.06, 0.08, (r[0] + r[1]) / 2, F + 1.0, (r[2] + r[3]) / 2); }
+  }
+  // ---- the ground floor among the columns ----
+  for (const s of [1, -1]) {
+    twBox(s, -8.4, -6.6, -6.4, -4.6, 0, 1.0, 0x8b5a2b, true);
+    twBox(s, 6.6, 8.6, -1.2, 0.6, 0, 1.1, 0x9ca3af, true);
+    twBox(s, -2.4, -0.6, 3.6, 4.6, 0, 1.4, 0x52525b, true);                     // a generator
+    twBox(s, 1.2, 3.8, -5.0, -4.4, 0, 1.8, 0xb45309);                            // formwork boards on end
+  }
+  // ---- the site round the tower ----
+  twCrane(16, -14, 0.5); twCrane(-16, 14, 0.5 + Math.PI);
+  for (const s of [1, -1]) {
+    twMixer(s); twCabin(s);
+    { const r = twR(s, -19.9, -18.1, -10.9, -9.1); kBlock(r[0], r[1], r[2], r[3], 0, 1.2, 0xd6b98c, true); KIT.B.put(pineGeo, 0xd6b98c, s * -19, 1.0, s * -10, 0, 0, 0, 2.2, 1.4, 2.2); }
+    twBox(s, -8, -4, -13.8, -12.2, 0, 1.1, 0x9ca3af, true);                      // pipes
+    for (let i = 0; i < 6; i++) KIT.B.cyl(0x4b5563, 0.25, 0.25, 4, s * (-6), 0.25 + Math.floor(i / 3) * 0.5, s * (-13.4 + (i % 3) * 0.55), 10, 0, 0, Math.PI / 2);
+    for (const [x, z] of [[-12, -9], [-18, 6], [-3, -12], [-8, 12], [8, -12]]) twBox(s, x - 0.6, x + 0.6, z - 0.6, z + 0.6, 0, 1.0, 0x9ca3af, true);
+    twBox(s, -20.5, -19.5, -4.5, 0.5, 0, 0.5, 0x7c2d12, true);                    // rebar
+    twBox(s, -22.1, -20.9, -20.6, -19.4, 0, 2.4, 0x2563eb);                       // the portable toilet
+    for (const [x, z] of [[-22.8, -12], [-22.8, -6]]) { const r = twR(s, x - 0.3, x + 0.3, z - 2.6, z + 2.6); KIT.B.box(ORG, 0.06, 1.8, 5.2, (r[0] + r[1]) / 2, 0.9, (r[2] + r[3]) / 2); }
+  }
+  kSign('خطر — منطقة عمل', '#f97316', 0, 3.4, -8.45, Math.PI, 3.6, '#1f2937');
+  kSign('خطر — منطقة عمل', '#f97316', 0, 3.4, 8.45, 0, 3.6, '#1f2937');
+  kitBake();
+  Object.assign(FLO, { F: TW_F, stairs: TW_STAIRS, sided: false });
+  navUpRebuild();
+}
+// ================= Map: the school, at night (zombies) =================
+// The assembly yard in the middle. North: four classrooms on a corridor. West: the library. East: the science lab.
+// South: the gym and the canteen. The zombies climb in through the classroom, library, lab, gym and canteen windows.
+const SC_BOX = [[5, -5.5, 0], [-15, 8.8, 0], [18, 0, 0], [14, 17.2, 0]];
+function scDesk(x, z) {
+  addBox(x, z, 1.2, 0.75, 0.6, 0x8a7f70, true);
+  KIT.B.box(0xc8a26e, 1.2, 0.06, 0.6, x, 0.72, z); KIT.B.box(0x6b7280, 1.1, 0.68, 0.05, x, 0.34, z - 0.26);
+  KIT.B.box(0x2563eb, 0.45, 0.45, 0.42, x, 0.23, z + 0.55); KIT.B.box(0x2563eb, 0.45, 0.45, 0.06, x, 0.65, z + 0.75);
+}
+function buildSchool() {
+  ARENA = 24; radarRange = 22;
+  kitStart();
+  setSky(0x9cc9e8);
+  makeGround(0x5d6b4a, 'grass');
+  perimeter(0xd6c7a8, { n: [-18, -6, 6, 18], s: [-21, -3, 14], w: [-6, 6], e: [-6, 6] });
+  backdrop(0x3b4a3a, true);
+  const H = 3.6, W = 0xe8dcc0, W2 = 0xd8c8a6, IN = 23.5;
+  // ---- floors ----
+  kFloor(-IN, IN, -IN, -12, 0xb9b2a4);                                          // classrooms and corridor
+  kFloor(-IN, -12, -12, 12, 0x8b6a48); kFloor(12, IN, -12, 12, 0xcfd4d8);      // library wood, lab tiles
+  kFloor(-IN, 4, 12, IN, 0xb7864f); kFloor(4, IN, 12, IN, 0xd9cdb6);           // gym boards, canteen
+  kFloor(-12, 12, -12, 12, 0x6b6e70);                                           // the yard
+  for (let x = -10; x <= 10; x += 4) KIT.S.box(0xf8fafc, 0.1, 0.02, 20, x, 0.03, 0);
+  // ---- the north wing: classrooms and the corridor ----
+  for (const x of [-12, 0, 12]) kWallZ(x, -IN, -15, [], 0, H, W);
+  kWallX(-15, -IN, IN, [[-18.65, -16.85], [-6.9, -5.1], [5.1, 6.9], [16.85, 18.65]], 0, H, W);
+  kWallX(-12, -IN, IN, [[-16, -14], [-8, -4], [4, 8], [14, 16]], 0, H, W2);
+  const rooms = [[-IN, -12], [-12, 0], [0, 12], [12, IN]];
+  rooms.forEach(([a, b], i) => {
+    for (const dx of [2.6, 6, 9.4]) for (const z of [-20.6, -18.6, -16.7]) scDesk(a + dx * (b - a) / 11.75, z);
+    kBlock(a + 0.4, a + 2.0, -22.2, -21.4, 0, 0.8, 0x7c4a1e, true);              // the teacher's desk
+    KIT.B.box(0xf8fafc, 0.06, 1.2, 3.6, a + 0.17, 1.8, -19.2); KIT.B.box(0x334155, 0.08, 1.3, 3.7, a + 0.15, 1.8, -19.2);   // whiteboard
+    KIT.G.box(['#a5b4fc', '#fca5a5', '#86efac', '#fde68a'].map(c => new THREE.Color(c).getHex())[i], 0.02, 0.5, 2.2, a + 0.22, 2.0, -19.2);
+    kSign('فصل ' + ['١', '٢', '٣', '٤'][i], '#64748b', (a + b) / 2, 2.95, -14.83, Math.PI, 1.8);
+    for (const x of [a + 3, b - 3]) kPanel(x, -19.2, H - 0.05, 1.4, 0.35);
+  });
+  for (let x = -22.5; x < 23; x += 0.62) {                                        // lockers along the corridor
+    if ([-17.75, -12, -6, 6, 12, 17.75].some(c => Math.abs(x - c) < 1.3)) continue;
+    KIT.B.box([0x2563eb, 0x1d4ed8][Math.round(x * 2) % 2 ? 1 : 0], 0.58, 1.9, 0.35, x, 0.95, -14.67);
+  }
+  for (const x of [-18, -6, 6, 18]) kPanel(x, -13.5, H - 0.05, 1.6, 0.35);
+  lightPool(-12, -13.5, 0xfff7e0, 7); lightPool(12, -13.5, 0xfff7e0, 7);
+  kCeil(-IN, IN, -IN, -12, H, 0x8f8a80);
+  // ---- the library (west) ----
+  kWallZ(-12, -12, 12, [[-2, 2]], 0, H, W2);
+  const BOOKS = [0x7f1d1d, 0x1e3a8a, 0x14532d, 0x78350f, 0x581c87, 0xa16207];
+  for (const x of [-21.4, -18.4]) { kShelfZ(x, -9, -2.6, 2.0, BOOKS, 0x6b4423); kShelfZ(x, 2.6, 9, 2.0, BOOKS, 0x6b4423); }
+  for (const z of [-5, 0, 5]) kTable(-14.8, z, 2.2, 1.3, 0xa0784f, 0x4b3621, 0x7c2d12);
+  kSign('المكتبة', '#a16207', -12.17, 2.9, 0, -Math.PI / 2, 2.4);
+  for (const z of [-6, 0, 6]) kPanel(-17, z, H - 0.05, 1.4, 0.35, 0xfff1d6);
+  kCeil(-IN, -12, -12, 12, H, 0x7a6248);
+  // ---- the science lab (east) ----
+  kWallZ(12, -12, 12, [[-2, 2]], 0, H, W2);
+  for (const z of [-8.2, -3.8, 3.8, 8.2]) {
+    kBlock(14.6, 21.6, z - 0.6, z + 0.6, 0, 1.0, 0x1f2937, true);
+    for (let x = 15.4; x < 21.2; x += 1.6) { KIT.B.box(0x9ca3af, 0.4, 0.05, 0.3, x, 1.02, z); KIT.G.box([0x4ade80, 0x60a5fa, 0xf472b6][Math.round(x) % 3], 0.12, 0.28, 0.12, x + 0.4, 1.15, z + 0.25); }
+  }
+  kBlock(22.6, 23.4, -11.6, -9.4, 0, 2.0, 0xe5e7eb);                             // a fume cupboard
+  KIT.G.box(0xa7f3d0, 0.02, 0.8, 1.8, 22.58, 1.3, -10.5);
+  kSign('المختبر', '#4ade80', 12.17, 2.9, 0, Math.PI / 2, 2.4);
+  for (const z of [-6, 0, 6]) kPanel(18, z, H - 0.05, 1.4, 0.35, 0xecfeff);
+  kCeil(12, IN, -12, 12, H, 0x8f8a80);
+  // ---- the south wing: the gym and the canteen ----
+  kWallX(12, -IN, IN, [[-20, -18], [-8, -5], [-1, 2], [7, 10], [18, 20]], 0, H, W2);
+  kWallZ(4, 12, IN, [[16.5, 18.5]], 0, H, W);
+  for (const [z0, z1, h] of [[20.5, 21.5, 0.5], [21.5, 22.5, 1.0], [22.5, IN, 1.5]]) kBlock(-18, -6, z0, z1, 0, h, [0x9ca3af, 0x6b7280, 0x4b5563][Math.round(h * 2) - 1], true);   // bleachers
+  for (const x of [-22.9, 3.4]) {                                                // the hoops
+    kBlock(x - 0.15, x + 0.15, 17.6, 17.9, 0, 3.4, 0x6b7280);
+    KIT.B.box(0xf8fafc, 0.06, 1.0, 1.6, x + (x < 0 ? 0.25 : -0.25), 3.0, 17.75); KIT.B.torus(0xf97316, 0.3, 0.03, x + (x < 0 ? 0.6 : -0.6), 2.6, 17.75, Math.PI / 2, 0, 0);
+  }
+  KIT.S.box(0xf8fafc, 0.08, 0.02, 11.4, -9.75, 0.03, 17.75); KIT.S.torus(0xf8fafc, 2.0, 0.05, -9.75, 0.03, 17.75, Math.PI / 2, 0, 0);
+  for (const [x, z] of [[-20, 14.5], [-13.5, 14.5]]) { kBlock(x - 1, x + 1, z - 0.6, z + 0.6, 0, 0.3, 0x1d4ed8, true); }    // mats
+  kSign('الصالة الرياضية', '#3b82f6', -6.5, 2.95, 11.83, 0, 3.4);
+  for (const x of [-18, -10, -2]) for (const z of [15, 20]) kPanel(x, z, H - 0.05, 1.6, 0.4);
+  lightPool(-10, 17, 0xfff7e0, 10);
+  kCeil(-IN, 4, 12, IN, H, 0x8f8a80);
+  for (const x of [8, 12, 16]) for (const z of [15.5, 19]) kTable(x, z, 1.5, 1.5, 0xf8fafc, 0x6b7280, 0xf59e0b);
+  kBlock(22.4, 23.4, 13, 21, 0, 1.05, 0x9ca3af, true);
+  for (let z = 13.6; z < 21; z += 1.4) KIT.G.box([0xfde68a, 0xfca5a5, 0x86efac][Math.round(z) % 3], 0.4, 0.06, 0.8, 22.9, 1.1, z);
+  kSign('المقصف', '#f59e0b', 8.5, 2.95, 11.83, 0, 2.4);
+  for (const x of [8, 15]) for (const z of [15, 20]) kPanel(x, z, H - 0.05, 1.4, 0.35, 0xfff7ed);
+  kCeil(4, IN, 12, IN, H, 0x8f8a80);
+  // ---- the yard ----
+  kBlock(-0.6, 0.6, -0.6, 0.6, 0, 0.4, 0x9ca3af, true);
+  kBlock(-0.09, 0.09, -0.09, 0.09, 0.4, 7, 0xd1d5db);
+  KIT.B.box(0x1d4ed8, 1.6, 1.05, 0.02, 0.85, 6.25, 0); KIT.B.box(0xf8fafc, 1.6, 0.16, 0.03, 0.85, 6.25, 0); KIT.B.box(0xfacc15, 0.34, 0.34, 0.04, 0.85, 6.25, 0);   // the school's own flag
+  for (const [x, z] of [[-5.6, 6.3], [5.6, 6.3], [-5.6, 9.7], [5.6, 9.7]]) kBlock(x - 0.15, x + 0.15, z - 0.15, z + 0.15, 0, 3.2, 0x94a3b8);
+  KIT.S.box(0x0e7490, 11.8, 0.12, 4.0, 0, 3.25, 8);
+  for (const [x, z] of [[-8, -4], [8, -4], [-8, 4], [8, 4]]) kBlock(x - 1.2, x + 1.2, z - 0.3, z + 0.3, 0, 0.5, 0x92400e, true);
+  for (const [x, z] of [[-10.4, -10.4], [10.4, -10.4], [-10.4, 10.4], [10.4, 10.4]]) {
+    kBlock(x - 0.8, x + 0.8, z - 0.8, z + 0.8, 0, 0.7, 0x9ca3af, true);
+    KIT.B.cyl(0x6b4423, 0.12, 0.16, 2.4, x, 1.9, z, 6); KIT.B.put(leafGeo, 0x2f5e2a, x, 3.4, z, 0, 0, 0, 1.3, 1.1, 1.3);
+  }
+  for (const [x, z] of [[-9, -8], [9, -8], [-9, 8], [9, 8]]) lamp(x, z);
+  kSign('مدرسة الأمل', '#0ea5e9', 0, 3.1, -11.83, 0, 3.6);
+  // ---- zombies: the machines ----
+  perkMachine(-12, -14.4, 1, 'jug'); perkMachine(12, -14.4, 1, 'speed');
+  perkMachine(10, 22.9, -1, 'dtap'); perkMachine(-20, -11.4, 1, 'stam');
+  perkMachine(-2, -11.4, 1, 'revive');
+  papMachine(1.5, 22.9, -1);
+  kitBake();
+}
+// ================= Map: the abandoned hospital (zombies, dark) =================
+// The lobby (west) opens onto one long corridor running east. North of it: three wards, then the big ward and the stores.
+// South of it: the pharmacy, the lift lobby (the lift is dead), the operating theatre, then the morgue and the generator room.
+// Two yards outside: the overgrown garden (north-west) and the ambulance bay (south-west).
+const HS_BOX = [[-19.5, 0, 0], [-3, -17.6, 0], [9, 21, 0], [-18, -18, 0], [6, 5.5, 0]];
+function hsBed(x, z, along) {
+  const w = along ? 2.0 : 0.95, d = along ? 0.95 : 2.0;
+  kBlock(x - w / 2, x + w / 2, z - d / 2, z + d / 2, 0, 0.62, 0x9ca3af, true);
+  KIT.B.box(0xe5e7eb, w - 0.06, 0.14, d - 0.06, x, 0.66, z);
+  KIT.B.box(0xf8fafc, along ? 0.4 : 0.8, 0.12, along ? 0.8 : 0.4, x + (along ? -w / 2 + 0.3 : 0), 0.78, z + (along ? 0 : -d / 2 + 0.3));
+}
+function buildHospital() {
+  ARENA = 24; radarRange = 20;
+  kitStart();
+  setSky(0x9cc9e8);
+  hemi.intensity = 0.36; sun.intensity = 0.32; scene.fog.near = 5; scene.fog.far = 44;      // darker than the other maps
+  makeGround(0x3f4a3c, 'grass');
+  perimeter(0xb8b2a6, { n: [-18, -3, 15], s: [-18, -3, 15], w: [-18, -6, 6, 18], e: [-18, -7, 7, 18] });
+  backdrop(0x1f2a24, true);
+  const H = 3.4, W = 0xd9d4c7, W2 = 0xc2c9c4, IN = 23.5, RED = 0xff2d2d;
+  // ---- floors ----
+  kFloor(-IN, -12, -12, 12, 0x9aa19b); kFloor(-12, IN, -12, 12, 0xb3b8b1); kFloor(-12, IN, -IN, -12, 0xa7ada6); kFloor(-12, IN, 12, IN, 0x9ca29c);
+  kFloor(-IN, -12, 12, IN, 0x3a3d40);
+  // ---- the walls ----
+  kWallZ(-12, -12, 12, [[-2, 2]], 0, H, W);                                      // lobby | corridor and rooms
+  kWallX(-12, -IN, -12, [[-18, -16]], 0, H, W); kWallX(12, -IN, -12, [[-18, -16]], 0, H, W);     // lobby | garden, lobby | ambulance bay
+  kWallZ(-12, -IN, -12, [[-18, -16]], 0, H, W); kWallZ(-12, 12, IN, [[17, 19]], 0, H, W);        // big ward | garden, morgue | bay
+  kWallX(-2, -12, IN, [[-7, -5], [5, 7], [16, 18]], 0, H, W2);                   // the corridor's north side
+  kWallX(2, -12, IN, [[-7, -5], [3, 9], [16, 19]], 0, H, W2);                    // its south side
+  for (const x of [0, 12]) { kWallZ(x, -12, -2, [], 0, H, W); kWallZ(x, 2, 12, [], 0, H, W); }
+  kWallX(-12, -12, IN, [[-9, -7], [3, 5], [14.9, 16.9]], 0, H, W);
+  kWallX(12, -12, IN, [[-4, -2], [0.6, 2.6], [13.5, 15.5]], 0, H, W);
+  kWallZ(6, -IN, -12, [[-19, -17]], 0, H, W); kWallZ(6, 12, IN, [[17, 19]], 0, H, W);
+  // ---- the lobby ----
+  kBlock(-16.6, -15.4, -4, 4, 0, 1.1, 0x6b7280, true); kBlock(-16.6, -14.2, 3.4, 4.2, 0, 1.1, 0x6b7280, true);
+  KIT.G.box(0x67e8f9, 0.4, 0.3, 0.04, -16.0, 1.35, -1.2);
+  for (const [x, z] of [[-20, -8], [-20, -4.6], [-20, 4.6], [-20, 8]]) { kBlock(x - 1.6, x + 1.6, z - 0.3, z + 0.3, 0, 0.5, 0x1e3a8a, true); KIT.B.box(0x1e3a8a, 3.2, 0.5, 0.08, x, 0.75, z + 0.3); }
+  KIT.B.box(0x374151, 0.9, 0.55, 0.9, -13.6, 0.3, 7.5, 0, 0.6, 1.4);             // a wheelchair on its side
+  KIT.B.torus(0x111111, 0.3, 0.04, -13.6, 0.35, 7.1, 0, 0.6, 0);
+  kSign('الاستقبال', '#22c55e', -16.0, 2.6, -4.3, Math.PI, 2.2);
+  kSign('مستشفى الرحمة', '#ef4444', -12.17, 2.9, -6, -Math.PI / 2, 3.4);
+  for (const z of [-7, 0, 7]) kPanel(-18, z, H - 0.05, 1.4, 0.35, z ? 0xfef9c3 : 0x52525b);
+  kCeil(-IN, -12, -12, 12, H, 0x6b6e6a);
+  // ---- the corridor: gurneys, red emergency lights ----
+  kBlock(1.4, 3.4, -1.7, -0.9, 0, 0.9, 0x9ca3af, true); KIT.B.box(0xe5e7eb, 2.0, 0.1, 0.8, 2.4, 0.95, -1.3);
+  kBlock(13.6, 15.6, 0.9, 1.7, 0, 0.9, 0x9ca3af, true); KIT.B.box(0xe5e7eb, 2.0, 0.1, 0.8, 14.6, 0.95, 1.3);
+  KIT.B.box(0x6b6e6a, 1.6, 0.06, 1.0, -6.5, 0.03, 1.2, 0, 0.4, 0);                // a fallen ceiling panel, flat on the floor
+  for (let x = -9; x < 23; x += 6) KIT.G.box(x % 12 ? RED : 0xfef3c7, 0.5, 0.05, 0.2, x, H - 0.05, 0);
+  lightPool(-4, 0, 0xff5050, 7); lightPool(14, 0, 0xff5050, 7);
+  kSign('العمليات', '#ef4444', 17.5, 2.95, 2.17, Math.PI, 2.2); kSign('الصيدلية', '#22c55e', -6, 2.95, 2.17, Math.PI, 2.2);
+  kCeil(-12, IN, -2, 2, H, 0x5f625e);
+  // ---- the wards (north of the corridor) ----
+  [[-12, 0], [0, 12], [12, IN]].forEach(([a, b], i) => {
+    for (const dx of [2.2, 5.8, 9.4]) { const x = a + dx * (b - a) / 12; hsBed(x, -10.2, false); KIT.Gl.box(0xbbf7d0, 0.04, 1.8, 2.4, x + 1.0, 1.4, -10.0); }
+    KIT.B.box(0x9ca3af, 0.06, 2.0, 0.06, a + 1.2, 1.0, -7.4); KIT.Gl.box(0xfca5a5, 0.3, 0.4, 0.15, a + 1.2, 1.9, -7.4);
+    kPanel((a + b) / 2, -7, H - 0.05, 1.4, 0.35, i === 1 ? 0x3f3f46 : 0xfef9c3);
+    kSign('جناح ' + ['أ', 'ب', 'ج'][i], '#60a5fa', a + (i === 2 ? 5 : 6), 2.95, -2.17, 0, 1.8);
+  });
+  kCeil(-12, IN, -12, -2, H, 0x6b6e6a);
+  // ---- the big ward and the stores (north strip) ----
+  for (const x of [-9.5, -6.5, 0.5, 3.5]) hsBed(x, -21.5, false);
+  for (const x of [-10.5, -5.5, -1.0, 1.0]) hsBed(x, -14, false);
+  KIT.Gl.box(0xbbf7d0, 17, 1.8, 0.04, -3, 1.4, -17.6);
+  for (const x of [10.5, 19]) kShelfZ(x, -21, -14.5, 2.2, [0x94a3b8, 0xe5e7eb, 0x60a5fa, 0xfde68a], 0x6b7280);
+  for (const [x, z] of [[17.6, -21.6], [21.5, -14]]) cover('crates', x, z, 1.3, 1.2, 1.3, 0);
+  kPanel(-3, -18, H - 0.05, 1.4, 0.35, 0xfef9c3); kPanel(15, -18, H - 0.05, 1.4, 0.35, 0x3f3f46);
+  kCeil(-12, IN, -IN, -12, H, 0x6b6e6a);
+  // ---- the garden (outside, north-west) ----
+  for (const [x, z] of [[-20, -20], [-15, -21], [-19, -14.5]]) { kBlock(x - 0.2, x + 0.2, z - 0.2, z + 0.2, 0, 3.0, 0x4a3726); KIT.B.box(0x3a2a1c, 1.6, 0.08, 0.08, x + 0.5, 2.6, z, 0, 0, 0.6); KIT.B.box(0x3a2a1c, 0.08, 0.08, 1.4, x, 2.2, z + 0.4, 0.7, 0, 0); }
+  kBlock(-15.5, -13.5, -15.8, -15.2, 0, 0.5, 0x6b4423, true);
+  for (let i = 0; i < 24; i++) KIT.B.box(0x3f6212, 0.5, 0.35 + (i % 3) * 0.15, 0.5, -22.6 + (i * 2.37) % 10, 0.2, -22.6 + (i * 1.73) % 10);
+  // ---- the pharmacy, the lift lobby, the operating theatre (south of the corridor) ----
+  kBlock(-11, -5, 5, 5.8, 0, 1.05, 0xe5e7eb, true);
+  kShelfX(-11.5, -5, 11.1, 2.0, [0xf8fafc, 0x22c55e, 0x60a5fa, 0xfca5a5]);
+  kBlock(3, 9, 9.3, 12, 0, H, 0x6b7280);                                         // the dead lift
+  KIT.B.box(0x9ca3af, 0.9, 2.4, 0.05, 5.3, 1.2, 9.26); KIT.B.box(0x9ca3af, 0.9, 2.4, 0.05, 6.9, 1.2, 9.26);
+  KIT.B.box(0x111111, 0.7, 2.4, 0.04, 6.1, 1.2, 9.27);
+  KIT.G.box(RED, 0.5, 0.2, 0.02, 6.1, 2.7, 9.25);
+  kSign('معطّل', '#ef4444', 6.1, 3.05, 9.24, Math.PI, 1.4);
+  kBlock(9.8, 11.7, 3, 5.2, 0, 1.3, 0x78716c, true);                              // rubble in front of the stairs
+  for (const [x, z] of [[1.6, 4], [2.6, 7.2]]) { KIT.B.box(0x374151, 0.7, 0.5, 0.7, x, 0.25, z); KIT.B.torus(0x111111, 0.3, 0.04, x, 0.4, z + 0.36, 0, 0, 0); }
+  kBlock(16.4, 18.6, 6.5, 7.5, 0, 1.0, 0x9ca3af, true); KIT.B.box(0x86efac, 2.2, 0.08, 1.0, 17.5, 1.04, 7);
+  KIT.B.cyl(0xe5e7eb, 0.8, 1.0, 0.3, 17.5, H - 0.35, 7, 12); KIT.G.box(0xf8fafc, 1.0, 0.04, 1.0, 17.5, H - 0.52, 7);
+  lightPool(17.5, 7, 0xf8fafc, 6);
+  for (const [x, z] of [[14.2, 9.8], [21.2, 4.2]]) kBlock(x - 0.5, x + 0.5, z - 0.35, z + 0.35, 0, 0.95, 0x9ca3af, true);
+  kPanel(-6, 7, H - 0.05, 1.4, 0.35, 0xfef9c3); kPanel(6, 6, H - 0.05, 1.4, 0.35, 0x3f3f46);
+  kCeil(-12, IN, 2, 12, H, 0x6b6e6a);
+  // ---- the morgue and the generator room (south strip) ----
+  kBlock(-11.95, -11.1, 13, 22.6, 0, 2.4, 0x9ca3af);
+  for (let z = 13.4; z < 22.4; z += 1.1) for (let y = 0.4; y < 2.3; y += 0.8) KIT.B.box(0xd1d5db, 0.04, 0.6, 0.9, -11.08, y, z);
+  for (const [x, z] of [[-6, 16], [-1, 16], [-6, 20], [1.5, 20.5]]) { kBlock(x - 1.0, x + 1.0, z - 0.45, z + 0.45, 0, 1.0, 0xa1a1aa, true); }
+  KIT.B.box(0xf1f5f9, 1.8, 0.2, 0.5, -1, 1.1, 16);
+  kBlock(12, 16, 16.8, 19.2, 0, 2.2, 0x3f6212);                                   // the generator
+  KIT.B.box(0x1f2937, 4.02, 0.6, 2.42, 14, 1.5, 18); KIT.G.box(RED, 0.3, 0.3, 0.02, 15.2, 1.6, 16.79);
+  kBlock(19.1, 20.9, 14.1, 15.9, 0, 2.0, 0x52525b); KIT.B.cyl(0x52525b, 0.95, 0.95, 2.0, 20, 1.0, 15, 12);
+  kPanel(-3, 18, H - 0.05, 1.4, 0.35, 0xe0f2fe); kPanel(15, 21, H - 0.05, 1.4, 0.35, 0x3f3f46);
+  kCeil(-12, IN, 12, IN, H, 0x6b6e6a);
+  // ---- the ambulance bay (outside, south-west) ----
+  kBlock(-19.2, -16.8, 15.5, 21.5, 0, 2.6, 0xf8fafc);
+  KIT.B.box(0xdc2626, 2.42, 0.3, 6.02, -18, 1.6, 18.5); KIT.B.box(0xdc2626, 0.05, 1.0, 0.3, -16.78, 1.9, 17.6); KIT.B.box(0xdc2626, 0.05, 0.3, 1.0, -16.78, 1.9, 17.6);
+  KIT.G.box(0x3b82f6, 0.8, 0.15, 0.3, -18, 2.7, 16.2); KIT.G.box(RED, 0.8, 0.15, 0.3, -18, 2.7, 16.6);
+  kBlock(-14.8, -13.2, 20, 20.8, 0, 0.9, 0x9ca3af, true);
+  lamp(-14, 14.5); lamp(-18, -14);
+  // ---- zombies: the machines ----
+  perkMachine(-21, -11.4, 1, 'jug'); perkMachine(2, -2.6, -1, 'speed');
+  perkMachine(-10, 2.6, 1, 'dtap'); perkMachine(13, -12.6, -1, 'stam');
+  perkMachine(-10, 1.4, -1, 'revive');
+  papMachine(20, 11.3, -1);
+  kitBake();
+}
 const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x: 25, y: 9.5, z: 25.5, tx: 3, ty: 0.5, tz: 1 }, start: [-17, 20.5, 0], boxSpots: BASE_BOX }, town: { build: buildTown }, station: { build: buildStation, start: [0, 24, 0] }, tdm: { build: buildTown, tdm: true },
   port: { build: buildPort, tdm: true, cam: { x: -11.5, y: 7.5, z: 12.5, tx: 1, ty: 0.6, tz: -1 },
           spawns: [[-11.6, 12.2], [11.6, 12.2], [-6.4, 12.3], [6.4, 12.3], [-12.4, 7], [12.4, 7.2], [-12.4, 0], [12.4, 0],
@@ -4239,6 +4738,17 @@ const MAPS = { arena: { build: buildArena }, base: { build: buildBase, cam: { x:
 MAPS.souq = { build: buildSouq, tdm: true, cam: { x: -17, y: 10, z: 22, tx: 0, ty: 1, tz: 0 }, spawns: SOUQ_SPAWNS, sideBias: 14,
               flags: [[-6, 9.6], [0, 0], [6, -9.6]], sites: [[-16, -8], [16.5, -8.6]] };
 MAPS.port.flags = [[-1.2, 9.6], [0, 0], [1.2, -9.6]]; MAPS.port.sites = [[-11.4, -5.6], [11.3, -6.6]];
+MAPS.gas = { build: buildGas, tdm: true, cam: { x: -20, y: 9, z: 20, tx: 0, ty: 1, tz: 0 }, spawns: GS_SPAWNS, sideBias: 10,
+             flags: [[-15.5, 0], [0, 0], [15, 0]], sites: [[-14.5, -12.75], [12.2, -12]],
+             hills: [{ n: 'المضخات', x: 0, z: 0, w: 6, d: 4, y: 0 }, { n: 'البقالة', x: -15.5, z: 0, w: 4.4, d: 4, y: 0 }, { n: 'المطعم', x: 15, z: 0, w: 4, d: 2.6, y: 0 },
+                     { n: 'الشاحنات الشمالية', x: -14.5, z: -12.75, w: 6, d: 2.6, y: 0 }, { n: 'المغسلة الجنوبية', x: 12.4, z: 12, w: 3.4, d: 4.4, y: 0 },
+                     { n: 'الشاحنات الجنوبية', x: -14.5, z: 12.75, w: 6, d: 2.6, y: 0 }, { n: 'المغسلة الشمالية', x: 12.4, z: -12, w: 3.4, d: 4.4, y: 0 }] };
+MAPS.tower = { build: buildTower, tdm: true, floors: true, cam: { x: -26, y: 15, z: 26, tx: 0, ty: 3, tz: 0 }, spawns: TW_SPAWNS, sideBias: 14,
+               flags: [[-19, 2], [0, 0], [19, -2]], sites: [[-16, -12], [12, -11.5]],
+               hills: [{ n: 'تحت البرج', x: 0, z: 0, w: 6, d: 4, y: 0 }, { n: 'الطابق الأول — الغرب', x: -7.5, z: 4.4, w: 4, d: 2.6, y: TW_F }, { n: 'الطابق الأول — الشرق', x: 7.5, z: -4.4, w: 4, d: 2.6, y: TW_F },
+                       { n: 'الرافعة الشمالية', x: 12, z: -11.5, w: 4, d: 3, y: 0 }, { n: 'الرافعة الجنوبية', x: -12, z: 11.5, w: 4, d: 3, y: 0 }, { n: 'الخلاطة الغربية', x: -19, z: 2, w: 3, d: 4, y: 0 }, { n: 'الخلاطة الشرقية', x: 19, z: -2, w: 3, d: 4, y: 0 }] };
+MAPS.school = { build: buildSchool, cam: { x: -24, y: 14, z: 26, tx: 0, ty: 1, tz: 0 }, start: [0, 3, 0], boxSpots: SC_BOX };
+MAPS.hospital = { build: buildHospital, cam: { x: -26, y: 13, z: 24, tx: 0, ty: 1, tz: 0 }, start: [-14, -8, 0], boxSpots: HS_BOX };
 MAPS.mall = { build: buildMall, tdm: true, floors: true, cam: { x: -30, y: 16, z: 30, tx: 0, ty: 2, tz: 0 }, spawns: ML_SPAWNS, sideBias: 16,
               flags: [[-19, 0], [0, -4.4], [19, 0]], sites: [[-19, -15.4], [18.5, -15.6]],
               hills: [{ n: 'ساحة المطاعم', x: 0, z: 4.6, w: 7, d: 3, y: 0 }, { n: 'السوبرماركت', x: -19, z: 0, w: 8, d: 3.4, y: 0 }, { n: 'الإلكترونيات', x: 19, z: 0, w: 5.5, d: 4.5, y: 0 },
@@ -9581,8 +10091,10 @@ const boxLim = () => 3 + Math.floor(Math.random() * 6);          // the teddy co
 // every place the box can be on this map: [x, z, zone]
 function boxSpotList() {
   const fixed = MAPS[currentMap] && MAPS[currentMap].boxSpots;
-  if (fixed) return fixed.map(q => [q[0], q[1], q[2] || 0]);
-  return (BOX_SPOTS[currentMap] || []).filter(([x, z]) => spotFree(x, z, 1.5)).map(q => [q[0], q[1], 0]);
+  const all = fixed ? fixed.map(q => [q[0], q[1], q[2] || 0]) : (BOX_SPOTS[currentMap] || []).filter(([x, z]) => spotFree(x, z, 1.5)).map(q => [q[0], q[1], 0]);
+  const P = CP.on && CP.props, jobs = P ? (P.bats || []).concat([P.gen, P.sig, P.ant, P.padAt]).filter(Boolean) : [];
+  const ok = all.filter(([x, z]) => jobs.every(q => Math.hypot(q.x - x, q.z - z) > 3.4));
+  return ok.length ? ok : all;
 }
 // ---- the locator boards: a little map of the level on a post next to each spot; the lamp where the box is now is lit ----
 const SIGN_W = 1.1, SIGN_H = 0.95;
@@ -13102,7 +13614,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.7';
+const GAME_VERSION = '4.8';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
