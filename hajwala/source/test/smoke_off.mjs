@@ -1,0 +1,11 @@
+import { launch, openGame } from './lib_offline.mjs';
+const b = await launch();
+const t0 = Date.now();
+const { page, errors } = await openGame(b);
+console.log('ready in', Date.now() - t0, 'ms');
+await page.waitForTimeout(4000);
+await page.screenshot({ path: 'shots/smoke_intro.png' });
+const info = await page.evaluate(() => { const H = window.__H; return { state: H.GAME.state, calls: H.GAME.renderer.info.render.calls, tris: H.GAME.renderer.info.render.triangles, fps: H.fps(), cups: H.CUPS.list.length, jumps: H.W.jumpSpots.length, lamps: H.W.lamps.length, boxes: H.COL.boxes.length, palms: H.W.palms.length, crowd: H.CROWD.n, traffic: H.TRAFFIC.cars.length, shops: H.W.shops.length }; });
+console.log(JSON.stringify(info));
+console.log('ERRORS:', errors.slice(0, 20).join('\n'));
+await b.close();

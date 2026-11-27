@@ -1,0 +1,10 @@
+import { launch, openGame } from './lib.mjs';
+const b = await launch();
+const { page, errors } = await openGame(b);
+await page.evaluate(() => { const H = window.__H; H.CAM.intro && (H.CAM.intro.t = 999); });
+await page.waitForTimeout(800);
+console.log(await page.evaluate(() => ({ st: window.__H.GAME.state, title: document.querySelector('#title').className, menu: document.querySelector('#menu').className })));
+await page.mouse.click(640, 400); await page.waitForTimeout(800);
+console.log(await page.evaluate(() => ({ st: window.__H.GAME.state, title: document.querySelector('#title').className, menu: document.querySelector('#menu').className, top: document.elementFromPoint(640,400)?.id || document.elementFromPoint(640,400)?.className })));
+console.log(errors.filter(e => !e.includes('GPU')).join('\n'));
+await b.close();

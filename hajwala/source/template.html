@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>هجولة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&family=Lalezar&display=swap" rel="stylesheet">
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<!--__HTML__-->
+<script>
+(function(){
+  function show(msg){ var l=document.querySelector('#loading .lt'); if(l){ l.textContent='صار خطأ: '+msg; l.style.color='#ff9a7a'; } }
+  window.__bootErr = show;
+  window.addEventListener('error', function(e){ if(!window.__H || !window.__H.ready) show((e && e.message) || 'غير معروف'); });
+  window.addEventListener('unhandledrejection', function(e){ if(!window.__H || !window.__H.ready) show(String(e && e.reason && (e.reason.message || e.reason))); });
+  setTimeout(function(){ if(!window.__H || !window.__H.ready){ var l=document.querySelector('#loading .lt'); if(l && l.textContent.indexOf('خطأ')<0) l.textContent += ' (يطوّل شوي… لو ما تحرّك سكّر الصفحة وافتحها مرة ثانية)'; } }, 20000);
+})();
+</script>
+<script>
+/*__GAME__*/
+</script>
+</body>
+</html>

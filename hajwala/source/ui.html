@@ -1,0 +1,121 @@
+<div id="app">
+<canvas id="lines"></canvas>
+<div id="loading"><div class="lg neon">هجولة</div><div class="bar"><i></i></div><div class="lt">يجهّز الحي…</div></div>
+<div id="title" class="screen"><h1 class="neon big">هجولة</h1><p class="sub">ليل الحي · ساحة التفحيط · البر</p><p class="tap">اضغط عشان تبدأ</p></div>
+
+<div id="menu" class="screen">
+  <div class="mpanel">
+    <div class="mlogo neon">هجولة</div>
+    <button class="mb primary" data-act="free"><b>يلا نهجول</b><small>العالم المفتوح</small></button>
+    <button class="mb" data-act="modes"><b>الأطوار</b><small>تفحيط · سباقات · دورية · تطعيس</small></button>
+    <button class="mb" data-act="garage"><b>الكراج</b><small>سيارات وتعديل</small></button>
+    <button class="mb" data-act="online"><b>ساحة الشباب</b><small id="mnet">العب مع الربع أونلاين</small></button>
+    <button class="mb" data-act="settings"><b>الإعدادات</b><small>الجودة والصوت والتحكم</small></button>
+    <div class="mfoot"><span id="mmoney"></span><span id="mcar"></span></div>
+  </div>
+  <div class="mhint" id="mhint"></div>
+</div>
+
+<div id="hud">
+  <div id="tl">
+    <div class="chip money"><span id="hmoney">0</span> <small>ريال</small></div>
+    <div class="chip cups">☕ <span id="hcups">0/25</span></div>
+    <div class="chip net" id="hnet" hidden>🟢 <span id="hnetn">0</span></div>
+  </div>
+  <button id="bpause" class="ib" aria-label="إيقاف">❚❚</button>
+  <div id="modehud"></div>
+  <div id="drift"><div class="dp"><span id="dpts">0</span><b id="dmult">×1</b></div><div class="da"><i id="dang"></i></div></div>
+  <div id="big"></div>
+  <div id="toasts"></div>
+  <div id="moneyfly"></div>
+  <canvas id="speedo" width="220" height="220"></canvas>
+  <canvas id="minimap" width="200" height="200"></canvas>
+  <button id="prompt" hidden></button>
+  <div id="touch">
+    <div id="steerZone"><div id="wheel"><div class="wr"></div><div class="wk"></div></div><div class="sz-hint">اسحب يمين ويسار للدركسون</div></div>
+    <button class="tb" id="tGas">بنزين</button>
+    <button class="tb" id="tBrake">فرامل</button>
+    <button class="tb" id="tHand">هاند</button>
+    <button class="tb" id="tNitro">نيترو</button>
+    <button class="tb sm" id="tHorn">📯</button>
+    <button class="tb sm" id="tCam">🎥</button>
+  </div>
+  <div id="tut" hidden><div class="tc"><div class="ts" id="tstep"></div><div class="tt" id="ttext"></div><div class="tk" id="tkeys"></div><div class="tdots"><i></i><i></i><i></i></div></div><button class="lnk" id="tskip">تخطي</button></div>
+</div>
+
+<div id="countdown"></div>
+
+<div id="pause" class="modal"><div class="card">
+  <h2>واقف شوي</h2>
+  <button class="mb primary" data-p="resume"><b>كمّل</b></button>
+  <button class="mb" data-p="restart"><b>عيد الطور</b></button>
+  <button class="mb" data-p="reset"><b>رجّع السيارة على الطريق</b></button>
+  <button class="mb" data-p="photo"><b>وضع التصوير 📸</b></button>
+  <button class="mb" data-p="cam"><b>غيّر الكاميرا</b></button>
+  <button class="mb" data-p="free"><b>رجوع للهجولة الحرة</b></button>
+  <button class="mb" data-p="settings"><b>الإعدادات</b></button>
+  <button class="mb" data-p="menu"><b>القائمة الرئيسية</b></button>
+</div></div>
+
+<div id="modes" class="modal"><div class="card wide">
+  <h2>الأطوار</h2>
+  <div class="grid">
+    <div class="mc"><h3>تحدي التفحيط</h3><p>٩٠ ثانية في الساحة. زاوية وسرعة ومدة، والمضاعف يكبر لما تربط الدريفت.</p><div class="rec" id="rDrift"></div><button class="go" data-m="drift">ابدأ</button></div>
+    <div class="mc"><h3>السباقات</h3><p>ضد ٣ منافسين، وشبح أفضل لفة لك.</p><div class="trk" id="trkList"></div></div>
+    <div class="mc"><h3>الدورية</h3><p>وصّل الطلبية والدورية وراك. اقطع خط الرؤية عشان تفلت.</p><div class="rec" id="rPatrol"></div><button class="go" data-m="patrol">ابدأ</button></div>
+    <div class="mc"><h3>التطعيس</h3><p>تحديات البر.</p><div class="trk"><button data-d="climb">الطعس الكبير <small id="rClimb"></small></button><button data-d="jump">أطول قفزة <small id="rJump"></small></button><button data-d="high">أعلى نقطة <small id="rHigh"></small></button></div></div>
+  </div>
+  <button class="x" data-close>✕</button>
+</div></div>
+
+<div id="online" class="modal"><div class="card wide">
+  <h2>ساحة الشباب</h2>
+  <div class="onrow"><span id="onStat" class="st">…</span></div>
+  <p class="note" id="onNote"></p>
+  <label class="fld">اسمك فوق السيارة<input id="nick" maxlength="14" autocomplete="off"></label>
+  <div class="cols">
+    <div><h3>الموجودين</h3><div id="peerList" class="plist"></div></div>
+    <div><h3>لوحة التفحيط الحيّة</h3><div id="dboard" class="plist"></div></div>
+  </div>
+  <h3>سباق جماعي</h3><div class="trk" id="grpTracks"></div>
+  <button class="x" data-close>✕</button>
+</div></div>
+
+<div id="settings" class="modal"><div class="card">
+  <h2>الإعدادات</h2>
+  <div class="set"><span>الجودة</span><div class="seg" id="sQ"><button data-v="auto">تلقائي</button><button data-v="low">منخفضة</button><button data-v="medium">متوسطة</button><button data-v="high">عالية</button></div></div>
+  <div class="set"><span>الموسيقى</span><label class="sw"><input type="checkbox" id="sMus"><i></i></label><input type="range" id="sMusV" min="0" max="1" step="0.05"></div>
+  <div class="set"><span>المؤثرات</span><input type="range" id="sSfx" min="0" max="1" step="0.05"></div>
+  <div class="set"><span>مساعدة التفحيط</span><label class="sw"><input type="checkbox" id="sAssist"><i></i></label></div>
+  <div class="set"><span>الدركسون بالإمالة</span><label class="sw"><input type="checkbox" id="sGyro"><i></i></label><small id="gyroMsg"></small></div>
+  <div class="set"><span>حساسية الدركسون</span><input type="range" id="sSens" min="0.5" max="1.8" step="0.05"></div>
+  <div class="set"><span>دورة الفجر</span><label class="sw"><input type="checkbox" id="sDawn"><i></i></label></div>
+  <div class="set"><span>التحكم</span><small class="keys">WASD/الأسهم · مسافة هاند بريك · Shift نيترو · H هرن · C كاميرا · R رجّع السيارة · E تفاعل · P تصوير · Esc إيقاف · ويدعم يد التحكم</small></div>
+  <div class="set"><span>البيانات</span><button class="lnk danger" id="sReset">مسح التقدم</button></div>
+  <button class="x" data-close>✕</button>
+</div></div>
+
+<div id="results" class="modal"><div class="card">
+  <h2 id="resT"></h2><div class="resbig" id="resB"></div><div id="resL" class="resl"></div>
+  <div class="row"><button class="mb primary" id="resRetry"><b>عيدها</b></button><button class="mb" id="resBack"><b>رجوع للحي</b></button></div>
+</div></div>
+
+<div id="confirm" class="modal"><div class="card"><h2 id="cfT"></h2><div class="row"><button class="mb primary" id="cfY"><b>إيه</b></button><button class="mb" id="cfN"><b>لا</b></button></div></div></div>
+
+<div id="garage">
+  <div class="gtop"><button class="ib" id="gBack">‹ رجوع</button><div class="chip money"><span id="gmoney"></span> <small>ريال</small></div></div>
+  <div class="gside">
+    <div class="tabs"><button data-tab="perf" class="on">الأداء</button><button data-tab="look">الشكل</button></div>
+    <div id="gPerf" class="gpane"></div>
+    <div id="gLook" class="gpane" hidden></div>
+  </div>
+  <div class="gsel"><button class="arr" id="gPrev">›</button><div class="gname"><b id="gCar"></b><small id="gType"></small><button class="buy" id="gBuy"></button></div><button class="arr" id="gNext">‹</button></div>
+</div>
+
+<div id="photo"><div class="ph-hint">اسحب عشان تلف · WASD/عصا للتحريك · عجلة الماوس للزوم</div><div class="ph-bar"><div class="seg" id="phF"><button data-f="none" class="on">عادي</button><button data-f="cine">سينمائي</button><button data-f="warm">دافي</button><button data-f="neon">نيون</button><button data-f="bw">أبيض وأسود</button></div><button class="mb primary" id="phSave"><b>📸 احفظ الصورة</b></button><button class="mb" id="phExit"><b>خروج</b></button></div></div>
+<div id="shot" class="modal"><div class="card wide"><h2>صورتك</h2><img id="shotImg" alt="لقطة من اللعبة"><p class="note" id="shotNote"></p><div class="row"><button class="mb" id="shotClose"><b>تمام</b></button></div></div></div>
+
+<div id="emotes" class="modal"><div class="card"><h2>سولف مع الشباب</h2><div class="emg" id="emg"></div><button class="x" data-close>✕</button></div></div>
+<div id="invite" hidden><span id="invT"></span><button class="mb primary" id="invY"><b>انضم</b></button><button class="lnk" id="invN">لا</button></div>
+<div id="rotate"><div>🔄</div><p>لف جوالك بالعرض عشان تهجول صح</p></div>
+</div>
