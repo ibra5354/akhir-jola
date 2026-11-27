@@ -1,0 +1,10 @@
+import { launch, openGame } from './lib.mjs';
+const b = await launch();
+const { page } = await openGame(b, { viewport: { width: 960, height: 540 } });
+await page.evaluate(() => { const H = window.__H; H.CAM.intro && (H.CAM.intro.t = 99); H.SAVE.tutorialDone = true; });
+await page.waitForTimeout(400);
+await page.evaluate(() => { const H = window.__H; H.titleContinue(); document.querySelector('#menu').classList.remove('on'); H.startMode('free'); H.teleport(H.GAME.player, -265, -20, Math.PI / 2); H.UI.enterPhoto(); const P = H.UI.photo; P.target.set(-265, 3, -20); P.yaw = -Math.PI / 2 + 0.3; P.pitch = 0.15; P.dist = 12; });
+await page.waitForTimeout(2500); await page.screenshot({ path: 'shots/look_west.png' });
+const info = await page.evaluate(() => { const H = window.__H; const out = []; for (const x of [-330, -340, -320]) for (const z of [-40, -20, 0]) out.push([x, z, H.terrainH(x, z).toFixed(1), H.groundAt(x, z, 99).h.toFixed(1)]); return out; });
+console.log(JSON.stringify(info));
+await b.close();
