@@ -251,6 +251,7 @@
   #sh { height:100%; width:0%; background:#38bdf8; box-shadow:0 0 8px #38bdf8; transition:width .15s; }
   #hpbar { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); width:min(60vw,320px); height:12px; background:rgba(255,255,255,.25); border-radius:6px; overflow:hidden; }
   #hp { height:100%; width:100%; background:#4ade80; transition:width .15s; }
+  body.bossOn #toast { top:32%; }
   #toast { position:absolute; top:24%; left:50%; transform:translateX(-50%); font-size:22px; font-weight:700; text-shadow:0 2px 6px #000; opacity:0; transition:opacity .25s; white-space:nowrap; }
   #flash { position:fixed; inset:0; background:rgba(255,0,0,0); pointer-events:none; transition:background .15s; }
   .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:safe center; overflow-y:auto; touch-action:pan-y; background:rgba(0,0,0,.72); gap:14px; text-align:center; padding:20px; }
@@ -2378,17 +2379,176 @@ function animBot(b, dt) {
   if (!b.legL) return;
   b.walkT += sp * dt * 2.4;
   const a = Math.sin(b.walkT) * Math.min(sp / 2.5, 1) * 0.75;
-  b.legL.rotation.x = a; b.legR.rotation.x = -a;
+  const G = b.gait;                     // a zombie may drag one leg, hold its arms out or let them hang
+  b.legL.rotation.x = a * (G ? G.l : 1); b.legR.rotation.x = -a * (G ? G.r : 1);
   if (b.zombie) {                       // shambling: arms sway, body lurches, and a lunge when it swipes
     if (b.swipe > 0) b.swipe -= dt;
     const sw = b.swipe > 0 ? Math.sin(b.swipe / 0.35 * Math.PI) * 0.9 : 0;
-    b.armR.rotation.x = -1.45 + Math.sin(b.walkT * 0.5) * 0.14 + sw;
-    b.armL.rotation.x = -1.2 + Math.cos(b.walkT * 0.5) * 0.14 + sw * 0.6;
-    b.group.rotation.z = Math.sin(b.walkT * 0.5) * 0.07;
+    b.armR.rotation.x = (G ? G.ar : -1.45) + Math.sin(b.walkT * 0.5) * 0.14 + sw;
+    b.armL.rotation.x = (G ? G.al : -1.2) + Math.cos(b.walkT * 0.5) * 0.14 + sw * 0.6;
+    b.group.rotation.z = Math.sin(b.walkT * 0.5) * (G ? G.sway : 0.07);
   }
 }
 const hitGeo = new THREE.BoxGeometry(0.8, 1.42, 0.5);     // invisible body hit-box (torso and legs)
+// ---------- The dead, v4.9: each zombie is seven vertex-coloured meshes (torso, head, eyes, two legs, two arms)
+// instead of twenty-odd plain ones. They dress for the map (thobes in the old quarter and the school, gowns and scrubs
+// in the hospital, overalls at the station, camouflage at the base), and each is one of a fixed set of "people" per map,
+// so the meshes are built once and shared. The hit boxes are the same invisible box and sphere as before.
+const ZVC = new THREE.MeshLambertMaterial({ vertexColors: true });
+const ZGLOW = new THREE.MeshBasicMaterial({ vertexColors: true });
+const ZL = { cache: new Map() };
+const ZSKIN2 = [0x8fa67c, 0x7f9a82, 0xa3a77d, 0x6f8a6a, 0x9a9e86, 0xb3ab8e, 0x7d8f75, 0x96a08a];
+const ZTHEME = { arena: ['casual', 'worker', 'thobe'], town: ['thobe', 'thobe', 'casual'], base: ['army', 'army', 'worker'], station: ['worker', 'casual', 'thobe'],
+  zmall: ['casual', 'thobe', 'casual'], school: ['thobe', 'thobe', 'casual'], hospital: ['gown', 'gown', 'scrubs', 'coat'] };
+const ZPEOPLE = 24;                                      // different people per map and kind of zombie
+function zRng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const zMul = (c, k) => { const r = Math.min(255, ((c >> 16) & 255) * k), g = Math.min(255, ((c >> 8) & 255) * k), b = Math.min(255, (c & 255) * k); return (r << 16) | (g << 8) | b; };
+// everything about one person: clothes, skin, hair, wounds, gait. Deterministic from (theme, type, n)
+function zPerson(theme, type, n) {
+  const R = zRng((theme.length * 7919 + type.length * 104729 + n * 7477 + theme.charCodeAt(0) * 31) | 0), pick = a => a[Math.floor(R() * a.length)];
+  const pool = ZTHEME[theme] || ZTHEME.arena;
+  const outfit = type === 'armor' ? 'army' : type === 'boss' ? 'rags' : pool[Math.floor(R() * pool.length)];
+  const P = { outfit, skin: type === 'boss' ? 0x6b1b1b : pick(ZSKIN2), fat: type === 'tank' ? 1.35 : type === 'runner' ? 0.74 : type === 'boss' ? 1.15 : 0.84 + R() * 0.38,
+    hair: pick(['bald', 'short', 'short', 'messy', 'long']), head: 'none', tears: type === 'runner' ? 5 : 2 + Math.floor(R() * 3), ribs: type === 'runner' || R() < 0.15,
+    belly: type === 'tank', armBig: type === 'tank' || type === 'boss' ? 1.3 : 1, missing: type === 'normal' && R() < 0.12 ? (R() < 0.5 ? 'L' : 'R') : '',
+    eyes: type === 'runner' ? 0xff5a1a : type === 'tank' ? 0xd4ff3a : 0xffb11a, jaw: 0.25 + R() * 0.45, tilt: (R() - 0.5) * 0.45, hunch: type === 'runner' ? 0.36 : 0.16 + R() * 0.16,
+    limp: R() < 0.35 ? (R() < 0.5 ? 'L' : 'R') : '', arms: type === 'runner' ? 0 : pick([0, 0, 1, 2]), sway: 0.05 + R() * 0.06, R };
+  if (outfit === 'casual') Object.assign(P, { shirt: pick([0x9b2c2c, 0x2b5d8a, 0x3f6b3a, 0xd6d0c0, 0x5b4a8a, 0xb8862b, 0x333a40]), pants: pick([0x2c3e5c, 0x34495e, 0x6b5a3c, 0x202428, 0x3a4a3a]), shoe: pick([0x1d1d1d, 0xe5e5e5, 0x5a3b22]), long: R() < 0.4 });
+  if (outfit === 'thobe') Object.assign(P, { robe: pick([0xe9e6dd, 0xdedad0, 0xcfcabd, 0xbdb6a5]), head: pick(['ghutra', 'shmagh', 'none', 'kufi']), shoe: pick([0x5a3b22, 0x2a2a2a]), long: true });
+  if (outfit === 'army') Object.assign(P, { shirt: 0x55603f, pants: 0x4a5236, shoe: 0x1d1d1d, long: true, camo: [0x3e4a2c, 0x6b6a45, 0x2e3522] });
+  if (outfit === 'worker') Object.assign(P, { shirt: pick([0xe8752a, 0xd8a22a]), pants: pick([0xe8752a, 0x2f4f7a]), shoe: 0x3a2a1a, long: R() < 0.5, vis: true });
+  if (outfit === 'gown') Object.assign(P, { shirt: pick([0x9cc4dd, 0xa9cfc0, 0xc7d6e3]), pants: 0, shoe: 0, long: false });
+  if (outfit === 'scrubs') Object.assign(P, { shirt: pick([0x2f7d6d, 0x3a6fa5]), pants: 0, shoe: 0xe5e5e5, long: false });
+  if (outfit === 'coat') Object.assign(P, { shirt: pick([0x6b8fb3, 0xd6d0c0]), pants: 0x2c3038, shoe: 0x1d1d1d, long: true, coat: 0xeeeeea });
+  if (outfit === 'rags') Object.assign(P, { shirt: 0, pants: 0x2a221c, shoe: 0, long: false });
+  if (P.outfit === 'scrubs') P.pants = P.shirt;
+  if (P.head !== 'none') P.hair = 'bald';
+  return P;
+}
+// the parts, built once per person
+const zGeo = (B, mat) => { const m = B.mesh(mat || ZVC); return m ? m.geometry : new THREE.BufferGeometry(); };   // an empty bag gives an empty geometry
+function zBuild(P) {
+  const R = P.R, sk = P.skin, skD = zMul(sk, 0.78), blood = 0x5a0d0d, blood2 = 0x7a1414, F = P.fat;
+  const cloth = P.outfit === 'thobe' ? P.robe : P.outfit === 'rags' ? sk : P.shirt;
+  const sleeve = P.coat ? P.coat : cloth;
+  const out = {};
+  // ---- torso (group coordinates), hunched forward about the hips ----
+  { const B = VB(), top = P.coat || cloth;
+    B.box(P.outfit === 'thobe' ? P.robe : (P.pants || sk), 0.36 * F, 0.2, 0.24 * Math.max(1, F * 0.9), 0, 0.9, 0);
+    if (P.belly) { B.ball(sk, 0.27, 0, 1.06, 0.06, 1.05, 0.9, 0.95); B.ball(zMul(sk, 0.7), 0.06, 0.08, 1.0, 0.31); }
+    else B.cyl(top, 0.2 * F, 0.19 * F, 0.28, 0, 1.06, 0, 10);
+    B.put(OG.chest, top, 0, 1.3, 0, 0, 0, 0, F * 1.05, 1.05, F * 1.05);
+    for (const s of [-1, 1]) B.ball(top, 0.095, s * 0.25 * Math.max(0.9, F), 1.41, 0, 1, 0.9, 1);
+    B.cyl(sk, 0.062, 0.07, 0.14, 0, 1.5, 0.01, 8);
+    if (P.coat) { B.box(P.shirt, 0.18, 0.34, 0.02, 0, 1.25, 0.15 * F); B.box(0x9ca3af, 0.08, 0.03, 0.02, 0.12, 1.36, 0.16 * F); }
+    if (P.vis) { B.box(0xe6f542, 0.42 * F, 0.05, 0.3 * F, 0, 1.2, 0); B.box(0xe6f542, 0.42 * F, 0.05, 0.3 * F, 0, 1.0, 0); }
+    if (P.camo) for (let i = 0; i < 9; i++) { const a = R() * 6.28; B.box(P.camo[i % 3], 0.12, 0.1, 0.02, Math.cos(a) * 0.16 * F, 1.0 + R() * 0.42, Math.sin(a) > 0 ? 0.15 * F : -0.15 * F); }
+    if (P.outfit === 'gown') { for (let i = 0; i < 6; i++) B.box(zMul(cloth, 0.8), 0.03, 0.03, 0.01, (R() - 0.5) * 0.3, 1.0 + R() * 0.4, 0.155 * F); B.box(sk, 0.12, 0.5, 0.02, 0, 1.15, -0.16 * F); }
+    if (P.outfit === 'scrubs') B.box(sk, 0.1, 0.08, 0.02, 0, 1.44, 0.135 * F);
+    if (P.outfit === 'thobe') B.box(zMul(P.robe, 0.92), 0.06, 0.24, 0.015, 0.0, 1.36, 0.15 * F);
+    if (P.outfit === 'army') { B.box(0x3a4128, 0.12, 0.1, 0.05, -0.1, 1.24, 0.16 * F); B.box(0x3a4128, 0.12, 0.1, 0.05, 0.1, 1.24, 0.16 * F); }
+    // torn cloth showing skin, blood, sometimes the ribs
+    for (let i = 0; i < P.tears; i++) { const front = R() < 0.7 ? 1 : -1; B.box(i % 2 ? sk : skD, 0.08 + R() * 0.08, 0.06 + R() * 0.08, 0.015, (R() - 0.5) * 0.3 * F, 0.98 + R() * 0.42, front * 0.158 * F); }
+    for (let i = 0; i < 2 + P.tears / 2; i++) B.box(i % 2 ? blood : blood2, 0.06 + R() * 0.12, 0.05 + R() * 0.12, 0.016, (R() - 0.5) * 0.3 * F, 0.95 + R() * 0.45, (R() < 0.75 ? 1 : -1) * 0.16 * F);
+    if (P.ribs) { B.box(zMul(sk, 0.6), 0.22, 0.22, 0.012, 0, 1.24, 0.158 * F); for (let i = 0; i < 4; i++) B.box(0xd8d2bf, 0.2, 0.022, 0.016, 0, 1.17 + i * 0.05, 0.164 * F); }
+    if (P.missing) { const s = P.missing === 'L' ? -1 : 1; B.ball(blood2, 0.085, s * 0.29, 1.38, 0, 1, 1, 1); B.ball(0xd8d2bf, 0.03, s * 0.31, 1.37, 0.02); }
+    const M = new THREE.Matrix4().makeTranslation(0, 0.86, 0).multiply(new THREE.Matrix4().makeRotationX(P.hunch)).multiply(new THREE.Matrix4().makeTranslation(0, -0.86, 0));
+    B.xform(M);
+    if (P.outfit === 'thobe') {                             // the robe hangs straight down to the shins, torn at the hem
+      B.cyl(P.robe, 0.23 * F, 0.29 * F, 0.62, 0, 0.52, -0.01, 12);
+      for (let i = 0; i < 7; i++) { const a = R() * 6.28; B.box(i % 2 ? zMul(P.robe, 0.75) : blood, 0.07, 0.06 + R() * 0.08, 0.02, Math.sin(a) * 0.27 * F, 0.27 + R() * 0.05, Math.cos(a) * 0.27 * F, 0, a, 0); }
+    }
+    if (P.coat) B.cyl(P.coat, 0.24 * F, 0.28 * F, 0.36, 0, 0.66, -0.01, 12);
+    if (P.outfit === 'gown') B.cyl(cloth, 0.22 * F, 0.27 * F, 0.3, 0, 0.7, 0, 12);
+    out.torso = zGeo(B);
+  }
+  // ---- head: skull, brow, sockets, nose, a hanging jaw with teeth, hair or a headdress ----
+  { const B = VB(), G = VB(), hy = 1.64;
+    B.ball(sk, 0.165, 0, hy, 0, 0.95, 1.08, 1.0);
+    B.box(skD, 0.25, 0.045, 0.06, 0, hy + 0.06, 0.13);
+    for (const s of [-1, 1]) { B.box(0x1a0808, 0.075, 0.05, 0.03, s * 0.063, hy + 0.02, 0.148); G.box(P.eyes, 0.035, 0.028, 0.01, s * 0.063, hy + 0.02, 0.165); B.box(skD, 0.035, 0.07, 0.05, s * 0.158, hy + 0.0, 0.0); }
+    B.box(skD, 0.04, 0.06, 0.05, 0, hy - 0.035, 0.16);
+    B.box(0x1a0808, 0.13, 0.05, 0.03, 0, hy - 0.095, 0.135);
+    { const J = VB(); J.box(sk, 0.15, 0.05, 0.13, 0, 0, 0.055); J.box(0xd8d2bf, 0.12, 0.022, 0.02, 0, 0.03, 0.11); J.box(blood, 0.09, 0.02, 0.06, 0, -0.015, 0.06);
+      J.xform(new THREE.Matrix4().makeTranslation(0, hy - 0.11, 0.05).multiply(new THREE.Matrix4().makeRotationX(P.jaw))); B.join(J); }
+    B.box(0xd8d2bf, 0.11, 0.02, 0.02, 0, hy - 0.08, 0.15);
+    if (R() < 0.45) B.box(blood2, 0.07, 0.06, 0.02, (R() - 0.5) * 0.18, hy + 0.08, 0.13);
+    const hairC = R() < 0.25 ? 0x6b6b66 : 0x1f1b18;
+    if (P.hair === 'short') B.put(OG.cap, hairC, 0, hy + 0.03, -0.01, -0.15, 0, 0, 1.08, 1.05, 1.02);
+    if (P.hair === 'messy') for (let i = 0; i < 9; i++) { const a = R() * 6.28; B.box(hairC, 0.07, 0.06, 0.07, Math.sin(a) * 0.1, hy + 0.12 + R() * 0.04, Math.cos(a) * 0.1 - 0.02, R(), R(), 0); }
+    if (P.hair === 'long') { B.put(OG.cap, hairC, 0, hy + 0.03, -0.01, -0.15, 0, 0, 1.08, 1.05, 1.02); B.box(hairC, 0.3, 0.3, 0.06, 0, hy - 0.1, -0.13); }
+    if (P.head === 'ghutra' || P.head === 'shmagh') {
+      const c1 = P.head === 'ghutra' ? 0xf1f0ea : 0xb22222, c2 = P.head === 'ghutra' ? 0xdcdad2 : 0xf1f0ea;
+      B.put(OG.cap, c1, 0, hy + 0.04, -0.01, -0.1, 0, 0, 1.18, 1.25, 1.12);
+      B.box(c1, 0.38, 0.4, 0.04, 0, hy - 0.12, -0.15, 0.15, 0, 0); for (const s of [-1, 1]) B.box(c1, 0.04, 0.36, 0.2, s * 0.18, hy - 0.1, -0.03);
+      if (P.head === 'shmagh') for (let i = 0; i < 8; i++) B.box(c2, 0.035, 0.035, 0.01, -0.14 + (i % 4) * 0.09, hy - 0.02 - Math.floor(i / 4) * 0.14, -0.172);
+      if (R() < 0.7) B.torus(0x111111, 0.15, 0.016, 0, hy + 0.11, -0.01, Math.PI / 2 + 0.1, 0, 0);
+      B.box(blood, 0.08, 0.1, 0.02, 0.06, hy - 0.2, -0.17);
+    }
+    if (P.head === 'kufi') B.put(OG.cap, 0xf1f0ea, 0, hy + 0.05, -0.01, -0.1, 0, 0, 1.02, 0.7, 1.0);
+    const M = new THREE.Matrix4().makeTranslation(0, 0, 0.06 + P.hunch * 0.25).multiply(new THREE.Matrix4().makeTranslation(0, hy - 0.15, 0)).multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(P.hunch * 0.5, 0, P.tilt))).multiply(new THREE.Matrix4().makeTranslation(0, -(hy - 0.15), 0));
+    B.xform(M); G.xform(M);
+    out.head = zGeo(B); out.eyes = zGeo(G, ZGLOW);
+  }
+  // ---- a leg, from the hip down (local) ----
+  const leg = (side) => {
+    const B = VB(), bare = P.outfit === 'gown' || P.outfit === 'rags' && R() < 0.5, pc = P.outfit === 'thobe' ? P.robe : (P.pants || sk);
+    const thigh = P.outfit === 'thobe' ? zMul(P.robe, 0.95) : bare ? sk : pc;
+    B.put(OG.thigh, thigh, 0, 0, 0, 0, 0, 0, 1.08 * Math.max(0.9, F * 0.95), 1, 1.08 * Math.max(0.9, F * 0.95));
+    const shinBare = bare || P.outfit === 'thobe' || (P.outfit === 'casual' && R() < 0.2);
+    B.put(OG.shin, shinBare ? sk : pc, 0, -0.42, 0, 0, 0, 0, 1.1, 1.0, 1.1);
+    if (!shinBare && R() < 0.5) B.box(sk, 0.08, 0.1, 0.012, 0, -0.55, 0.07);
+    if (R() < 0.4) B.box(blood, 0.07, 0.08, 0.012, 0, -0.3 - R() * 0.3, 0.085);
+    const shoe = P.shoe && !(P.outfit === 'thobe' && R() < 0.4) ? P.shoe : skD;
+    B.box(shoe, 0.12, 0.09, 0.26, 0, -0.79, 0.05);
+    return zGeo(B);
+  };
+  out.legL = leg(-1); out.legR = leg(1);
+  // ---- an arm, from the shoulder down (local): sleeve, forearm, a clawed hand ----
+  const arm = () => {
+    const B = VB(), k = P.armBig;
+    B.put(OG.upper, sleeve || sk, 0, 0, 0, 0, 0, 0, 1.15 * k, 0.98, 1.15 * k);
+    B.put(OG.fore, P.long ? sleeve : sk, 0, -0.29, 0, 0, 0, 0, 1.15 * k, 1.05, 1.15 * k);
+    if (P.long && R() < 0.6) for (let i = 0; i < 3; i++) B.box(zMul(sleeve, 0.8), 0.04, 0.06, 0.04, (i - 1) * 0.04, -0.52, 0.03);
+    else if (!P.long) for (let i = 0; i < 3; i++) B.box(zMul(sleeve, 0.8), 0.045, 0.05, 0.045, (i - 1) * 0.045, -0.28, (i % 2 ? 0.05 : -0.05));
+    B.box(sk, 0.08 * k, 0.1, 0.065 * k, 0, -0.6, 0.0);
+    for (let i = 0; i < 3; i++) B.box(skD, 0.018, 0.08, 0.02, (i - 1) * 0.025, -0.69, 0.025, 0.4, 0, 0);
+    if (R() < 0.5) B.box(blood, 0.05, 0.08, 0.012, 0, -0.4, 0.06 * k);
+    return zGeo(B);
+  };
+  out.armL = arm(); out.armR = arm();
+  return out;
+}
+function zParts(theme, type, n) {
+  const key = theme + '|' + type + '|' + n;
+  let e = ZL.cache.get(key);
+  if (!e) { const P = zPerson(theme, type, n); e = { P, G: zBuild(P) }; delete e.P.R; ZL.cache.set(key, e); }
+  return e;
+}
+// builds the zombie into group; same answer as botRig gives
+function zombieRig(group, type) {
+  const theme = ZTHEME[currentMap] ? currentMap : 'arena', n = Math.floor(Math.random() * ZPEOPLE);
+  const { P, G } = zParts(theme, type || 'normal', n);
+  const body = new THREE.Mesh(hitGeo, ZVC); body.position.y = 0.71; body.visible = false;
+  const head = new THREE.Mesh(botHeadGeo, ZVC); head.position.y = 1.65; head.visible = false;
+  group.add(body, head);
+  const mk = (g, mat, parent) => { const m = new THREE.Mesh(g, mat); m.castShadow = mat === ZVC; parent.add(m); return m; };
+  mk(G.torso, ZVC, group);
+  const hd = mk(G.head, ZVC, group), ey = mk(G.eyes, ZGLOW, group);
+  const legL = new THREE.Group(), legR = new THREE.Group(), armL = new THREE.Group(), armR = new THREE.Group();
+  legL.position.set(-0.13, 0.82, 0); legR.position.set(0.13, 0.82, 0);
+  const sh = 0.27 * Math.max(0.9, P.fat), hz = P.hunch * 0.5, hyS = 1.38 - P.hunch * 0.12;
+  armL.position.set(-sh, hyS, hz); armR.position.set(sh, hyS, hz);
+  mk(G.legL, ZVC, legL); mk(G.legR, ZVC, legR); mk(G.armL, ZVC, armL); mk(G.armR, ZVC, armR);
+  group.add(legL, legR, armL, armR);
+  if (P.missing === 'L') armL.visible = false; if (P.missing === 'R') armR.visible = false;
+  const pose = [[-1.45, -1.2], [-1.4, -0.25], [-0.35, -0.2]][P.arms];
+  armR.rotation.set(pose[0], 0, -0.1); armL.rotation.set(pose[1], 0, 0.16);
+  return { body, head, legL, legR, armL, armR, zombie: true, face: [hd, ey],
+           gait: { l: P.limp === 'L' ? 0.4 : 1, r: P.limp === 'R' ? 0.4 : 1, ar: pose[0], al: pose[1], sway: P.sway + (P.limp ? 0.05 : 0) } };
+}
 function botRig(group, mats, zombie) {
+  if (zombie) return zombieRig(group, 'normal');
   const body = new THREE.Mesh(hitGeo, mats.body); body.position.y = 0.71; body.visible = false;
   const head = new THREE.Mesh(botHeadGeo, mats.head); head.position.y = 1.65;
   group.add(body, head);
@@ -7710,6 +7870,7 @@ function gsReskin() {                           // I changed sides: every bot's 
 function botDamage(b, d, byTeam, byName, byPeer, kb) {
   if (b.dead) return;
   b.hp -= d; b.hitT = 0.08;
+  botHurt(b, kb, byPeer, false);
   if (b.hp <= 0) tdmKill(b, byTeam, byName || null, byPeer, kb);
 }
 function modeDeath(d) {                         // host: someone (bot or person) just died at x, z
@@ -8072,6 +8233,8 @@ function modeGoal(b) {                          // where this bot wants to stand
     if (S.bomb) { if (atk) goalAt(b, S.bomb.x, S.bomb.z, 5); else { b.gx = S.bomb.x; b.gz = S.bomb.z; b.gr = 1.1; b.hard = true; } }
     else if (atk) {
       let first = true; for (const o of enemies) if (!o.net && !o.dead && o.at === S.atk && o.id < b.id) { first = false; break; }
+      const A = enemies.filter(o => !o.net && !o.dead && o.at === S.atk).sort((p, q) => p.id - q.id), nl = A.length >= 4 && sites.length > 1 ? Math.floor(A.length / 3) : 0;
+      if (nl && A.indexOf(b) >= A.length - nl) { const o2 = sites[1 - S.plan]; goalAt(b, o2[0], o2[1], 6); return; }     // a couple go the other way and keep that site busy
       const s = sites[S.plan], LN = MAPS[currentMap].lanes;
       if (LN) {
         if (b.viaR !== S.round) { b.viaR = S.round; const o = LN[S.plan]; b.via = o[(b.id + S.round) % o.length]; }
@@ -8079,14 +8242,271 @@ function modeGoal(b) {                          // where this bot wants to stand
         if (b.via) { goalAt(b, b.via[0], b.via[1], 2.5); return; }
       }
       if (first) { b.gx = s[0]; b.gz = s[1]; b.gr = 1.0; b.hard = true; } else goalAt(b, s[0], s[1], 4.5);
-    } else { const s = sites[b.id % sites.length]; goalAt(b, s[0], s[1], 5); }
+    } else sndDefGoal(b, S, sites);
   }
+}
+// ---- the bots' heads: who they are, what they know, where they look ----
+// Each bot has a way of playing that goes with how it looks: the rusher pushes in, the heavy holds and backs off when hurt,
+// the sniper keeps its distance and stands still to shoot, the breacher goes round the side. Riflemen get one of the three.
+// None of them sees through walls any more: a bot knows where you are only if it saw you, heard you shoot or run close by,
+// took a hit from you, or a teammate called you out a moment ago.
+const BOT_PER = {
+  rush:  { k: 'rush',  range: [7, 11],  react: [0.24, 0.42], hunt: 1,    hold: [0, 0.5], retreat: 0,    still: 0.1,  flank: 0.15 },
+  care:  { k: 'care',  range: [12, 17], react: [0.3, 0.55],  hunt: 0.78, hold: [2, 4.5], retreat: 0.5,  still: 0.4,  flank: 0.1 },
+  snip:  { k: 'snip',  range: [18, 26], react: [0.34, 0.6],  hunt: 0.82, hold: [3, 6],   retreat: 0.45, still: 0.72, flank: 0 },
+  flank: { k: 'flank', range: [9, 14],  react: [0.28, 0.5],  hunt: 1,    hold: [0.4, 1.4], retreat: 0.35, still: 0.15, flank: 0.85 },
+};
+const CLS_PER = { rusher: 'rush', sniper: 'snip', heavy: 'care', breach: 'flank' };
+const BOT_FOV = 1.2, BOT_HEAR = 32, BOT_STEPS = 6, BOT_MEM = 9;
+const BI = { key: '', tint: { b: new Map(), r: new Map() }, hot: { b: -1, r: -1 }, holds: {} };
+function botPersona(b) {
+  const P = BOT_PER[CLS_PER[b.cls] || ['flank', 'care', 'rush'][(b.seed || b.id || 0) % 3]], r = a => a[0] + Math.random() * (a[1] - a[0]);
+  b.per = P; b.range = r(P.range); b.react = r(P.react);
+}
+let _qx = 0, _qy = 0, _qz = 0, _qh = 1.4;
+function entAt(e) {                             // where someone is: feet (_qx, _qy, _qz) and the height to aim at (_qh)
+  if (e === 'player') { _qx = player.x; _qz = player.z; _qy = player.y || 0; _qh = eyeH - 0.2 + _qy; }
+  else if (e.net) { _qx = e.tx; _qz = e.tz; _qy = e.ty || 0; _qh = 1.4 + _qy; }
+  else { _qx = e.group.position.x; _qz = e.group.position.z; _qy = e.y || 0; _qh = 1.4 + _qy; }
+}
+function entLive(e) { return e === 'player' ? player.alive && running : !!e && !e.dead && !e.fin && enemies.indexOf(e) >= 0; }
+function botFoe(b, e) {
+  if (e === b || !e) return false;
+  if (isFFA()) return true;
+  return e === 'player' ? b.team === 'red' : e.team !== b.team;
+}
+function botKnow(b, e, x, z, y, vis, ts) {
+  let k = b.kn.get(e);
+  if (!k) b.kn.set(e, k = { x, z, y, t: ts, v: vis }); else { k.x = x; k.z = z; k.y = y; k.t = ts; k.v = vis; }
+  if (vis && !isFFA()) {                        // and tells the team
+    const T = BI.tint[b.at]; let c = T.get(e);
+    if (!c) T.set(e, { x, z, y, t: ts }); else { c.x = x; c.z = z; c.y = y; c.t = ts; }
+  }
+}
+function botTurn(b, x, z, t) { b.tdx = x; b.tdz = z; b.turnT = t; }
+// a shot (or anything loud) at x, z: every bot on the other side within r learns roughly where, the further the rougher
+function botHear(src, x, z, y, r) {
+  if (mode !== 'tdm' || !gsHost()) return;
+  const ts = performance.now() / 1000;
+  for (const b of enemies) {
+    if (b.dead || b.net || b.mir || b.fin || !b.kn || !botFoe(b, src)) continue;
+    const P = b.group.position, d = Math.hypot(P.x - x, P.z - z);
+    if (d > r) continue;
+    const k = b.kn.get(src);
+    if (k && k.v && ts - k.t < 0.5) continue;    // already watching them
+    const f = Math.min(3, d * 0.09);
+    botKnow(b, src, x + (Math.random() - 0.5) * f * 2, z + (Math.random() - 0.5) * f * 2, y, false, ts);
+    if (!b.los && d < 22) botTurn(b, x, z, 1.1);
+  }
+}
+// hit: it knows exactly who and where, and looks all round for a moment
+function botHurt(b, kb, peer, me) {
+  if (!b.kn || b.net || b.mir) return;
+  const ts = performance.now() / 1000, src = kb && !kb.dead ? kb : me ? 'player' : peer ? enemies.find(o => o.net && o.peer === peer) : null;
+  b.hurtT = ts;
+  if (!src || !botFoe(b, src)) return;
+  entAt(src); botKnow(b, src, _qx, _qz, _qy, false, ts);
+  b.alert = 0.8; b.retgt = 0; botTurn(b, _qx, _qz, 0.8);
+}
+const _cand = [];
+function botSense(b, dt, ts) {                  // eyes and ears, five times a second
+  if (b.alert > 0) b.alert -= dt;
+  b.senseT = (b.senseT || 0) - dt;
+  if (b.senseT > 0) return;
+  b.senseT = 0.2 + Math.random() * 0.06;
+  const P = b.group.position, ey = 1.5 + (b.y || 0), face = b.group.rotation.y, C = _cand;
+  C.length = 0;
+  if (botFoe(b, 'player') && player.alive && running) C.push('player');
+  for (const o of enemies) if (!o.dead && !o.fin && botFoe(b, o)) C.push(o);
+  const n = C.length; if (!n) return;
+  b.rr = ((b.rr || 0) + 1) % n;
+  let spare = 1;
+  for (let j = 0; j < n; j++) {
+    const e = C[(b.rr + j) % n];
+    entAt(e);
+    const dx = _qx - P.x, dz = _qz - P.z, d = Math.hypot(dx, dz), k = b.kn.get(e);
+    if (d > 42) { if (k) k.v = false; continue; }
+    let da = Math.atan2(dx, dz) - face; da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da)));
+    const track = k && k.v && ts - k.t < 0.6, look = d < 2.5 || da < ((b.mvK || 0) < 0.3 ? 1.6 : BOT_FOV) || track || b.alert > 0;   // standing still, it takes in more
+    if (look && (e === b.tgt || track || spare > 0)) {
+      if (e !== b.tgt && !track) spare--;
+      if (hasLOS(P.x, ey, P.z, _qx, _qh, _qz)) { botKnow(b, e, _qx, _qz, _qy, true, ts); if (e !== b.tgt && !b.los) b.retgt = 0; continue; }
+    }
+    if (k && k.v) k.v = false;
+    if (d < BOT_STEPS && (!k || ts - k.t > 1.5)) {   // footsteps: someone running close by, through the wall
+      const loud = e === 'player' ? moving && stance !== 'crouch' : !e.net && (e.mvK || 0) > 0.6 && !e.crouch;
+      if (loud) { botKnow(b, e, _qx, _qz, _qy, false, ts); if (!b.los) botTurn(b, _qx, _qz, 0.9); }
+    }
+  }
+}
+function botChoose(b, ts) {                     // who to go after: what it sees first, then what it heard, then what the team said
+  let best = null, bs = 1e9;
+  const P = b.group.position;
+  for (const [e, k] of b.kn) {
+    if (!entLive(e) || ts - k.t > BOT_MEM) { b.kn.delete(e); continue; }
+    const d = Math.hypot(k.x - P.x, k.z - P.z), s = k.v && ts - k.t < 0.45 ? d : d + 10 + (ts - k.t) * 3;
+    if (s < bs) { bs = s; best = e; }
+  }
+  if (!isFFA()) {
+    const T = BI.tint[b.at];
+    for (const [e, c] of T) {
+      const age = ts - c.t;
+      if (!entLive(e) || age > 30) { T.delete(e); continue; }
+      if (age < 0.7 || age > 6 || b.kn.has(e)) continue;
+      const s = Math.hypot(c.x - P.x, c.z - P.z) + 18 + age * 3;
+      if (s < bs) { bs = s; best = e; }
+    }
+    if (best && !b.kn.has(best)) { const c = T.get(best); b.kn.set(best, { x: c.x, z: c.z, y: c.y, t: c.t, v: false }); }
+  }
+  return best;
+}
+function botCleared(b, t, ox, oz) {             // went to where they were and nobody's there: forget it
+  b.kn.delete(t);
+  if (!isFFA()) { const T = BI.tint[b.at], c = T.get(t); if (c && Math.hypot(c.x - ox, c.z - oz) < 4) T.delete(t); }
+  b.tgt = null; b.retgt = 0; b.los = false;
+}
+function navOpen(x, z) {
+  const n = NAV.n, cs = NAV.cs, ix = Math.floor((x + ARENA) / cs), iz = Math.floor((z + ARENA) / cs);
+  return ix >= 0 && iz >= 0 && ix < n && iz < n && !NAV.blocked[iz * n + ix];
+}
+function navCellOf(x, z) { const n = NAV.n, cs = NAV.cs; return clamp(Math.floor((z + ARENA) / cs), 0, n - 1) * n + clamp(Math.floor((x + ARENA) / cs), 0, n - 1); }
+function botFlankVia(b, ox, oz, mx, mz) {       // the breacher's way in: a point off to one side of the straight line
+  if (b.fvFor === b.tgt) { if (b.fv && Math.hypot(b.fv[0] - ox, b.fv[1] - oz) < 2.5) b.fv = null; return; }
+  b.fvFor = b.tgt; b.fv = null;
+  const L = Math.hypot(mx - ox, mz - oz);
+  if (L < 10 || (b.y || 0) > 0.5 || Math.random() > b.per.flank) return;
+  const ux = (mx - ox) / L, uz = (mz - oz) / L, sd = Math.random() < 0.5 ? -1 : 1;
+  for (const off of [8, 6, -8, -6]) {
+    const o = off * sd, x = ox + ux * L * 0.55 - uz * o, z = oz + uz * L * 0.55 + ux * o;
+    if (spotFree(x, z, 0.7) && navOpen(x, z)) { b.fv = [x, z]; return; }
+  }
+}
+function botCover(b, tx, tz, ty) {              // hurt: the nearest spot close by that they can't see
+  const P = b.group.position, ox = P.x, oz = P.z;
+  if ((b.y || 0) > 0.5) return false;
+  let best = null, bd = 1e9;
+  for (const r of [3.5, 5.5, 7.5]) {
+    for (let i = 0; i < 12; i++) {
+      const a = i * 0.5236, x = ox + Math.sin(a) * r, z = oz + Math.cos(a) * r;
+      if ((x - ox) * (ox - tx) + (z - oz) * (oz - tz) < -0.3 * r * Math.hypot(ox - tx, oz - tz)) continue;   // not towards them
+      if (!spotFree(x, z, 0.55) || !navOpen(x, z) || hasLOS(tx, ty, tz, x, 1.3, z)) continue;
+      const d = r + Math.random();
+      if (d < bd) { bd = d; best = [x, z]; }
+    }
+    if (best) break;
+  }
+  if (!best) return false;
+  b.rtx = best[0]; b.rtz = best[1];
+  return true;
+}
+const _roamC = [];
+function botRoamPick(b, ox, oz, ts) {           // nobody to chase: go and look somewhere worth looking
+  const MP = MAPS[currentMap] || {}, C = _roamC, ffa = isFFA(), es = ffa ? 0 : -spawnSign(b.team);
+  C.length = 0;
+  let sum = 0;
+  const add = (x, z, y, w) => { if (Math.hypot(x - ox, z - oz) < 6 || Math.abs(x) > ARENA - 3 || Math.abs(z) > ARENA - 3) return; if (!(y > 0.5) && (!spotFree(x, z, 0.6) || !navOpen(x, z))) return; C.push([x, z, y || 0, w]); sum += w; };
+  if (!ffa) for (const c of BI.tint[b.at].values()) if (ts - c.t < 30) add(c.x, c.z, c.y, 3);
+  for (const [x, z] of MP.spawns || []) add(x, z, 0, es && Math.sign(z) === es ? 1.2 : 0.5);
+  for (const h of MP.hills || []) add(h.x, h.z, h.y || 0, 1.4);
+  for (const f of MP.flags || []) add(f[0], f[1], 0, 1);
+  for (const s of MP.sites || []) add(s[0], s[1], 0, 1);
+  for (let i = 0; i < 6; i++) add((Math.random() * 2 - 1) * (ARENA - 4), (Math.random() * 2 - 1) * (ARENA - 4), 0, 0.8);
+  if (!C.length) return [-ox * 0.5, -oz * 0.5, 0];
+  let r = Math.random() * sum;
+  for (const c of C) if ((r -= c[3]) <= 0) return c;
+  return C[C.length - 1];
+}
+function botRoam(b, ts, ox, oz) {
+  const R = b.ro;
+  if (R && ts < b.roT) {
+    if (Math.hypot(R[0] - ox, R[1] - oz) > 1.3 || (MAPS[currentMap].floors && upLvl(b.y || 0) !== upLvl(R[2]))) return;
+    if (!b.roHeld) { b.roHeld = true; const h = b.per.hold; b.hold = h[0] + Math.random() * (h[1] - h[0]); return; }
+    if (b.hold > 0) return;
+  }
+  b.ro = botRoamPick(b, ox, oz, ts); b.roT = ts + 14 + Math.random() * 8; b.roHeld = false; b.flowT = 0;
+}
+function botThreat(b, ts, ox, oz) {             // which way trouble comes from, to face while standing
+  let best = null, bt = 25;
+  for (const k of b.kn.values()) if (ts - k.t < bt) { bt = ts - k.t; best = k; }
+  if (!isFFA()) for (const c of BI.tint[b.at].values()) if (ts - c.t < bt) { bt = ts - c.t; best = c; }
+  if (best) { _qx = best.x; _qz = best.z; return; }
+  const S = GS.snd, es = isFFA() ? 0 : S ? (b.at === S.atk ? -1 : 1) : -spawnSign(b.team);
+  if (es) { _qx = ox * 0.5; _qz = es * ARENA * 0.8; } else { _qx = -ox; _qz = -oz; }
+}
+function botLookA(b, ox, oz, hx, hz) {          // of the open ways to look, the one most towards the threat
+  const base = Math.atan2(hx - ox, hz - oz), ey = 1.5 + (b.y || 0);
+  let best = base, bs = -1;
+  for (let i = 0; i < 12; i++) {
+    const a = i * 0.5236, c = Math.cos(a - base);
+    if (c < -0.2) continue;
+    let open = 0;
+    for (const r of [3, 7, 12]) { if (hasLOS(ox, ey, oz, ox + Math.sin(a) * r, ey, oz + Math.cos(a) * r)) open++; else break; }
+    const s = open * (1.3 + c);
+    if (s > bs) { bs = s; best = a; }
+  }
+  return best;
+}
+function botIntelTick(ts) {                     // once a frame: a new round wipes what the teams knew; remote players' shots are heard
+  const key = GS.id + '|' + currentMap + '|' + (GS.snd ? GS.snd.round : 0) + '|' + (tdm.over ? 1 : 0);
+  if (BI.key !== key) { BI.key = key; BI.tint.b.clear(); BI.tint.r.clear(); BI.hot.b = BI.hot.r = -1; }
+  for (const o of enemies) {
+    if (!o.net || o.dead) continue;
+    const s = netSeenShot.get(o.peer) || 0;
+    if (o._hs !== undefined && s !== o._hs) botHear(o, o.tx, o.tz, o.ty || 0, BOT_HEAR);
+    o._hs = s;
+  }
+  const S = GS.snd;
+  if (S && S.ph === 'live') {                   // the defenders: is one of the sites getting company?
+    const sites = MAPS[currentMap].sites || [], def = otherAt(S.atk);
+    const cnt = sites.map(() => 0), seen = new Set();
+    const look = (e, c) => {                    // each attacker counts once, for the site it is clearly heading for
+      if (ts - c.t > 7 || seen.has(e)) return; seen.add(e);
+      let bi = -1, b1 = 1e9, b2 = 1e9;
+      sites.forEach((s, i) => { const d = Math.hypot(c.x - s[0], c.z - s[1]); if (d < b1) { b2 = b1; b1 = d; bi = i; } else if (d < b2) b2 = d; });
+      if (bi >= 0 && (b1 < 12 || (b1 < 20 && b1 < b2 * 0.7))) cnt[bi]++;
+    };
+    for (const [e, c] of BI.tint[def]) look(e, c);
+    for (const b of enemies) if (!b.net && !b.dead && b.at === def && b.kn) for (const [e, k] of b.kn) look(e, k);
+    let hot = -1, hc = 0;
+    cnt.forEach((c, i) => { if (c > hc) { hc = c; hot = i; } });
+    if (hot >= 0 || ts - (BI.hotT || 0) > 6) { BI.hot[def] = hot; if (hot >= 0) BI.hotT = ts; }
+  }
+}
+function sndHolds(si) {                         // spots around a site with an eye on it and something to hide behind
+  const key = currentMap + '|' + ARENA + '|' + si;
+  if (BI.holds[key]) return BI.holds[key];
+  const s = MAPS[currentMap].sites[si], cand = [], cs = NAV.cs;
+  const dist = new Int16Array(NAV.n * NAV.n); navFlow(s[0], s[1], dist);
+  for (let r = 3; r <= 9; r += 1.5) for (let i = 0; i < 16; i++) {
+    const a = i * 0.3927, x = s[0] + Math.sin(a) * r, z = s[1] + Math.cos(a) * r;
+    if (!spotFree(x, z, 0.6) || !navOpen(x, z)) continue;
+    const dc = dist[navCellOf(x, z)];
+    if (dc < 0 || dc * cs > r * 2.2 + 2) continue;          // round the back of a wall: no
+    if (!hasLOS(x, 1.5, z, s[0], 1.0, s[1])) continue;
+    let cover = 0;
+    for (const [qx, qz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!spotFree(x + qx * 1.1, z + qz * 1.1, 0.3)) cover++;
+    cand.push([x, z, Math.min(cover, 2) - (z - s[1]) / r * 0.8 + (r > 4 ? 0.5 : 0) + Math.random() * 0.4]);
+  }
+  cand.sort((p, q) => q[2] - p[2]);
+  const out = [];
+  for (const c of cand) if (out.every(o => Math.hypot(o[0] - c[0], o[1] - c[1]) > 3.2)) { out.push(c); if (out.length >= 4) break; }
+  if (!out.length) out.push([s[0], s[1], 0]);
+  return (BI.holds[key] = out);
+}
+function sndDefGoal(b, S, sites) {              // defenders: one on each site, a second each, the last one rotates to trouble
+  const D = enemies.filter(o => !o.net && !o.dead && o.at === b.at).sort((p, q) => p.id - q.id);
+  const j = D.indexOf(b), n = D.length, ns = sites.length, hot = BI.hot[b.at];
+  const rot = n >= 3 && j === n - 1, si = j % ns;
+  if (hot >= 0 && (rot || (j >= ns && si !== hot))) { goalAt(b, sites[hot][0], sites[hot][1], 5); return; }
+  const H = sndHolds(si), h = H[(rot ? 2 : Math.floor(j / ns)) % H.length];
+  b.gx = h[0]; b.gz = h[1]; b.gr = 0.8;
 }
 function updateTdmBots(dt) {
   const sig = currentMap + ARENA + '|' + obstacles.length + '|tdm';
-  if (NAV.sig !== sig) { NAV.sig = sig; navRebuild(); }
-  const cells = NAV.n * NAV.n, host = gsHost(), frozen = !!GS.snd && GS.snd.ph !== 'live', k = Math.min(1, dt * 12), now = performance.now();
+  if (NAV.sig !== sig) { NAV.sig = sig; navRebuild(); BI.holds = {}; }
+  const cells = NAV.n * NAV.n, host = gsHost(), frozen = !!GS.snd && GS.snd.ph !== 'live', k = Math.min(1, dt * 12), now = performance.now(), ts = now / 1000;
   tdmTokens = Math.min(3, tdmTokens + 3 * dt);         // caps how fast the player can be shot at
+  if (host) botIntelTick(ts);
   for (const b of enemies) {
     if (b.dead || b.net || b.fin) continue;
     const g = b.group;
@@ -8103,43 +8523,63 @@ function updateTdmBots(dt) {
       animBot(b, dt);
       continue;
     }
-    if (b.range === undefined) { b.range = 8 + Math.random() * 10; b.react = 0.28 + Math.random() * 0.3; b.navT = 0; b.flowT = 0; b.strT = 0; b.seen = 0; b.side = Math.random() < 0.5 ? -1 : 1; b.stuck = 0; b.nudge = 0; b.goalT = Math.random() * 0.5; }
+    if (b.range === undefined) { botPersona(b); b.navT = 0; b.flowT = 0; b.strT = 0; b.seen = 0; b.side = Math.random() < 0.5 ? -1 : 1; b.stuck = 0; b.nudge = 0; b.goalT = Math.random() * 0.5; b.kn = new Map(); b.ret = 0; b.retCD = 0; b.hold = 0; b.hurtT = -99; b.turnT = 0; b.stuckN = 0; }
     if (frozen) { b.crouch = false; animBot(b, dt); continue; }
+    const PR = b.per;
+    if (ts - b.hurtT > 5 && b.hp < b.maxHp) b.hp = Math.min(b.maxHp, b.hp + 12 * dt);   // out of the fight a while: patched up, like you
+    botSense(b, dt, ts);
     b.retgt -= dt;
-    const stale = !b.tgt || (b.tgt === 'player' ? !player.alive : (b.tgt.dead || enemies.indexOf(b.tgt) < 0));
-    if (stale || b.retgt <= 0) { const nt = tdmFindTarget(b); if (nt !== b.tgt) { b.tgt = nt; b.flowT = 0; b.seen = 0; } b.retgt = 0.6 + Math.random() * 0.6; }
+    if (!b.tgt || !entLive(b.tgt) || !b.kn.has(b.tgt) || b.retgt <= 0) { const nt = botChoose(b, ts); if (nt !== b.tgt) { b.tgt = nt; b.flowT = 0; b.seen = 0; } b.retgt = 0.4 + Math.random() * 0.4; }
     b.goalT -= dt;
     if (b.goalT <= 0) { b.goalT = 0.7 + Math.random() * 0.6; const og = b.gx; modeGoal(b); if ((og === undefined) !== (b.gx === undefined)) b.flowT = 0; }
-    const t = b.tgt, atPlayer = t === 'player', ox = g.position.x, oz = g.position.z;
-    let tx = ox, tz = oz, ty = 1.4, dx = 0, dz = 0, d = 1e9;
-    if (t) {
-      tx = atPlayer ? player.x : t.net ? t.tx : t.group.position.x;
-      tz = atPlayer ? player.z : t.net ? t.tz : t.group.position.z;
-      ty = atPlayer ? eyeH - 0.2 + player.y : t.net ? 1.4 + (t.ty || 0) : 1.4 + (t.y || 0);
+    const t = b.tgt, atPlayer = t === 'player', ox = g.position.x, oz = g.position.z, K = t ? b.kn.get(t) : null;
+    let tx = ox, tz = oz, ty = 1.4, dx = 0, dz = 0, d = 1e9, mx = ox, mz = oz, my = 0;
+    if (t && K) {
+      entAt(t); tx = _qx; tz = _qz; ty = _qh;
       dx = tx - ox; dz = tz - oz; d = Math.hypot(dx, dz) || 1;
-      b.losT -= dt;
-      if (b.losT <= 0) { b.losT = 0.2; b.los = hasLOS(ox, 1.5 + (b.y || 0), oz, tx, ty, tz); }
+      b.los = K.v && ts - K.t < 0.45;
+      if (b.los) { mx = tx; mz = tz; my = _qy; } else { mx = K.x; mz = K.z; my = K.y; }
       b.seen = b.los ? b.seen + dt : 0;
     } else { b.los = false; b.seen = 0; }
-    const hasGoal = b.gx !== undefined, gx = hasGoal ? b.gx : tx, gz = hasGoal ? b.gz : tz, gd = Math.hypot(gx - ox, gz - oz);
-    const flo = !!MAPS[currentMap].floors, gy = hasGoal ? (b.gy || 0) : (atPlayer ? player.y : t ? (t.net ? (t.ty || 0) : (t.y || 0)) : 0), sameL = !flo || upLvl(b.y || 0) === upLvl(gy);
+    if (b.turnT > 0) b.turnT -= dt;
+    if (b.hold > 0) b.hold -= dt;
+    b.retCD -= dt;
+    if (b.ret > 0) { b.ret -= dt; if (b.ret <= 0 || Math.hypot(b.rtx - ox, b.rtz - oz) < 0.8) { b.ret = 0; if (!b.los) b.hold = 1.2 + Math.random() * 1.5; } }
+    else if (PR.retreat && b.los && !b.act && !b.hard && b.retCD <= 0 && b.hp < b.maxHp * PR.retreat && ts - b.hurtT < 1.5) {
+      if (botCover(b, tx, tz, ty)) { b.ret = 2.6; b.retCD = 9; b.flowT = 0; } else b.retCD = 2;
+    }
+    const flo = !!MAPS[currentMap].floors, hasGoal = b.gx !== undefined;
+    let gx, gz, gy, gr, roam = false;
+    if (b.ret > 0) { gx = b.rtx; gz = b.rtz; gy = 0; gr = 0.6; }
+    else if (hasGoal) { gx = b.gx; gz = b.gz; gy = b.gy || 0; gr = b.gr; }
+    else if (t && K) {
+      gx = mx; gz = mz; gy = my; gr = 1.2;
+      if (!b.los) {
+        botFlankVia(b, ox, oz, mx, mz);
+        if (b.fv) { gx = b.fv[0]; gz = b.fv[1]; gy = 0; }
+        else if (Math.hypot(mx - ox, mz - oz) < 1.6 && (!flo || upLvl(b.y || 0) === upLvl(my))) botCleared(b, t, ox, oz);
+      }
+    } else { roam = true; botRoam(b, ts, ox, oz); gx = b.ro[0]; gz = b.ro[1]; gy = b.ro[2]; gr = 1.2; }
+    const gd = Math.hypot(gx - ox, gz - oz), sameL = !flo || upLvl(b.y || 0) === upLvl(gy);
     const fight = !!t && b.los && d <= b.range && (sameL || hasGoal);
-    let ux = 0, uz = 0, sp = b.speed;
+    let ux = 0, uz = 0, sp = b.speed * (t ? 1 : PR.hunt);
     b.crouch = !!b.act;
     if (b.act) sp = 0;                                 // planting or defusing: hold still
     else if (b.nudge > 0) {                            // wedged on something: slide sideways for a moment
       b.nudge -= dt;
-      const mx = gd > 0.01 ? (gx - ox) / gd : 1, mz = gd > 0.01 ? (gz - oz) / gd : 0;
-      ux = -mz * b.side; uz = mx * b.side;
-    } else if (fight && !(hasGoal && b.hard && gd > b.gr)) {
+      const mx2 = gd > 0.01 ? (gx - ox) / gd : 1, mz2 = gd > 0.01 ? (gz - oz) / gd : 0;
+      ux = -mz2 * b.side; uz = mx2 * b.side;
+    } else if (fight && b.ret <= 0 && !(hasGoal && b.hard && gd > b.gr)) {
       b.strT -= dt;
-      if (b.strT <= 0) { b.strT = 0.5 + Math.random() * 1.1; b.side = Math.random() < 0.15 ? 0 : Math.random() < 0.5 ? -1 : 1; }
-      const fx = dx / d, fz = dz / d, adv = d < 4.5 ? -0.8 : d > b.range * 0.8 ? 0.45 : 0;
+      const anchor = hasGoal && !b.hard && gd < 2.5;    // holding a spot: stay on it and shoot rather than dance about
+      if (b.strT <= 0) { b.strT = 0.5 + Math.random() * 1.1; b.side = Math.random() < (anchor ? Math.max(PR.still, 0.65) : PR.still) ? 0 : Math.random() < 0.5 ? -1 : 1; }
+      const fx = dx / d, fz = dz / d;
+      const adv = anchor ? 0 : PR.k === 'rush' ? (d < 2.5 ? -0.6 : 0.7) : PR.k === 'snip' ? (d < 9 ? -0.9 : 0) : PR.k === 'care' ? (d < 6 ? -0.8 : 0) : d < 4.5 ? -0.8 : d > b.range * 0.8 ? 0.45 : 0;
       ux = -fz * b.side + fx * adv; uz = fx * b.side + fz * adv;
       if (hasGoal && gd > 2.2) { ux += (gx - ox) / gd * 0.6; uz += (gz - oz) / gd * 0.6; }      // drift back to where it should be
       const l = Math.hypot(ux, uz);
-      if (l > 0) { ux /= l; uz /= l; sp *= 0.6; } else sp = 0;
-    } else if ((!hasGoal && !t) || (hasGoal && gd <= b.gr && sameL)) sp = 0;
+      if (l > 0) { ux /= l; uz /= l; sp *= 0.6; } else { sp = 0; b.crouch = PR.k === 'care' || PR.k === 'snip' || anchor; }
+    } else if ((b.hold > 0 && !b.los && !hasGoal && b.ret <= 0) || (gd <= gr && sameL)) sp = 0;   // holding an angle, or there
     else {
       const rt = flo ? botRoute(b, dt, gx, gz, gy) : 0;
       if (rt === 1) { ux = _nx; uz = _nz; }
@@ -8147,7 +8587,10 @@ function updateTdmBots(dt) {
         const fx = rt === 2 ? _rgx : gx, fz = rt === 2 ? _rgz : gz, fd = Math.hypot(fx - ox, fz - oz);
         if (!b.dist || b.dist.length !== cells) { b.dist = new Int16Array(cells); b.flowT = 0; }
         b.flowT -= dt;
-        if (b.flowT <= 0 || b.rtT !== rt) { b.rtT = rt; b.flowT = 0.45 + Math.random() * 0.35; navFlow(fx, fz, b.dist); }
+        if (b.flowT <= 0 || b.rtT !== rt) {
+          b.rtT = rt; b.flowT = 0.45 + Math.random() * 0.35; navFlow(fx, fz, b.dist);
+          if (roam && rt === 0 && b.dist[navCellOf(ox, oz)] < 0) b.roT = 0;      // can't get there from here: somewhere else
+        }
         if (navStep(b, dt, ox, oz, fx, fz) === 2) { ux = _nx; uz = _nz; } else if (fd > 0.01) { ux = (fx - ox) / fd; uz = (fz - oz) / fd; }
       }
     }
@@ -8161,12 +8604,26 @@ function updateTdmBots(dt) {
     const moved = Math.hypot(_cx - ox, _cz - oz);
     if (step > 0 && moved < step * 0.35) {
       if (fight) b.side = -b.side || 1;
-      else if ((b.stuck += dt) > 0.5) { b.stuck = 0; b.nudge = 0.35 + Math.random() * 0.3; b.side = Math.random() < 0.5 ? -1 : 1; b.flowT = 0; }
-    } else b.stuck = 0;
+      else if ((b.stuck += dt) > 0.5) {
+        b.stuck = 0; b.nudge = 0.35 + Math.random() * 0.3; b.side = Math.random() < 0.5 ? -1 : 1; b.flowT = 0;
+        if (++b.stuckN >= 3) { b.stuckN = 0; if (roam) b.roT = 0; else if (b.fv) b.fv = null; }
+      }
+    } else { b.stuck = 0; if (moved > step * 0.8) b.stuckN = 0; }
     g.position.x = clamp(_cx, -ARENA + 2, ARENA - 2);
     g.position.z = clamp(_cz, -ARENA + 2, ARENA - 2);
     if (flo) botFeet(b, dt);
-    const want = b.los && t ? Math.atan2(dx, dz) : (ux || uz) ? Math.atan2(ux, uz) : g.rotation.y;
+    // where it looks: at what it's fighting; at a noise or a hit; at where it last knew someone was; else down the way it's
+    // walking; standing still, down the most open way towards trouble, sweeping a little
+    let want;
+    if (b.los && t) want = Math.atan2(dx, dz);
+    else if (b.turnT > 0) want = Math.atan2(b.tdx - ox, b.tdz - oz);
+    else if (t && K && Math.hypot(mx - ox, mz - oz) < 15 && Math.hypot(mx - ox, mz - oz) > 1) want = Math.atan2(mx - ox, mz - oz);
+    else if (sp > 0 && (ux || uz) && moved > step * 0.3) want = Math.atan2(ux, uz);
+    else {
+      const lk = Math.round(ox * 0.7) * 1000 + Math.round(oz * 0.7);
+      if (b.lookK !== lk) { b.lookK = lk; botThreat(b, ts, ox, oz); b.lookA = botLookA(b, ox, oz, _qx, _qz); }
+      want = b.lookA + Math.sin(ts * 0.8 + b.id * 1.7) * 0.5;
+    }
     let da = want - g.rotation.y; da = Math.atan2(Math.sin(da), Math.cos(da));
     g.rotation.y += da * Math.min(1, dt * 10);
     if (b.hitT > 0) b.hitT -= dt;
@@ -8175,6 +8632,7 @@ function updateTdmBots(dt) {
 
     b.cool -= dt;
     if (!t || b.act || b.cool > 0 || d > 30 || !b.los || b.seen < b.react) continue;
+    { let fa = Math.atan2(dx, dz) - g.rotation.y; fa = Math.atan2(Math.sin(fa), Math.cos(fa)); if (Math.abs(fa) > 0.45) continue; }   // still turning round
     if (atPlayer && tdmTokens < 1) { b.cool = 0.2; continue; }
     if (t.net) {                                       // a person on another device: the same ration of shots at them
       t.tok = Math.min(3, (t.tok === undefined ? 3 : t.tok) + 3 * (now - (t.tokT || now)) / 1000); t.tokT = now;
@@ -8188,11 +8646,17 @@ function updateTdmBots(dt) {
       if (!player.grounded) acc *= 0.45;
       else if (moving) acc *= (held('sprint') || sprintToggle) ? 0.5 : 0.7;
     } else if (t.net) acc *= 0.75;
+    else {                                             // bot on bot: moving makes you harder to hit and a worse shot; crouched is smaller
+      if ((t.mvK || 0) > 0.6) acc *= 0.7;
+      else if (t.crouch) acc *= 0.85;
+      if ((b.mvK || 0) > 0.6) acc *= 0.75;
+    }
     const hit = Math.random() < acc;
     _m.set(g.position.x, 1.3 + (b.y || 0), g.position.z);
     if (hit) _e.set(tx, ty, tz);
     else _e.set(tx + (Math.random() - 0.5) * 3, ty - 0.5 + Math.random() * 0.6, tz + (Math.random() - 0.5) * 3);
     b.kick = 1; b.shots = (b.shots + 1) & 255;
+    botHear(b, g.position.x, g.position.z, b.y || 0, BOT_HEAR);
     addTracer(_m, _e, b.team === 'red' ? 0xff6a3d : 0x7dd3fc);
     fxMuzzle(_m, null, 1, 0.8, 0.45, false); shotNoise(0.035, 0.12, 2600);
     const near = Math.hypot(g.position.x - player.x, g.position.z - player.z);
@@ -9209,10 +9673,9 @@ function spawnBot(forceType, mir) {
   const group = new THREE.Group();
   // ordinary zombies come in different clothes, skin and height
   const plain = type === 'normal' || type === 'runner';
-  const look = plain ? { body: lam(ZCLOTH[Math.floor(Math.random() * ZCLOTH.length)]), head: lam(ZSKIN[Math.floor(Math.random() * ZSKIN.length)]) } : T;
   const tall = T.scale * (plain ? 0.92 + Math.random() * 0.16 : 1);
   group.rotation.order = 'YXZ';                    // so leaning and falling follow the way it faces
-  const { body, head, legL, legR, armL, armR, face } = botRig(group, look, true);
+  const { body, head, legL, legR, armL, armR, face, gait } = zombieRig(group, type);
   if (type === 'boss') addBossParts(group);
   if (type === 'armor') addArmorParts(group);
   group.scale.setScalar(tall);
@@ -9226,7 +9689,7 @@ function spawnBot(forceType, mir) {
   scene.add(group);
   const hp = type === 'boss' ? 500 + wave * 100 : (30 + wave * 6) * T.hp;
   const bot = {
-    group, body, head, legL, legR, armL, armR, face, zombie: true, rise: bar ? 0 : 1.4, swipe: 0, type, scale: tall, stag: 0, lean: 0, legDmg: 0, crawl: false,
+    group, body, head, legL, legR, armL, armR, face, gait, zombie: true, rise: bar ? 0 : 1.4, swipe: 0, type, scale: tall, stag: 0, lean: 0, legDmg: 0, crawl: false,
     navT: Math.random() * 0.3, clear: false, hx: 0, hz: 0, flank: jit(5),
     bar, ph: bar ? 1 : 0, slot: jit(1.7), tearT: 0, climbT: 0,       // ph: 1 walking to the window, 2 tearing boards, 3 climbing in, 0 inside
     hp, maxHp: hp,
@@ -10752,6 +11215,7 @@ function applyDamage(bot, dmg, head, low) {
     if (bot.net) { netHit(bot, dmg); return; }
     if (bot.mir) { mirHit(bot, dmg); return; }
     bot.hp -= dmg; bot.hitT = 0.08;
+    botHurt(bot, null, null, true);
     if (bot.hp <= 0) tdmKill(bot, 'blue', 'أنت');
     return;
   }
@@ -10821,6 +11285,7 @@ function tryFire() {
   flashMesh.visible = true;
   flashT = 0.05;
   gunSound(w.id, def);
+  if (mode === 'tdm') botHear('player', player.x, player.z, player.y || 0, BOT_HEAR);
   // the view jumps up and a little sideways, then settles back on target
   const kk = (KICK[w.id] || 0.02) * attKick() * (aimT > 0.7 ? 0.7 : 1) * (stance === 'crouch' ? 0.75 : 1);
   recPT = Math.min(0.26, recPT + kk); recYT += jit(kk * 0.7);
@@ -11451,7 +11916,7 @@ function hud() {
   let boss = null;
   for (const b of enemies) if (b.type === 'boss') { boss = b; break; }
   const bd = boss ? 'block' : 'none';
-  if (hc.bossDisp !== bd) { hc.bossDisp = bd; E.bossBar.style.display = bd; }
+  if (hc.bossDisp !== bd) { hc.bossDisp = bd; E.bossBar.style.display = bd; document.body.classList.toggle('bossOn', bd !== 'none'); }
   if (boss) {
     const wpc = Math.max(0, Math.round(boss.hp / boss.maxHp * 200) / 2) + '%';
     if (hc.bossW !== wpc) { hc.bossW = wpc; E.bossFill.style.width = wpc; }
@@ -13614,7 +14079,7 @@ $('pauseBtn').addEventListener('click', () => { pauseOpen = !pauseOpen; updateLo
 $('gsmBtn').addEventListener('click', () => gsmOpen());
 $('lookName').textContent = lookOf(LBY.look).name;
 // ---------- version and sponsors ----------
-const GAME_VERSION = '4.8';
+const GAME_VERSION = '4.9';
 $('verNum').textContent = GAME_VERSION;
 for (const [id, art, url] of [['spD', 'drLogo', 'https://www.instagram.com/drbr.sa/'], ['spO', 'ovenLogo', 'https://www.instagram.com/ovenpizza_sa/']]) {
   const b = $(id); b.querySelector('i').style.setProperty('--m', 'url("' + SPONSOR_ART[art] + '")');
